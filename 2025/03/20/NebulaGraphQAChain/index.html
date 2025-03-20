@@ -226,10 +226,10 @@
 <hr>
 <h2 id="1-这个代码是做什么的？"><a href="#1-这个代码是做什么的？" class="headerlink" title="1. 这个代码是做什么的？"></a><strong>1. 这个代码是做什么的？</strong></h2><ul>
 <li><strong>把自然语言问题转化为图数据库NebulaGraph查询语句</strong></li>
-<li><strong>查询 NebulaGraph（确保图数据库中以及存在数据，本代码不再额外构建数据插入图数据库）</strong></li>
+<li><strong>查询 NebulaGraph（确保图数据库中已经存在数据，本代码不再额外构建数据插入图数据库）</strong></li>
 <li><strong>返回查询结果</strong></li>
 </ul>
-<p><strong>简单来说</strong>：<br>你可以用“人话”问它问题，它会自动 <strong>翻译成数据库语言</strong>，然后去 <strong>图数据库找答案</strong>。</p>
+<p><strong>简单来说</strong>：<br>你可以用“人话”问它问题，它会自动 <strong>翻译成图数据库语言</strong>，然后去 <strong>图数据库找答案</strong>，将查询到的结果与提问相结合重新用“人话”回答问题。</p>
 <hr>
 <h2 id="2-代码执行的流程是什么？"><a href="#2-代码执行的流程是什么？" class="headerlink" title="2. 代码执行的流程是什么？"></a><strong>2. 代码执行的流程是什么？</strong></h2><ol>
 <li>读取 <strong>API 配置</strong>（告诉代码如何访问 LLM）</li>
@@ -288,6 +288,7 @@
 <li>代码调用 LLM，获取 Cypher 语句</li>
 <li>执行数据库查询，返回结果。<br><img src="https://github.com/user-attachments/assets/fefb7d40-9737-4dc1-a3d0-266445ccc65a" alt="Query Execution"></li>
 <li>我们可以在图数据库中进行验证。<br><img src="https://github.com/user-attachments/assets/72b07b88-740e-4210-aaaf-823e29bfb3d1" alt="Nebula Graph Query"></li>
+<li>这里制作了一个简易的前端页面，可以查看效果和后端日志，详细代码可在项目地址中获取：<a target="_blank" rel="noopener" href="https://github.com/EvannZhongg/NebulaGraphQAChain.git">https://github.com/EvannZhongg/NebulaGraphQAChain.git</a><br><img src="https://github.com/user-attachments/assets/8a1613eb-ec9a-4e2f-bce9-3876ebc80191" alt="image"></li>
 </ol>
 <hr>
 <p>该项目代码参考 <a target="_blank" rel="noopener" href="https://github.com/hwchase17/langchain">LangChain</a> 和 <a target="_blank" rel="noopener" href="http://doc.cnlangchain.com/modules/chains/examples/graph_nebula_qa.html">NebulaGraphQAChain</a>。</p>
