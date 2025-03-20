@@ -254,10 +254,10 @@
 <li><strong>发送请求</strong> 给 LLM（大模型），让它把用户问题翻译成 <strong>数据库查询语句</strong>。</li>
 <li><strong>解析返回结果</strong>，提取真正的数据库查询语句。</li>
 <li><strong>如果出错</strong>，就打印错误信息。</li>
-<li>代码中的以下部分用于处理大模型输出含有代码标记块的情况，如果你的大模型输出含有代码标记块则查询语句会出现失败，在下方代码中添加代码标记块名称，避免查询出错.</li>
 </ol>
-  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">if result.startswith(&quot;```代码标记块内容&quot;) and result.endswith(&quot;```&quot;):</span><br><span class="line">  result = result[len(&quot;```&quot;):-len(&quot;```&quot;)].strip()</span><br></pre></td></tr></table></figure>
-
+<ul>
+<li>代码中的以下部分用于处理大模型输出含有代码标记块的情况，如果你的大模型输出含有代码标记块则查询语句会出现失败，在下方代码中添加代码标记块名称，避免查询出错.<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">if result.startswith(&quot;```代码标记块内容&quot;) and result.endswith(&quot;```&quot;):</span><br><span class="line">  result = result[len(&quot;```&quot;):-len(&quot;```&quot;)].strip()</span><br></pre></td></tr></table></figure></li>
+</ul>
 <p>📌 <strong>示例：</strong></p>
 <ul>
 <li>你输入：“列出某个电子器件的所有相关参数”</li>
