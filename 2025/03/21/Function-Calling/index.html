@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Evan Zhong">
+
+
+
+
+
+<title>Function Calling | Hexo</title>
+
+
+
+    <link rel="icon" href="/favicon.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const currentTheme = window.localStorage && window.localStorage.getItem('theme') || '';
+            const isDark = currentTheme === 'dark';
+            const pagebody = document.getElementsByTagName('body')[0]
+            if (isDark) {
+                pagebody.classList.add('dark-theme');
+                // mobile
+                document.getElementById("mobile-toggle-theme").innerText = "· Dark"
+            } else {
+                pagebody.classList.remove('dark-theme');
+                // mobile
+                document.getElementById("mobile-toggle-theme").innerText = "· Light"
+            }
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Evan Zhong&#39;s Blog</a></div>
+            <div class="menu navbar-right">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/category">Categories</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+                <input id="switch_default" type="checkbox" class="switch_default">
+                <label for="switch_default" class="toggleBtn"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Evan Zhong&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/category">Categories</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if(toggleMenu.classList.contains("active")){
+           toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        }else{
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+            <div class="main">
+                <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Function Calling</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">Evan Zhong</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">March 21, 2025&nbsp;&nbsp;23:50:25</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    Category:
+                            
+                                <a href="/categories/LLM%E5%AD%A6%E4%B9%A0%E4%B9%8B%E8%B7%AF/">LLM学习之路</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h1 id="Qwen-Function-Calling-详细解析"><a href="#Qwen-Function-Calling-详细解析" class="headerlink" title="Qwen Function Calling 详细解析"></a>Qwen Function Calling 详细解析</h1><hr>
+<p>项目地址：<a target="_blank" rel="noopener" href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="1-Function-Calling-简介"><a href="#1-Function-Calling-简介" class="headerlink" title="1. Function Calling 简介"></a><strong>1. Function Calling 简介</strong></h2><p>Function Calling 允许 LLM（大语言模型）在回答问题时调用外部工具，如 Python 函数、API 或数据库查询。</p>
+<p><strong>核心流程：</strong></p>
+<ol>
+<li><strong>用户输入问题</strong></li>
+<li><strong>AI 判断是否需要调用工具</strong></li>
+<li><strong>如果需要，AI 返回 <code>tool_calls</code>，请求调用特定函数</strong></li>
+<li><strong>开发者执行对应的 Python 函数，并返回执行结果</strong></li>
+<li><strong>AI 读取工具返回值，继续推理并生成最终回答</strong></li>
+</ol>
+<h2 id="2-代码拆解：Function-Calling-功能实现"><a href="#2-代码拆解：Function-Calling-功能实现" class="headerlink" title="2. 代码拆解：Function Calling 功能实现"></a><strong>2. 代码拆解：Function Calling 功能实现</strong></h2><p>本文定义了一个read_markdown函数，用于通过提问让大模型自主调用函数阅读markdown文本内容，回答问题。</p>
+<h3 id="（1）初始化-Qwen-客户端"><a href="#（1）初始化-Qwen-客户端" class="headerlink" title="（1）初始化 Qwen 客户端"></a><strong>（1）初始化 Qwen 客户端</strong></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">client = OpenAI(</span><br><span class="line">    api_key=<span class="string">&quot;your_api_key&quot;</span>,</span><br><span class="line">    base_url=<span class="string">&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>连接 Qwen API 进行请求。</li>
+<li><code>api_key</code> 必须正确，否则请求会失败。</li>
+</ul>
+<hr>
+<h3 id="（2）定义工具（Function-Calling）"><a href="#（2）定义工具（Function-Calling）" class="headerlink" title="（2）定义工具（Function Calling）"></a><strong>（2）定义工具（Function Calling）</strong></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>告诉 Qwen 可调用的工具。</li>
+<li><code>name</code> 必须与 Python 函数名一致，否则无法正确调用。</li>
+<li><code>description</code> 用于让 AI 知道工具的用途。</li>
+<li>在 Qwen 的 Function Calling 中，工具的<code>parameters</code> 的 <code>type</code> 必须是 <code>object</code>。</li>
+<li><code>parameters</code> 为空 <code>&#123;&#125;</code>，表示此工具不需要参数。</li>
+<li><code>parameters</code> <strong>如果不为空</strong>，表示此工具需要<strong>传递参数</strong>。<ul>
+<li><code>properties</code> 定义了每个参数的名称、类型和描述。</li>
+<li><code>required</code> 指定了哪些参数是必填项。</li>
+</ul>
+</li>
+</ul>
+<p>如果代码中涉及到了多个工具的调用，可按照以下的格式进行多个工具的定义：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;fetch_weather&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;获取指定城市的天气信息。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                    <span class="string">&quot;city&quot;</span>: &#123;</span><br><span class="line">                        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;description&quot;</span>: <span class="string">&quot;要查询天气的城市名称&quot;</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;city&quot;</span>]</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>示例解释：</strong></p>
+<ul>
+<li><code>read_markdown</code> <strong>不需要参数</strong>，所以 <code>properties</code> 为空。</li>
+<li><code>fetch_weather</code> <strong>需要参数</strong>，它的 <code>parameters</code> 里包含 <code>city</code> 这个字符串参数。</li>
+<li>AI 在调用 <code>fetch_weather</code> 时，会传递 JSON 结构的 <code>arguments</code>，如：<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;city&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Shanghai&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<hr>
+<h3 id="（3）读取-Markdown-文件"><a href="#（3）读取-Markdown-文件" class="headerlink" title="（3）读取 Markdown 文件"></a><strong>（3）读取 Markdown 文件</strong></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">read_markdown</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    读取 documents 文件夹中的首个 .md 文件，并返回前 2000 字符的内容。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    doc_path = <span class="string">&quot;documents&quot;</span></span><br><span class="line">    md_file = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> file <span class="keyword">in</span> os.listdir(doc_path):</span><br><span class="line">        <span class="keyword">if</span> file.endswith(<span class="string">&quot;.md&quot;</span>):</span><br><span class="line">            md_file = os.path.join(doc_path, file)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> md_file:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;No markdown file found in the &#x27;documents&#x27; folder.&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(md_file, <span class="string">&quot;r&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        content = f.read()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> content[:<span class="number">5000</span>]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>读取 <code>documents/</code> 目录下后缀为 <code>.md</code> 文件。</li>
+<li>限制 5000 字符，防止超出 Token 限制。</li>
+<li>将<code>markdown</code>文本的前5000个字符传递给AI。</li>
+</ul>
+<hr>
+<h3 id="（4）获取天气信息（示例工具）"><a href="#（4）获取天气信息（示例工具）" class="headerlink" title="（4）获取天气信息（示例工具）"></a><strong>（4）获取天气信息（示例工具）</strong></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">fetch_weather</span>(<span class="params">city</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取指定城市的天气信息。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;当前 <span class="subst">&#123;city&#125;</span> 的天气：晴，25°C&quot;</span></span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>模拟获取天气信息，<strong>参数 <code>city</code> 必须传递</strong>。</li>
+<li>Qwen 在调用 <code>fetch_weather</code> 时，会自动提供 <code>city</code> 的值。</li>
+</ul>
+<h3 id="（5）主逻辑：工具调用的完整流程"><a href="#（5）主逻辑：工具调用的完整流程" class="headerlink" title="（5）主逻辑：工具调用的完整流程"></a><strong>（5）主逻辑：工具调用的完整流程</strong></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    user_question = <span class="built_in">input</span>(<span class="string">&quot;请输入问题：&quot;</span>).strip()</span><br><span class="line">    messages = [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: user_question&#125;]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>让用户输入问题，并存入 <code>messages</code> 作为对话历史。</li>
+</ul>
+<hr>
+<h3 id="（6）第一次请求：看看-AI-是否调用工具"><a href="#（6）第一次请求：看看-AI-是否调用工具" class="headerlink" title="（6）第一次请求：看看 AI 是否调用工具"></a><strong>（6）第一次请求：看看 AI 是否调用工具</strong></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">completion = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>调用 Qwen，让其决定是否需要调用工具。</li>
+</ul>
+<hr>
+<h3 id="（7）检查-Qwen-是否调用了工具"><a href="#（7）检查-Qwen-是否调用了工具" class="headerlink" title="（7）检查 Qwen 是否调用了工具"></a><strong>（7）检查 Qwen 是否调用了工具</strong></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> tool_calls:</span><br><span class="line">    tool_results = []</span><br><span class="line">    <span class="keyword">for</span> tool_call <span class="keyword">in</span> tool_calls:</span><br><span class="line">        tool_name = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;name&quot;</span>]</span><br><span class="line">        tool_id = tool_call[<span class="string">&quot;id&quot;</span>]</span><br><span class="line">        tool_args = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;arguments&quot;</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> tool_name == <span class="string">&quot;read_markdown&quot;</span>:</span><br><span class="line">            result_content = read_markdown()</span><br><span class="line">        <span class="keyword">elif</span> tool_name == <span class="string">&quot;fetch_weather&quot;</span>:</span><br><span class="line">            city = tool_args.get(<span class="string">&quot;city&quot;</span>, <span class="string">&quot;未知城市&quot;</span>)</span><br><span class="line">            result_content = fetch_weather(city)</span><br><span class="line">        </span><br><span class="line">        tool_results.append(&#123;</span><br><span class="line">            <span class="string">&quot;role&quot;</span>: <span class="string">&quot;tool&quot;</span>,</span><br><span class="line">            <span class="string">&quot;tool_call_id&quot;</span>: tool_id,</span><br><span class="line">            <span class="string">&quot;content&quot;</span>: result_content</span><br><span class="line">        &#125;)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>解析 Qwen 返回的 <code>tool_calls</code>。</li>
+<li><strong>调用不同的工具</strong>，如 <code>read_markdown()</code> 或 <code>fetch_weather(city)</code>。</li>
+<li><strong>如果工具需要参数</strong>，就从 <code>tool_args</code> 里提取。</li>
+<li>若 <code>tool_calls</code> 为空，说明 AI <strong>不需要调用工具</strong>。</li>
+</ul>
+<hr>
+<h3 id="（8）执行工具调用"><a href="#（8）执行工具调用" class="headerlink" title="（8）执行工具调用"></a><strong>（8）执行工具调用</strong></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> tool_calls:</span><br><span class="line">    tool_results = []</span><br><span class="line">    <span class="keyword">for</span> tool_call <span class="keyword">in</span> tool_calls:</span><br><span class="line">        tool_name = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;name&quot;</span>]</span><br><span class="line">        tool_id = tool_call[<span class="string">&quot;id&quot;</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> tool_name == <span class="string">&quot;read_markdown&quot;</span>:</span><br><span class="line">            result_content = read_markdown()</span><br><span class="line">            tool_results.append(&#123;</span><br><span class="line">                <span class="string">&quot;role&quot;</span>: <span class="string">&quot;tool&quot;</span>,</span><br><span class="line">                <span class="string">&quot;tool_call_id&quot;</span>: tool_id,</span><br><span class="line">                <span class="string">&quot;content&quot;</span>: result_content</span><br><span class="line">            &#125;)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>执行 <code>read_markdown()</code>，并存入 <code>tool</code> 消息。</li>
+</ul>
+<hr>
+<h3 id="（9）让-Qwen-继续推理"><a href="#（9）让-Qwen-继续推理" class="headerlink" title="（9）让 Qwen 继续推理"></a><strong>（9）让 Qwen 继续推理</strong></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tool_calls&quot;</span>: tool_calls</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)</span><br><span class="line"></span><br><span class="line">completion2 = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>让 Qwen <strong>读取工具返回值，并继续回答</strong>。</li>
+</ul>
+<hr>
+<p>效果测试：</p>
+<p align="center">
+  <img width="1198" alt="function_calling" src="https://github.com/user-attachments/assets/6da63b40-55b2-4eb0-b13c-b5f30225ff33" />
+</p>
+
+<hr>
+<h2 id="3-以下是我在测试的时候一些工具调用失败的原因"><a href="#3-以下是我在测试的时候一些工具调用失败的原因" class="headerlink" title="3. 以下是我在测试的时候一些工具调用失败的原因"></a><strong>3. 以下是我在测试的时候一些工具调用失败的原因</strong></h2><ol>
+<li><code>name</code> 和 Python 函数不匹配，导致 AI 无法正确调用工具。</li>
+<li><code>role=&quot;tool&quot;</code> 消息未紧跟 <code>assistant</code>，导致 AI 解析错误。</li>
+</ol>
+<ul>
+<li>解决方法是在调用完工具之后，向 messages 中手动插入一条 role&#x3D;”assistant” 的空消息，附带 tool_calls 字段，然后紧接着添加 role&#x3D;”tool” 的返回结果，这样就保证了正确的调用链路。<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    &quot;role&quot;: &quot;assistant&quot;,</span><br><span class="line">    &quot;content&quot;: &quot;&quot;,  # 一定为空</span><br><span class="line">    &quot;tool_calls&quot;: tool_calls  # 将 AI 最初返回的 tool_calls 原样放回</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)  # 马上接上 tool 返回值</span><br></pre></td></tr></table></figure></li>
+<li>因为 Qwen 模型的调用链规则如下：<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">用户消息（role=&quot;user&quot;）</span><br><span class="line">→ AI 返回 tool_calls（role=&quot;assistant&quot;，tool_calls）</span><br><span class="line">→ 工具执行，返回结果（role=&quot;tool&quot;，tool_call_id）</span><br><span class="line">→ AI 接收到结果，继续推理</span><br></pre></td></tr></table></figure></li>
+<li>如果 role&#x3D;”tool” 的消息不紧跟在带有 tool_calls 的 assistant 消息后面，模型就无法对上“这个工具调用返回了这个值”，于是会报错或输出异常。</li>
+</ul>
+<ol start="3">
+<li><code>parameters</code> 设置错误，导致 AI 传递了错误的参数。</li>
+<li><code>messages</code> 结构错误，导致 AI 不能正确读取历史对话。</li>
+</ol>
+<hr>
+<p>该项目代码参考 <a target="_blank" rel="noopener" href="https://help.aliyun.com/zh/model-studio/user-guide/qwen-function-calling?spm=0.0.0.i4#8c41d25020ipz">Qwen官方Function Calling</a>。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>Evan Zhong</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>Permalink:</span>
+                        <span><a href="https://evannzhongg.github.io/2025/03/21/Function-Calling/">https://evannzhongg.github.io/2025/03/21/Function-Calling/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>License:</span>
+                        <span>Copyright (c) 2019 <a target="_blank" rel="noopener" href="http://creativecommons.org/licenses/by-nc/4.0/">CC-BY-NC-4.0</a> LICENSE</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/LLM/"># LLM</a>
+                    
+                        <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"># 大模型</a>
+                    
+                        <a href="/tags/function-calling/"># function calling</a>
+                    
+                        <a href="/tags/agent/"># agent</a>
+                    
+                        <a href="/tags/Qwen/"># Qwen</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+            
+            <a class="next" rel="next" href="/2025/03/20/NebulaGraphQAChain/">NebulaGraphQAChain</a>
+            
+        </section>
+
+
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Evan Zhong | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>
