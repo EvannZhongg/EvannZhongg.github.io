@@ -262,7 +262,7 @@
 </blockquote>
 <hr>
 <h2 id="四、引入评论模块到文章模板"><a href="#四、引入评论模块到文章模板" class="headerlink" title="四、引入评论模块到文章模板"></a>四、引入评论模块到文章模板</h2><p>打开文件：<code>themes/Chic/layout/_page/post.ejs</code></p>
-<p>在文件底部 <code>&lt;/article&gt;</code> 之前添加一行代码 <code>&lt;%- partial(&#39;_partial/livers&#39;) %&gt;</code> ：</p>
+<p>找到代码底部，在 <code>&lt;/article&gt;</code> 上方添加一行代码 <code>&lt;%- partial(&#39;_partial/livers&#39;) %&gt;</code> ：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">        &lt;section class=&quot;post-nav&quot;&gt;</span><br><span class="line">            &lt;% if(post.prev)&#123; %&gt;</span><br><span class="line">                &lt;a class=&quot;prev&quot; rel=&quot;prev&quot; href=&quot;&lt;%- url_for(post.prev.path)%&gt;&quot;&gt;&lt;%- post.prev.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">            &lt;% if(post.next)&#123; %&gt;</span><br><span class="line">            &lt;a class=&quot;next&quot; rel=&quot;next&quot; href=&quot;&lt;%- url_for(post.next.path)%&gt;&quot;&gt;&lt;%- post.next.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">        &lt;/section&gt;</span><br><span class="line"></span><br><span class="line">	&lt;%- partial(&#x27;_partial/livers&#x27;) %&gt;</span><br><span class="line"></span><br><span class="line">    &lt;/article&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
 
 <p>这会让评论区出现在每篇文章的底部。</p>
@@ -272,7 +272,7 @@
 
 <p>然后访问你的博客文章页面，应该就能看到 Giscus 评论框</p>
 <hr>
-<h2 id="成功效果"><a href="#成功效果" class="headerlink" title="成功效果"></a>成功效果</h2><p><img src="https://github.com/user-attachments/assets/b75a7ffd-d99b-4d4a-9e95-cb43b06b36aa" alt="discussions"></p>
+<h2 id="成功效果"><a href="#成功效果" class="headerlink" title="成功效果"></a>成功效果</h2><p><img src="https://github.com/user-attachments/assets/b75a7ffd-d99b-4d4a-9e95-cb43b06b36aa" alt="discussions"> </p>
 <ul>
 <li>支持 GitHub 登录评论</li>
 <li>评论存储在 Discussions 中，便于管理</li>
@@ -286,7 +286,7 @@
 <li>确保启用了 Discussions 功能</li>
 </ul>
 <hr>
-<p>该项目代码基于 <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a target="_blank" rel="noopener" href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a></p>
+<p>该项目代码基于 <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a target="_blank" rel="noopener" href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
 
         </div>
 
