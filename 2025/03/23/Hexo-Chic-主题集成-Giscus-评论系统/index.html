@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Evan Zhong">
+
+
+
+
+
+<title>Hexo + Chic 主题集成 Giscus 评论系统 | Hexo</title>
+
+
+
+    <link rel="icon" href="/favicon.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const currentTheme = window.localStorage && window.localStorage.getItem('theme') || '';
+            const isDark = currentTheme === 'dark';
+            const pagebody = document.getElementsByTagName('body')[0]
+            if (isDark) {
+                pagebody.classList.add('dark-theme');
+                // mobile
+                document.getElementById("mobile-toggle-theme").innerText = "· Dark"
+            } else {
+                pagebody.classList.remove('dark-theme');
+                // mobile
+                document.getElementById("mobile-toggle-theme").innerText = "· Light"
+            }
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Evan Zhong&#39;s Blog</a></div>
+            <div class="menu navbar-right">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/category">Categories</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+                <input id="switch_default" type="checkbox" class="switch_default">
+                <label for="switch_default" class="toggleBtn"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Evan Zhong&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/category">Categories</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if(toggleMenu.classList.contains("active")){
+           toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        }else{
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+            <div class="main">
+                <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Hexo + Chic 主题集成 Giscus 评论系统</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">Evan Zhong</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">March 23, 2025&nbsp;&nbsp;22:33:40</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    Category:
+                            
+                                <a href="/categories/NebulaGraph/">NebulaGraph</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h1 id="Hexo-Chic-主题集成-Giscus-评论系统详细教程"><a href="#Hexo-Chic-主题集成-Giscus-评论系统详细教程" class="headerlink" title="Hexo + Chic 主题集成 Giscus 评论系统详细教程"></a>Hexo + Chic 主题集成 Giscus 评论系统详细教程</h1><p>本教程将教你如何在 Hexo 博客（使用 Chic 主题）中添加 Giscus 评论系统，让你的博客拥有简洁现代的评论功能，并且支持明暗模式自动切换。</p>
+<hr>
+<h2 id="一、准备工作"><a href="#一、准备工作" class="headerlink" title="一、准备工作"></a>一、准备工作</h2><h3 id="1-确保你已完成以下条件："><a href="#1-确保你已完成以下条件：" class="headerlink" title="1. 确保你已完成以下条件："></a>1. 确保你已完成以下条件：</h3><ul>
+<li>博客已搭建并使用 Hexo 框架</li>
+<li>正在使用 <a target="_blank" rel="noopener" href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 主题</li>
+<li>博客托管在 GitHub</li>
+</ul>
+<h3 id="2-启用-GitHub-Discussions-功能"><a href="#2-启用-GitHub-Discussions-功能" class="headerlink" title="2. 启用 GitHub Discussions 功能"></a>2. 启用 GitHub Discussions 功能</h3><ol>
+<li>打开你的博客仓库页面</li>
+<li>点击顶部的 <strong>Settings</strong></li>
+<li>左侧栏点击 <strong>Discussions</strong>（或在 Features 区域）</li>
+<li>勾选 <strong>“Enable discussions for this repository”</strong></li>
+</ol>
+<p><img src="/./setting_discussions.jpg" alt="Discussions"></p>
+<hr>
+<h2 id="二、使用-Giscus-app-获取评论配置代码"><a href="#二、使用-Giscus-app-获取评论配置代码" class="headerlink" title="二、使用 Giscus.app 获取评论配置代码"></a>二、使用 Giscus.app 获取评论配置代码</h2><ol>
+<li>打开 Giscus 官网：<a target="_blank" rel="noopener" href="https://giscus.app/">https://giscus.app</a></li>
+<li>登录 GitHub 账号</li>
+<li>安装 <a target="_blank" rel="noopener" href="https://github.com/apps/giscus">giscus</a> app  ，否则访客将无法评论和回应</li>
+<li>按照如下选择进行配置：<ul>
+<li>Repository: 选择你的博客仓库</li>
+<li>Discussion Category: 建议选择 <strong>Announcements</strong>（防止读者随意发帖）</li>
+<li>Page ↔️ Discussion Mapping: 选择 <strong>pathname</strong></li>
+<li>Theme: 选择任意（我们后续会动态控制）</li>
+<li>Language: 选择 <code>zh-CN</code></li>
+</ul>
+</li>
+<li>点击页面底部的 <strong>“Copy code snippet”</strong>，复制生成的 <code>&lt;script&gt;</code> 标签代码</li>
+</ol>
+<hr>
+<h2 id="三、创建评论模块文件"><a href="#三、创建评论模块文件" class="headerlink" title="三、创建评论模块文件"></a>三、创建评论模块文件</h2><h3 id="1-打开博客主题目录"><a href="#1-打开博客主题目录" class="headerlink" title="1. 打开博客主题目录"></a>1. 打开博客主题目录</h3><p>路径：<code>themes/Chic/layout/_partial/</code></p>
+<h3 id="2-创建或编辑-livers-ejs-文件，将-Giscus-中生成的-标签代码粘贴进文件，同时增加主题自动同步功能代码："><a href="#2-创建或编辑-livers-ejs-文件，将-Giscus-中生成的-标签代码粘贴进文件，同时增加主题自动同步功能代码：" class="headerlink" title="2. 创建或编辑 livers.ejs 文件，将 Giscus 中生成的 &lt;script&gt; 标签代码粘贴进文件，同时增加主题自动同步功能代码："></a>2. 创建或编辑 <code>livers.ejs</code> 文件，将 Giscus 中生成的 <code>&lt;script&gt;</code> 标签代码粘贴进文件，同时增加主题自动同步功能代码：</h3><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- Giscus 评论系统 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;https://giscus.app/client.js&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-repo</span>=<span class="string">&quot;你的 GitHub 仓库路径&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-repo-id</span>=<span class="string">&quot;你的 repo-id&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-category</span>=<span class="string">&quot;Announcements&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-category-id</span>=<span class="string">&quot;你的 category-id&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-mapping</span>=<span class="string">&quot;pathname&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-strict</span>=<span class="string">&quot;0&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-reactions-enabled</span>=<span class="string">&quot;1&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-emit-metadata</span>=<span class="string">&quot;0&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-input-position</span>=<span class="string">&quot;top&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-theme</span>=<span class="string">&quot;light&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-lang</span>=<span class="string">&quot;zh-CN&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">crossorigin</span>=<span class="string">&quot;anonymous&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">async</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 主题自动同步（明暗模式） --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">setGiscusTheme</span>(<span class="params">theme</span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> iframe = <span class="variable language_">document</span>.<span class="title function_">querySelector</span>(<span class="string">&#x27;iframe.giscus-frame&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">if</span> (!iframe) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    iframe.<span class="property">contentWindow</span>.<span class="title function_">postMessage</span>(&#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="attr">giscus</span>: &#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="attr">setConfig</span>: &#123;</span></span><br><span class="line"><span class="language-javascript">          <span class="attr">theme</span>: theme === <span class="string">&#x27;dark&#x27;</span> ? <span class="string">&#x27;dark&#x27;</span> : <span class="string">&#x27;light&#x27;</span></span></span><br><span class="line"><span class="language-javascript">        &#125;</span></span><br><span class="line"><span class="language-javascript">      &#125;</span></span><br><span class="line"><span class="language-javascript">    &#125;, <span class="string">&#x27;https://giscus.app&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="comment">// 初始加载时设置主题</span></span></span><br><span class="line"><span class="language-javascript">  <span class="variable language_">window</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> storedTheme = <span class="variable language_">localStorage</span>.<span class="title function_">getItem</span>(<span class="string">&#x27;theme&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> currentTheme = storedTheme === <span class="string">&#x27;dark&#x27;</span> ? <span class="string">&#x27;dark&#x27;</span> : <span class="string">&#x27;light&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript">    <span class="title function_">setGiscusTheme</span>(currentTheme);</span></span><br><span class="line"><span class="language-javascript">  &#125;);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="comment">// 切换按钮点击时同步 Giscus 主题</span></span></span><br><span class="line"><span class="language-javascript">  <span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> themeButtons = [</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">querySelector</span>(<span class="string">&#x27;.toggleBtn&#x27;</span>),</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;mobile-toggle-theme&#x27;</span>)</span></span><br><span class="line"><span class="language-javascript">    ];</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    themeButtons.<span class="title function_">forEach</span>(<span class="function"><span class="params">btn</span> =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="keyword">if</span> (!btn) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript">      btn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="keyword">const</span> newTheme = <span class="variable language_">document</span>.<span class="property">body</span>.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;dark-theme&#x27;</span>) ? <span class="string">&#x27;dark&#x27;</span> : <span class="string">&#x27;light&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript">        <span class="title function_">setGiscusTheme</span>(newTheme);</span></span><br><span class="line"><span class="language-javascript">      &#125;);</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript">  &#125;);</span></span><br><span class="line"><span class="language-javascript"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>⚠️ 请将 <code>data-repo-id</code> 和 <code>data-category-id</code> 替换为你从 giscus.app 获取的值。</p>
+</blockquote>
+<hr>
+<h2 id="四、引入评论模块到文章模板"><a href="#四、引入评论模块到文章模板" class="headerlink" title="四、引入评论模块到文章模板"></a>四、引入评论模块到文章模板</h2><p>打开文件：<code>themes/Chic/layout/_page/post.ejs</code></p>
+<p>在文件底部 <code>&lt;/article&gt;</code> 之前添加以下一行：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;%- partial(&#x27;_partial/livers&#x27;) %&gt;</span><br></pre></td></tr></table></figure>
+
+<p>这会让评论区出现在每篇文章的底部。</p>
+<hr>
+<h2 id="五、重新部署博客"><a href="#五、重新部署博客" class="headerlink" title="五、重新部署博客"></a>五、重新部署博客</h2><p>执行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+
+<p>然后访问你的博客文章页面，应该就能看到 Giscus 评论框</p>
+<hr>
+<h2 id="成功效果"><a href="#成功效果" class="headerlink" title="成功效果"></a>成功效果</h2><p><img src="/./discussions.jpg" alt="Discussions2"></p>
+<ul>
+<li>支持 GitHub 登录评论</li>
+<li>评论存储在 Discussions 中，便于管理</li>
+<li>评论区支持明暗主题自动切换，与 Chic 博客风格一致</li>
+</ul>
+<hr>
+<p>如有问题，可以：</p>
+<ul>
+<li>检查浏览器控制台是否有加载错误</li>
+<li>确保 repo-id 和 category-id 正确</li>
+<li>确保启用了 Discussions 功能</li>
+</ul>
+<hr>
+<p>该项目代码基于 <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a target="_blank" rel="noopener" href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a></p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>Evan Zhong</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>Permalink:</span>
+                        <span><a href="https://evannzhongg.github.io/2025/03/23/Hexo-Chic-%E4%B8%BB%E9%A2%98%E9%9B%86%E6%88%90-Giscus-%E8%AF%84%E8%AE%BA%E7%B3%BB%E7%BB%9F/">https://evannzhongg.github.io/2025/03/23/Hexo-Chic-%E4%B8%BB%E9%A2%98%E9%9B%86%E6%88%90-Giscus-%E8%AF%84%E8%AE%BA%E7%B3%BB%E7%BB%9F/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>License:</span>
+                        <span>Copyright (c) 2019 <a target="_blank" rel="noopener" href="http://creativecommons.org/licenses/by-nc/4.0/">CC-BY-NC-4.0</a> LICENSE</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/Hexo/"># Hexo</a>
+                    
+                        <a href="/tags/%E5%8D%9A%E5%AE%A2/"># 博客</a>
+                    
+                        <a href="/tags/Blog/"># Blog</a>
+                    
+                        <a href="/tags/%E5%89%8D%E7%AB%AF/"># 前端</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+            
+            <a class="next" rel="next" href="/2025/03/21/Function-Calling/">Function Calling</a>
+            
+        </section>
+
+	<!-- Giscus 评论系统 -->
+<script src="https://giscus.app/client.js"
+        data-repo="EvannZhongg/EvannZhongg.github.io"
+        data-repo-id="R_kgDOOLqMyg"
+        data-category="Announcements"
+        data-category-id="DIC_kwDOOLqMys4CoYM2"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="top"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+</script>
+
+<!-- Giscus 主题跟随 Hexo-Chic 明暗模式自动切换 -->
+<script>
+  function setGiscusTheme(theme) {
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (!iframe) return;
+
+    iframe.contentWindow.postMessage({
+      giscus: {
+        setConfig: {
+          theme: theme === 'dark' ? 'dark' : 'light'
+        }
+      }
+    }, 'https://giscus.app');
+  }
+
+  // 初始化时设置 Giscus 主题
+  window.addEventListener('DOMContentLoaded', () => {
+    const storedTheme = localStorage.getItem('theme');
+    const currentTheme = storedTheme === 'dark' ? 'dark' : 'light';
+    setGiscusTheme(currentTheme);
+  });
+
+  // 监听按钮点击切换 Giscus 主题（兼容桌面 + 移动）
+  document.addEventListener('DOMContentLoaded', () => {
+    const themeButtons = [
+      document.querySelector('.toggleBtn'),
+      document.getElementById('mobile-toggle-theme')
+    ];
+
+    themeButtons.forEach(btn => {
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        const newTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+        setGiscusTheme(newTheme);
+      });
+    });
+  });
+</script>
+
+
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Evan Zhong | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>
