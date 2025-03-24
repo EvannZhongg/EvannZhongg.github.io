@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Evan Zhong">
+
+
+
+
+
+<title>Sync Code Block Theme with Dark Mode in Hexo Chic | Hexo</title>
+
+
+
+    <link rel="icon" href="/favicon.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+<link rel="stylesheet" href="/css/custom/custom.css">
+<!-- ✅ highlight.js 亮暗主题样式切换 -->
+<link id="hljs-theme" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css">
+
+<!-- ✅ highlight.js 主库 -->
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const currentTheme = window.localStorage && window.localStorage.getItem('theme') || '';
+            const isDark = currentTheme === 'dark';
+            const pagebody = document.getElementsByTagName('body')[0]
+            if (isDark) {
+                pagebody.classList.add('dark-theme');
+                // mobile
+                document.getElementById("mobile-toggle-theme").innerText = "· Dark"
+            } else {
+                pagebody.classList.remove('dark-theme');
+                // mobile
+                document.getElementById("mobile-toggle-theme").innerText = "· Light"
+            }
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">Evan Zhong&#39;s Blog</a></div>
+            <div class="menu navbar-right">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/category">Categories</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+                <input id="switch_default" type="checkbox" class="switch_default">
+                <label for="switch_default" class="toggleBtn"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">Evan Zhong&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/category">Categories</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if(toggleMenu.classList.contains("active")){
+           toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        }else{
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+            <div class="main">
+                <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Sync Code Block Theme with Dark Mode in Hexo Chic</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">Evan Zhong</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">March 25, 2025&nbsp;&nbsp;0:01:58</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    Category:
+                            
+                                <a href="/categories/Hexo/">Hexo</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h1 id="Hexo-Chic-为代码块实现明暗主题切换效果"><a href="#Hexo-Chic-为代码块实现明暗主题切换效果" class="headerlink" title="Hexo Chic 为代码块实现明暗主题切换效果"></a>Hexo Chic 为代码块实现明暗主题切换效果</h1><p>这份文档记录如何使用 Hexo 与 Chic 主题，完成代码块 (highlight.js) 样式随明&#x2F;暗主题切换。</p>
+<hr>
+<p>项目地址：<a target="_blank" rel="noopener" href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="背景知识"><a href="#背景知识" class="headerlink" title="背景知识"></a>背景知识</h2><ul>
+<li><strong>代码块</strong> 是你写文章时用 &#96;&#96;&#96; 包起来的那些 Python&#x2F;JavaScript 代码部分。</li>
+<li><strong>highlight.js</strong> 是用来给代码块加颜色的工具，它有“亮色”和“暗色”两套样式。</li>
+</ul>
+<p>希望解决的问题是：</p>
+<blockquote>
+<p>当我切换网站到暗色模式时，代码块还是白底，看起来很突兀。</p>
+</blockquote>
+<p>我们要做的就是：让代码块也能“跟着变黑”。</p>
+<hr>
+<h2 id="1-确认-Hexo-正在使用-highlight-js"><a href="#1-确认-Hexo-正在使用-highlight-js" class="headerlink" title="1. 确认 Hexo 正在使用 highlight.js"></a><strong>1. 确认 Hexo 正在使用 highlight.js</strong></h2><p>打开你博客根目录下的 <code>_config.yml</code> 文件，找到下面的内容并确保设置一致：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">syntax_highlighter:</span> <span class="string">highlight.js</span></span><br><span class="line"><span class="attr">highlight:</span></span><br><span class="line">  <span class="attr">line_number:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">auto_detect:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">tab_replace:</span> <span class="string">&#x27;&#x27;</span></span><br><span class="line">  <span class="attr">wrap:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">hljs:</span> <span class="literal">false</span></span><br></pre></td></tr></table></figure>
+
+<p>这段配置的意思是告诉 Hexo：我要用 highlight.js 来做代码高亮。</p>
+<hr>
+<h2 id="2-修改-head-ejs，引入代码高亮样式"><a href="#2-修改-head-ejs，引入代码高亮样式" class="headerlink" title="2.修改 head.ejs，引入代码高亮样式"></a><strong>2.修改 head.ejs，引入代码高亮样式</strong></h2><p>打开文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/head.ejs</span><br></pre></td></tr></table></figure>
+
+<p>在里面添加这几行（插入到已有的 <code>&lt;link&gt;</code> 标签之后即可）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- highlight.js 样式（默认亮色） --&gt;</span><br><span class="line">&lt;link id=&quot;hljs-theme&quot; rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;&gt;</span><br><span class="line">&lt;!-- highlight.js 自动上色功能 --&gt;</span><br><span class="line">&lt;script src=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/highlight.min.js&quot;&gt;&lt;/script&gt;</span><br><span class="line">&lt;script&gt;hljs.highlightAll();&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>第一行是默认代码样式（亮色）。</li>
+<li>第二三行是让代码自动加颜色。</li>
+</ul>
+<hr>
+<h2 id="3-修改-script-js，切换暗色样式时动态修改链接"><a href="#3-修改-script-js，切换暗色样式时动态修改链接" class="headerlink" title="3. 修改 script.js，切换暗色样式时动态修改链接"></a><strong>3. 修改 script.js，切换暗色样式时动态修改链接</strong></h2><p>打开文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">themes/hexo-theme-Chic/source/js/script.js</span><br></pre></td></tr></table></figure>
+
+<p>找到我们添加主题切换的地方，添加以下 JavaScript 代码：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> hljsTheme = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;hljs-theme&#x27;</span>);</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">updateCodeHighlightStyle</span>(<span class="params">isDarkMode</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!hljsTheme) <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">const</span> newHref = isDarkMode</span><br><span class="line">        ? <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github-dark.css&quot;</span></span><br><span class="line">        : <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;</span>;</span><br><span class="line">    hljsTheme.<span class="title function_">setAttribute</span>(<span class="string">&#x27;href&#x27;</span>, newHref);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后在主题切换按钮事件里调用：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">updateCodeHighlightStyle</span>(<span class="literal">true</span>); <span class="comment">// 或 false，根据你当前模式</span></span><br></pre></td></tr></table></figure>
+
+<p>每次切换主题时都调用它，就能切换代码样式。</p>
+<hr>
+<h2 id="4-创建一个-CSS-文件，解决代码块“白边”问题"><a href="#4-创建一个-CSS-文件，解决代码块“白边”问题" class="headerlink" title="4. 创建一个 CSS 文件，解决代码块“白边”问题"></a><strong>4. 创建一个 CSS 文件，解决代码块“白边”问题</strong></h2><p>这个步骤很关键，否则再暗色样式时代码块周围可能会留下一圈白色边框，如下方图片所示：<br><img src="https://github.com/user-attachments/assets/6baef8c8-887d-448f-a5c9-5f0501ab4ee2" alt="image"></p>
+<h3 id="第一步：创建文件夹和文件"><a href="#第一步：创建文件夹和文件" class="headerlink" title="第一步：创建文件夹和文件"></a>第一步：创建文件夹和文件</h3><p>在终端中运行：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cd themes/hexo-theme-Chic/source/css</span><br><span class="line">mkdir custom</span><br><span class="line">cd custom</span><br><span class="line">nano custom.css</span><br></pre></td></tr></table></figure>
+<p>或者手动：在 <code>themes/hexo-theme-Chic/source/css/</code> 下创建文件夹 <code>custom</code>，然后在里面新建文件 <code>custom.css</code></p>
+<h3 id="第二步：填入以下内容："><a href="#第二步：填入以下内容：" class="headerlink" title="第二步：填入以下内容："></a>第二步：填入以下内容：</h3><figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">pre,</span><br><span class="line"><span class="selector-tag">code</span>,</span><br><span class="line">pre <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">color</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 暗色背景 */</span></span><br><span class="line">    <span class="attribute">color</span>: <span class="number">#c9d1d9</span> <span class="meta">!important</span>;       <span class="comment">/* 暗色文字 */</span></span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre::-webkit-scrollbar-track,</span><br><span class="line">body.dark-theme code::-webkit-scrollbar-track &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 修复滚动条白边 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="5-在-head-ejs-中引入自定义-CSS-文件"><a href="#5-在-head-ejs-中引入自定义-CSS-文件" class="headerlink" title="5. 在 head.ejs 中引入自定义 CSS 文件"></a><strong>5. 在 head.ejs 中引入自定义 CSS 文件</strong></h2><p>在 <code>head.ejs</code> 中再加一行：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;link rel=&quot;stylesheet&quot; href=&quot;&lt;%- url_for(&#x27;/css/custom/custom.css&#x27;) %&gt;&quot;&gt;</span><br></pre></td></tr></table></figure>
+
+<p>放在其他 <code>&lt;link&gt;</code> 标签的下面。</p>
+<hr>
+<h2 id="6-重新生成并运行-Hexo"><a href="#6-重新生成并运行-Hexo" class="headerlink" title="6. 重新生成并运行 Hexo"></a><strong>6. 重新生成并运行 Hexo</strong></h2><p>在终端运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+
+<p>然后访问你的博客文章页面，尝试切换主题，看代码块是否也会随之变色。</p>
+<p>成功效果展示</p>
+<p><img src="https://github.com/user-attachments/assets/db87a928-293d-4c00-8299-6619722c92f8" alt="image"></p>
+<p><img src="https://github.com/user-attachments/assets/550ba759-3113-41b6-9737-887242fcfa14" alt="image"></p>
+<hr>
+<p>该项目代码基于 <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a target="_blank" rel="noopener" href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>Evan Zhong</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>Permalink:</span>
+                        <span><a href="https://evannzhongg.github.io/2025/03/25/Sync-Code-Block-Theme-with-Dark-Mode-in-Hexo-Chic/">https://evannzhongg.github.io/2025/03/25/Sync-Code-Block-Theme-with-Dark-Mode-in-Hexo-Chic/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>License:</span>
+                        <span>Copyright (c) 2019 <a target="_blank" rel="noopener" href="http://creativecommons.org/licenses/by-nc/4.0/">CC-BY-NC-4.0</a> LICENSE</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/Hexo/"># Hexo</a>
+                    
+                        <a href="/tags/%E5%8D%9A%E5%AE%A2/"># 博客</a>
+                    
+                        <a href="/tags/Blog/"># Blog</a>
+                    
+                        <a href="/tags/%E5%89%8D%E7%AB%AF/"># 前端</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+            
+            <a class="next" rel="next" href="/2025/03/24/Hexo-and-Chic-themes-add-Giscus-comment-system/">Hexo and Chic themes add Giscus comment system</a>
+            
+        </section>
+
+	<!-- Giscus 评论系统 -->
+<script src="https://giscus.app/client.js"
+        data-repo="EvannZhongg/EvannZhongg.github.io"
+        data-repo-id="R_kgDOOLqMyg"
+        data-category="Announcements"
+        data-category-id="DIC_kwDOOLqMys4CoYM2"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="top"
+        data-theme="light"
+        data-lang="zh-CN"
+        crossorigin="anonymous"
+        async>
+</script>
+
+<!-- Giscus 主题跟随 Hexo-Chic 明暗模式自动切换 -->
+<script>
+  function setGiscusTheme(theme) {
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (!iframe) return;
+
+    iframe.contentWindow.postMessage({
+      giscus: {
+        setConfig: {
+          theme: theme === 'dark' ? 'dark' : 'light'
+        }
+      }
+    }, 'https://giscus.app');
+  }
+
+  // 初始化时设置 Giscus 主题
+  window.addEventListener('DOMContentLoaded', () => {
+    const storedTheme = localStorage.getItem('theme');
+    const currentTheme = storedTheme === 'dark' ? 'dark' : 'light';
+    setGiscusTheme(currentTheme);
+  });
+
+  // 监听按钮点击切换 Giscus 主题（兼容桌面 + 移动）
+  document.addEventListener('DOMContentLoaded', () => {
+    const themeButtons = [
+      document.querySelector('.toggleBtn'),
+      document.getElementById('mobile-toggle-theme')
+    ];
+
+    themeButtons.forEach(btn => {
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        const newTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+        setGiscusTheme(newTheme);
+      });
+    });
+  });
+</script>
+
+
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Evan Zhong | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+<script src="/js/code-copy.js"></script>
+
+    </div>
+</body>
+
+</html>
