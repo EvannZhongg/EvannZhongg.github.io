@@ -266,7 +266,7 @@
 <p>找到我们添加主题切换的地方，添加以下 JavaScript 代码：</p>
 <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> hljsTheme = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;hljs-theme&#x27;</span>);</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">updateCodeHighlightStyle</span>(<span class="params">isDarkMode</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!hljsTheme) <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">const</span> newHref = isDarkMode</span><br><span class="line">        ? <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github-dark.css&quot;</span></span><br><span class="line">        : <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;</span>;</span><br><span class="line">    hljsTheme.<span class="title function_">setAttribute</span>(<span class="string">&#x27;href&#x27;</span>, newHref);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>然后在主题切换按钮事件里调用：</p>
+<p>然后就可以在主题切换按钮事件里调用：</p>
 <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">updateCodeHighlightStyle</span>(<span class="literal">true</span>); <span class="comment">// 或 false，根据你当前模式</span></span><br></pre></td></tr></table></figure>
 
 <p>每次切换主题时都调用它，就能切换代码样式。</p>
@@ -291,7 +291,7 @@
 <p><img src="https://github.com/user-attachments/assets/db87a928-293d-4c00-8299-6619722c92f8" alt="image"></p>
 <p><img src="https://github.com/user-attachments/assets/550ba759-3113-41b6-9737-887242fcfa14" alt="image"></p>
 <hr>
-<p>该项目代码基于 <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a target="_blank" rel="noopener" href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+<h2 id="修改后的相关完整代码可以在文章开头的项目地址中获取"><a href="#修改后的相关完整代码可以在文章开头的项目地址中获取" class="headerlink" title="修改后的相关完整代码可以在文章开头的项目地址中获取"></a>修改后的相关完整代码可以在文章开头的项目地址中获取</h2><p>该项目代码基于 <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a target="_blank" rel="noopener" href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
 
         </div>
 
