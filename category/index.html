@@ -76,64 +76,242 @@
 
     <div class="wrapper">
         <header>
-    <nav class="navbar">
-        <div class="container">
-            <div class="navbar-header header-logo"><a href="/">Evan Zhong&#39;s Blog</a></div>
-            <div class="menu navbar-right">
-                
-                    <a class="menu-item" href="/archives">Posts</a>
-                
-                    <a class="menu-item" href="/category">Categories</a>
-                
-                    <a class="menu-item" href="/tag">Tags</a>
-                
-                    <a class="menu-item" href="/about">About</a>
-                
-                <input id="switch_default" type="checkbox" class="switch_default">
-                <label for="switch_default" class="toggleBtn"></label>
-            </div>
-        </div>
-    </nav>
+  <nav class="navbar">
+    <div class="container">
+      <div class="navbar-header header-logo"><a href="/">Evan Zhong&#39;s Blog</a></div>
+      <div class="menu navbar-right">
+        
+          <a class="menu-item" href="/archives">Posts</a>
+        
+          <a class="menu-item" href="/category">Categories</a>
+        
+          <a class="menu-item" href="/tag">Tags</a>
+        
+          <a class="menu-item" href="/about">About</a>
+        
 
-    
-    <nav class="navbar-mobile" id="nav-mobile">
-        <div class="container">
-            <div class="navbar-header">
-                <div>
-                    <a href="/">Evan Zhong&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
-                </div>
-                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
-            </div>
-            <div class="menu" id="mobile-menu">
-                
-                    <a class="menu-item" href="/archives">Posts</a>
-                
-                    <a class="menu-item" href="/category">Categories</a>
-                
-                    <a class="menu-item" href="/tag">Tags</a>
-                
-                    <a class="menu-item" href="/about">About</a>
-                
-            </div>
+        <!-- ✅ 搜索图标与输入框 -->
+        <div class="search-container">
+          <a href="javascript:;" onclick="toggleSearchInput()">🔍</a>
+          <input type="text" id="nav-search-input" class="nav-search-input" placeholder="Search..." oninput="navSearch(this)">
+          <div id="nav-search-result" class="nav-search-result"></div>
         </div>
-    </nav>
 
+        <!-- ✅ 主题切换按钮（保留原结构） -->
+        <input id="switch_default" type="checkbox" class="switch_default">
+        <label for="switch_default" class="toggleBtn"></label>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ✅ 移动端导航保持原样，新增搜索入口 -->
+  <nav class="navbar-mobile" id="nav-mobile">
+    <div class="container">
+      <div class="navbar-header">
+        <div>
+          <a href="/">Evan Zhong&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+        </div>
+        <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+      </div>
+      <div class="menu" id="mobile-menu">
+        
+          <a class="menu-item" href="/archives">Posts</a>
+        
+          <a class="menu-item" href="/category">Categories</a>
+        
+          <a class="menu-item" href="/tag">Tags</a>
+        
+          <a class="menu-item" href="/about">About</a>
+        
+        <!-- ✅ 移动端搜索 -->
+        <a class="menu-item" href="javascript:;" onclick="toggleSearchInput()">🔍 Search</a>
+        <input type="text" id="nav-search-input-mobile" class="nav-search-input" placeholder="Search..." oninput="navSearch(this)">
+        <div id="nav-search-result" class="nav-search-result"></div>
+      </div>
+    </div>
+  </nav>
 </header>
+
 <script>
-    var mobileBtn = function f() {
-        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
-        var mobileMenu = document.getElementById("mobile-menu");
-        if(toggleMenu.classList.contains("active")){
-           toggleMenu.classList.remove("active")
-            mobileMenu.classList.remove("active")
-        }else{
-            toggleMenu.classList.add("active")
-            mobileMenu.classList.add("active")
-        }
+  var mobileBtn = function f() {
+    var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+    var mobileMenu = document.getElementById("mobile-menu");
+    if (toggleMenu.classList.contains("active")) {
+      toggleMenu.classList.remove("active");
+      mobileMenu.classList.remove("active");
+    } else {
+      toggleMenu.classList.add("active");
+      mobileMenu.classList.add("active");
     }
+  }
+
+  let searchData = [];
+
+  function toggleSearchInput() {
+    const inputs = document.querySelectorAll('.nav-search-input');
+    const results = document.querySelectorAll('.nav-search-result');
+
+    inputs.forEach(input => {
+      input.classList.toggle('active');
+      if (input.classList.contains('active')) input.focus();
+    });
+
+    results.forEach(r => r.style.display = 'none');
+
+    if (searchData.length === 0) {
+      fetch('/search.xml')
+        .then(res => res.text())
+        .then(xmlText => {
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(xmlText, 'text/xml');
+          const entries = xml.getElementsByTagName('entry');
+          for (let entry of entries) {
+            searchData.push({
+              title: entry.getElementsByTagName('title')[0]?.textContent || '',
+              content: entry.getElementsByTagName('content')[0]?.textContent || '',
+              url: entry.getElementsByTagName('url')[0]?.textContent || ''
+            });
+          }
+        });
+    }
+  }
+
+  function navSearch(inputElem) {
+    const keyword = inputElem.value.trim().toLowerCase();
+    const resultContainer = inputElem.nextElementSibling;
+    resultContainer.innerHTML = '';
+
+    if (!keyword) {
+      resultContainer.style.display = 'none';
+      return;
+    }
+
+    const results = searchData.filter(data =>
+      data.title.toLowerCase().includes(keyword) ||
+      data.content.toLowerCase().includes(keyword)
+    ).slice(0, 8);
+
+    if (results.length === 0) {
+      resultContainer.innerHTML = '<p>No results found.</p>';
+    } else {
+      resultContainer.innerHTML = results.map(item => {
+        const snippet = item.content.replace(/<[^>]+>/g, '').slice(0, 200);
+        return `
+          <div class="search-card">
+            <a class="search-card-title" href="${item.url}" target="_blank">${item.title}</a>
+            <div class="search-card-snippet">${snippet}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    resultContainer.style.display = 'block';
+  }
 </script>
-            <div class="main">
-                
+
+<style>
+/* 搜索框容器 */
+.search-container {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 10px;
+}
+.search-container a {
+  padding-right: 6px;
+  cursor: pointer;
+  font-size: 1.1em;
+}
+
+.nav-search-input {
+  display: none;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 260px;
+  transition: all 0.3s ease;
+  vertical-align: middle;
+}
+.nav-search-input.active {
+  display: inline-block;
+}
+
+.nav-search-result {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-top: 6px;
+  padding: 0.4em;
+  min-width: 260px;
+  max-height: 360px;
+  overflow-y: auto;
+  display: none;
+  z-index: 999;
+}
+
+/* 搜索结果卡片样式 */
+.search-card {
+  padding: 4px 6px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid #eee;
+  transition: background 0.2s;
+}
+.search-card:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+.search-card:hover {
+  background: #f9f9f9;
+}
+
+.search-card-title {
+  display: block;
+  font-weight: bold;
+  color: #1a0dab;
+  font-size: 1em;
+  line-height: 1.2em;
+  text-decoration: none;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+.search-card-title:hover {
+  text-decoration: underline;
+}
+
+.search-card-snippet {
+  font-size: 0.88em;
+  color: #444;
+  margin-top: 2px;
+  line-height: 1.3em;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 移动端支持 */
+@media (max-width: 768px) {
+  .nav-search-input {
+    width: 90%;
+    display: block;
+    margin: 10px auto;
+  }
+  .nav-search-result {
+    position: static;
+    width: 90%;
+    margin: 0 auto;
+  }
+}
+</style>
+
+        <div class="main">
+            
 
 
 
@@ -145,10 +323,10 @@
                     
                     <div class="card-item">
                         <div class="categories">
-                            <a href="/categories/LLM%E5%AD%A6%E4%B9%A0%E4%B9%8B%E8%B7%AF/">
+                            <a href="/categories/Hexo/">
                                 <h3>
                                     <i class="iconfont icon-category" style="padding-right:3px"></i>
-                                    LLM学习之路
+                                    Hexo
                                 </h3>
                             </a>
                             
@@ -156,7 +334,15 @@
                                 
                                     <article class="archive-item">
                                         <a class="archive-item-link"
-                                           href="/2025/03/21/Function-Calling/">Function Calling</a>
+                                           href="/2025/03/24/Hexo-and-Chic-themes-add-Giscus-comment-system/">Hexo and Chic themes add Giscus comment system</a>
+                                    </article>
+                                
+                            
+                                
+                                
+                                    <article class="archive-item">
+                                        <a class="archive-item-link"
+                                           href="/2025/03/25/Sync-Code-Block-Theme-with-Dark-Mode-in-Hexo-Chic/">Sync Code Block Theme with Dark Mode in Hexo Chic</a>
                                     </article>
                                 
                             
@@ -189,10 +375,10 @@
                     
                     <div class="card-item">
                         <div class="categories">
-                            <a href="/categories/Hexo/">
+                            <a href="/categories/LLM%E5%AD%A6%E4%B9%A0%E4%B9%8B%E8%B7%AF/">
                                 <h3>
                                     <i class="iconfont icon-category" style="padding-right:3px"></i>
-                                    Hexo
+                                    LLM学习之路
                                 </h3>
                             </a>
                             
@@ -200,15 +386,7 @@
                                 
                                     <article class="archive-item">
                                         <a class="archive-item-link"
-                                           href="/2025/03/25/Sync-Code-Block-Theme-with-Dark-Mode-in-Hexo-Chic/">Sync Code Block Theme with Dark Mode in Hexo Chic</a>
-                                    </article>
-                                
-                            
-                                
-                                
-                                    <article class="archive-item">
-                                        <a class="archive-item-link"
-                                           href="/2025/03/24/Hexo-and-Chic-themes-add-Giscus-comment-system/">Hexo and Chic themes add Giscus comment system</a>
+                                           href="/2025/03/21/Function-Calling/">Function Calling</a>
                                     </article>
                                 
                             
@@ -221,8 +399,8 @@
         </div>
     </div>
 
-            </div>
-            <footer id="footer" class="footer">
+        </div>
+        <footer id="footer" class="footer">
     <div class="copyright">
         <span>© Evan Zhong | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
     </div>
@@ -231,6 +409,111 @@
 <script src="/js/code-copy.js"></script>
 
     </div>
+
+    <!-- 引入搜索弹窗 -->
+    <div class="search-popup">
+  <div class="search-overlay" onclick="closeSearchPopup()"></div>
+  <div class="search-box">
+    <input type="text" id="search-input" placeholder="Search..." autofocus>
+    <div id="search-result" class="search-result-list"></div>
+  </div>
+</div>
+
+<!-- 加载本地 search.xml 数据 -->
+<script>
+function closeSearchPopup() {
+  document.querySelector('.search-popup').classList.remove('active');
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const input = document.getElementById('search-input');
+  const resultContainer = document.getElementById('search-result');
+  let searchData = [];
+
+  // 加载 search.xml 并解析数据
+  fetch('/search.xml')
+    .then(res => res.text())
+    .then(xmlText => {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(xmlText, 'text/xml');
+      const entries = xml.getElementsByTagName('entry');
+      for (let entry of entries) {
+        searchData.push({
+          title: entry.getElementsByTagName('title')[0]?.textContent || '',
+          content: entry.getElementsByTagName('content')[0]?.textContent || '',
+          url: entry.getElementsByTagName('url')[0]?.textContent || ''
+        });
+      }
+    });
+
+  // 搜索逻辑绑定
+  input.addEventListener('input', function () {
+    const keyword = this.value.trim().toLowerCase();
+    resultContainer.innerHTML = '';
+    if (!keyword) return;
+
+    const results = searchData.filter(data =>
+      data.title.toLowerCase().includes(keyword) ||
+      data.content.toLowerCase().includes(keyword)
+    );
+
+    if (results.length === 0) {
+      resultContainer.innerHTML = '<p>No results found.</p>';
+      return;
+    }
+
+    const html = results.map(item => {
+      return `<p><a href="${item.url}">${item.title}</a></p>`;
+    }).join('');
+    resultContainer.innerHTML = html;
+  });
+});
+</script>
+
+<style>
+.search-popup {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+.search-popup.active {
+  display: block;
+}
+.search-overlay {
+  position: absolute;
+  inset: 0;
+}
+.search-box {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  padding: 2em;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 600px;
+}
+#search-input {
+  width: 100%;
+  padding: 0.8em;
+  font-size: 1.1em;
+  margin-bottom: 1em;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.search-result-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+.search-result-list p {
+  margin: 0.5em 0;
+}
+</style>
+
+
 </body>
 
 </html>

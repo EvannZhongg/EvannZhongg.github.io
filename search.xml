@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>Hexo and Chic themes add Giscus comment system</title>
+    <url>/2025/03/24/Hexo-and-Chic-themes-add-Giscus-comment-system/</url>
+    <content><![CDATA[<h1 id="Hexo-Chic-主题集成-Giscus-评论系统详细教程"><a href="#Hexo-Chic-主题集成-Giscus-评论系统详细教程" class="headerlink" title="Hexo + Chic 主题集成 Giscus 评论系统详细教程"></a>Hexo + Chic 主题集成 Giscus 评论系统详细教程</h1><p>本教程将教你如何在 Hexo 博客（使用 Chic 主题）中添加 Giscus 评论系统，让你的博客拥有简洁现代的评论功能，并且支持明暗模式自动切换。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="一、准备工作"><a href="#一、准备工作" class="headerlink" title="一、准备工作"></a>一、准备工作</h2><h3 id="1-确保你已完成以下条件："><a href="#1-确保你已完成以下条件：" class="headerlink" title="1. 确保你已完成以下条件："></a>1. 确保你已完成以下条件：</h3><ul>
+<li>博客已搭建并使用 Hexo 框架</li>
+<li>正在使用 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 主题</li>
+<li>博客托管在 GitHub</li>
+</ul>
+<h3 id="2-启用-GitHub-Discussions-功能"><a href="#2-启用-GitHub-Discussions-功能" class="headerlink" title="2. 启用 GitHub Discussions 功能"></a>2. 启用 GitHub Discussions 功能</h3><ol>
+<li>打开你的博客仓库页面</li>
+<li>点击顶部的 <strong>Settings</strong></li>
+<li>在 <strong>General</strong> 中 <strong>Features</strong> 区域点击 <strong>Discussions</strong></li>
+<li>勾选 <strong>“Enable discussions for this repository”</strong></li>
+</ol>
+<p><img src="https://github.com/user-attachments/assets/6686f60e-f2d4-4a87-8b0d-d3425070c2cd" alt="setting_discussions"></p>
+<hr>
+<h2 id="二、使用-Giscus-app-获取评论配置代码"><a href="#二、使用-Giscus-app-获取评论配置代码" class="headerlink" title="二、使用 Giscus.app 获取评论配置代码"></a>二、使用 Giscus.app 获取评论配置代码</h2><ol>
+<li>打开 Giscus 官网：<a href="https://giscus.app/">https://giscus.app</a></li>
+<li>登录 GitHub 账号</li>
+<li>安装 <a href="https://github.com/apps/giscus">giscus</a> app  ，否则访客将无法评论和回应</li>
+<li>按照如下选择进行配置：<ul>
+<li>Repository: 选择你的博客仓库（注意填写格式为 <strong>用户名&#x2F;仓库名</strong>）</li>
+<li>Discussion Category: 建议选择 <strong>Announcements</strong>（防止读者随意发帖）</li>
+<li>Page ↔️ Discussion Mapping: 选择 <strong>pathname</strong></li>
+<li>Theme: 选择任意（我们后续会动态控制）</li>
+<li>Language: 选择 <code>zh-CN</code></li>
+</ul>
+</li>
+<li>点击页面底部的 <strong>“Copy code snippet”</strong>，复制生成的 <code>&lt;script&gt;</code> 标签代码</li>
+</ol>
+<hr>
+<h2 id="三、创建评论模块文件"><a href="#三、创建评论模块文件" class="headerlink" title="三、创建评论模块文件"></a>三、创建评论模块文件</h2><h3 id="1-打开博客主题目录"><a href="#1-打开博客主题目录" class="headerlink" title="1. 打开博客主题目录"></a>1. 打开博客主题目录</h3><p>路径：<code>themes/hexo-theme-Chic/layout/_partial/</code></p>
+<h3 id="2-创建或编辑-livers-ejs-文件"><a href="#2-创建或编辑-livers-ejs-文件" class="headerlink" title="2. 创建或编辑 livers.ejs 文件"></a>2. 创建或编辑 <code>livers.ejs</code> 文件</h3><p>将 Giscus 中生成的 <code>&lt;script&gt;</code> 标签代码粘贴进文件（注意部分参数的区别），同时增加主题自动同步功能代码：</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- Giscus 评论系统 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;https://giscus.app/client.js&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-repo</span>=<span class="string">&quot;你的 GitHub 仓库路径（用户名/仓库名）&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-repo-id</span>=<span class="string">&quot;你的 repo-id&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-category</span>=<span class="string">&quot;Announcements&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-category-id</span>=<span class="string">&quot;你的 category-id&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-mapping</span>=<span class="string">&quot;pathname&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-strict</span>=<span class="string">&quot;0&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-reactions-enabled</span>=<span class="string">&quot;1&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-emit-metadata</span>=<span class="string">&quot;0&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-input-position</span>=<span class="string">&quot;top&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-theme</span>=<span class="string">&quot;light&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">data-lang</span>=<span class="string">&quot;zh-CN&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">crossorigin</span>=<span class="string">&quot;anonymous&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">async</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 主题自动同步（明暗模式） --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">setGiscusTheme</span>(<span class="params">theme</span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> iframe = <span class="variable language_">document</span>.<span class="title function_">querySelector</span>(<span class="string">&#x27;iframe.giscus-frame&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">if</span> (!iframe) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    iframe.<span class="property">contentWindow</span>.<span class="title function_">postMessage</span>(&#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="attr">giscus</span>: &#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="attr">setConfig</span>: &#123;</span></span><br><span class="line"><span class="language-javascript">          <span class="attr">theme</span>: theme === <span class="string">&#x27;dark&#x27;</span> ? <span class="string">&#x27;dark&#x27;</span> : <span class="string">&#x27;light&#x27;</span></span></span><br><span class="line"><span class="language-javascript">        &#125;</span></span><br><span class="line"><span class="language-javascript">      &#125;</span></span><br><span class="line"><span class="language-javascript">    &#125;, <span class="string">&#x27;https://giscus.app&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="comment">// 初始加载时设置主题</span></span></span><br><span class="line"><span class="language-javascript">  <span class="variable language_">window</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> storedTheme = <span class="variable language_">localStorage</span>.<span class="title function_">getItem</span>(<span class="string">&#x27;theme&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> currentTheme = storedTheme === <span class="string">&#x27;dark&#x27;</span> ? <span class="string">&#x27;dark&#x27;</span> : <span class="string">&#x27;light&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript">    <span class="title function_">setGiscusTheme</span>(currentTheme);</span></span><br><span class="line"><span class="language-javascript">  &#125;);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="comment">// 切换按钮点击时同步 Giscus 主题</span></span></span><br><span class="line"><span class="language-javascript">  <span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> themeButtons = [</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">querySelector</span>(<span class="string">&#x27;.toggleBtn&#x27;</span>),</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;mobile-toggle-theme&#x27;</span>)</span></span><br><span class="line"><span class="language-javascript">    ];</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    themeButtons.<span class="title function_">forEach</span>(<span class="function"><span class="params">btn</span> =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="keyword">if</span> (!btn) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript">      btn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="keyword">const</span> newTheme = <span class="variable language_">document</span>.<span class="property">body</span>.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;dark-theme&#x27;</span>) ? <span class="string">&#x27;dark&#x27;</span> : <span class="string">&#x27;light&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript">        <span class="title function_">setGiscusTheme</span>(newTheme);</span></span><br><span class="line"><span class="language-javascript">      &#125;);</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript">  &#125;);</span></span><br><span class="line"><span class="language-javascript"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>⚠️ 请将 <code>data-repo-id</code> 和 <code>data-category-id</code> 替换为你从 giscus.app 获取的值。</p>
+</blockquote>
+<hr>
+<h2 id="四、引入评论模块到文章模板"><a href="#四、引入评论模块到文章模板" class="headerlink" title="四、引入评论模块到文章模板"></a>四、引入评论模块到文章模板</h2><p>打开文件：<code>themes/hexo-theme-Chic/layout/_page/post.ejs</code></p>
+<p>找到代码底部，在 <code>&lt;/article&gt;</code> 上方添加一行代码 <code>&lt;%- partial(&#39;_partial/livers&#39;) %&gt;</code> ：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">        &lt;section class=&quot;post-nav&quot;&gt;</span><br><span class="line">            &lt;% if(post.prev)&#123; %&gt;</span><br><span class="line">                &lt;a class=&quot;prev&quot; rel=&quot;prev&quot; href=&quot;&lt;%- url_for(post.prev.path)%&gt;&quot;&gt;&lt;%- post.prev.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">            &lt;% if(post.next)&#123; %&gt;</span><br><span class="line">            &lt;a class=&quot;next&quot; rel=&quot;next&quot; href=&quot;&lt;%- url_for(post.next.path)%&gt;&quot;&gt;&lt;%- post.next.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">        &lt;/section&gt;</span><br><span class="line"></span><br><span class="line">	&lt;%- partial(&#x27;_partial/livers&#x27;) %&gt;</span><br><span class="line"></span><br><span class="line">    &lt;/article&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+
+<p>这会让评论区出现在每篇文章的底部。</p>
+<hr>
+<h2 id="五、重新部署博客"><a href="#五、重新部署博客" class="headerlink" title="五、重新部署博客"></a>五、重新部署博客</h2><p>执行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+
+<p>然后访问你的博客文章页面，应该就能看到 Giscus 评论框</p>
+<hr>
+<h2 id="成功效果"><a href="#成功效果" class="headerlink" title="成功效果"></a>成功效果</h2><p><img src="https://github.com/user-attachments/assets/b75a7ffd-d99b-4d4a-9e95-cb43b06b36aa" alt="discussions"> </p>
+<ul>
+<li>支持 GitHub 登录评论</li>
+<li>评论存储在 Discussions 中，便于管理</li>
+<li>评论区支持明暗主题自动切换，与 Chic 博客风格一致</li>
+</ul>
+<hr>
+<p>如有问题，可以：</p>
+<ul>
+<li>检查浏览器控制台是否有加载错误</li>
+<li>确保 repo-id 和 category-id 正确</li>
+<li>确保启用了 Discussions 功能</li>
+</ul>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+]]></content>
+      <categories>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>Blog</tag>
+        <tag>前端</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>NebulaGraphQAChain</title>
+    <url>/2025/03/20/NebulaGraphQAChain/</url>
+    <content><![CDATA[<h1 id="基于Langchain在NebulaGraph实现GraphRAG"><a href="#基于Langchain在NebulaGraph实现GraphRAG" class="headerlink" title="基于Langchain在NebulaGraph实现GraphRAG"></a>基于Langchain在NebulaGraph实现GraphRAG</h1><hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/NebulaGraphQAChain.git">https://github.com/EvannZhongg/NebulaGraphQAChain.git</a></p>
+<hr>
+<h2 id="1-这个代码是做什么的？"><a href="#1-这个代码是做什么的？" class="headerlink" title="1. 这个代码是做什么的？"></a><strong>1. 这个代码是做什么的？</strong></h2><ul>
+<li><strong>把自然语言问题转化为图数据库NebulaGraph查询语句</strong></li>
+<li><strong>查询 NebulaGraph（确保图数据库中已经存在数据，本代码不再额外构建数据插入图数据库）</strong></li>
+<li><strong>返回查询结果</strong></li>
+</ul>
+<p><strong>简单来说</strong>：<br>你可以用“人话”问它问题，它会自动 <strong>翻译成图数据库语言</strong>，然后去 <strong>图数据库找答案</strong>，将查询到的结果与提问相结合重新用“人话”回答问题。</p>
+<hr>
+<h2 id="2-代码执行的流程是什么？"><a href="#2-代码执行的流程是什么？" class="headerlink" title="2. 代码执行的流程是什么？"></a><strong>2. 代码执行的流程是什么？</strong></h2><ol>
+<li>读取 <strong>API 配置</strong>（告诉代码如何访问 LLM）</li>
+<li>调用 <strong>大模型（LLM）</strong>，让它帮我们翻译问题</li>
+<li>连接 <strong>NebulaGraph</strong> 数据库</li>
+<li>执行 <strong>数据库查询</strong>，获得结果</li>
+<li>返回最终的查询结果</li>
+</ol>
+<hr>
+<h2 id="3-代码分解讲解"><a href="#3-代码分解讲解" class="headerlink" title="3. 代码分解讲解"></a><strong>3. 代码分解讲解</strong></h2><h3 id="3-1-读取环境变量（API-配置）"><a href="#3-1-读取环境变量（API-配置）" class="headerlink" title="3.1 读取环境变量（API 配置）"></a><strong>3.1 读取环境变量（API 配置）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line"><span class="comment"># 读取 .env 文件</span></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line">CHAT_API_URL = os.getenv(<span class="string">&quot;CHAT_API_URL&quot;</span>)</span><br><span class="line">API_KEY = os.getenv(<span class="string">&quot;API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> <span class="keyword">not</span> CHAT_API_URL <span class="keyword">or</span> <span class="keyword">not</span> API_KEY:</span><br><span class="line">    <span class="keyword">raise</span> ValueError(<span class="string">&quot;请在 .env 文件中正确配置 CHAT_API_URL 和 API_KEY&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h4 id="作用："><a href="#作用：" class="headerlink" title="作用："></a><strong>作用：</strong></h4><ul>
+<li><strong>读取 API 地址</strong> 和 <strong>密钥</strong>，让代码知道如何访问大模型。</li>
+<li><strong>如果没有配置 API</strong>，就会报错，提醒用户。</li>
+</ul>
+<p>🔹 <strong>什么是 .env 文件？</strong></p>
+<p><code>.env</code> 文件用于存放 <strong>API 密钥</strong>，这样我们就不用在代码里写明白，保证安全，你可以在项目目录中新建一个<code>.env</code> 文件，本文使用的是siliconflow平台提供的API服务，你可以在siliconflow平台进行注册申请API KEY填入下方的<code>API_KEY</code>变量中。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">CHAT_API_URL=https://api.siliconflow.cn/v1/chat/completions</span><br><span class="line">API_KEY=sk-***************************</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="3-2-调用-LLM-API"><a href="#3-2-调用-LLM-API" class="headerlink" title="3.2 调用 LLM API"></a><strong>3.2 调用 LLM API</strong></h3><h4 id="代码："><a href="#代码：" class="headerlink" title="代码："></a><strong>代码：</strong></h4><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">call_chat_api</span>(<span class="params">prompt</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    调用 LLM API 生成 Cypher 查询</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        response = requests.post(</span><br><span class="line">            CHAT_API_URL,</span><br><span class="line">            headers=&#123;<span class="string">&quot;Authorization&quot;</span>: <span class="string">f&quot;Bearer <span class="subst">&#123;API_KEY&#125;</span>&quot;</span>&#125;,</span><br><span class="line">            json=&#123;</span><br><span class="line">                <span class="string">&quot;model&quot;</span>: <span class="string">&quot;deepseek-ai/DeepSeek-V3&quot;</span>,  <span class="comment"># 选择模型</span></span><br><span class="line">                <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: prompt&#125;]</span><br><span class="line">            &#125;</span><br><span class="line">        )</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> response.status_code == <span class="number">200</span>:</span><br><span class="line">            data = response.json()</span><br><span class="line">            result = data[<span class="string">&quot;choices&quot;</span>][<span class="number">0</span>][<span class="string">&quot;message&quot;</span>][<span class="string">&quot;content&quot;</span>]</span><br><span class="line">            </span><br><span class="line">            <span class="comment"># 处理 Markdown 代码块</span></span><br><span class="line">            <span class="keyword">if</span> result.startswith(<span class="string">&quot;```nebula&quot;</span>) <span class="keyword">and</span> result.endswith(<span class="string">&quot;```&quot;</span>):</span><br><span class="line">                result = result[<span class="built_in">len</span>(<span class="string">&quot;```nebula&quot;</span>):-<span class="built_in">len</span>(<span class="string">&quot;```&quot;</span>)].strip()</span><br><span class="line">            <span class="keyword">elif</span> result.startswith(<span class="string">&quot;```cypher&quot;</span>) <span class="keyword">and</span> result.endswith(<span class="string">&quot;```&quot;</span>):</span><br><span class="line">                result = result[<span class="built_in">len</span>(<span class="string">&quot;```cypher&quot;</span>):-<span class="built_in">len</span>(<span class="string">&quot;```&quot;</span>)].strip()</span><br><span class="line">            <span class="keyword">elif</span> result.startswith(<span class="string">&quot;```sql&quot;</span>) <span class="keyword">and</span> result.endswith(<span class="string">&quot;```&quot;</span>):</span><br><span class="line">                result = result[<span class="built_in">len</span>(<span class="string">&quot;```sql&quot;</span>):-<span class="built_in">len</span>(<span class="string">&quot;```&quot;</span>)].strip()</span><br><span class="line">            <span class="keyword">elif</span> result.startswith(<span class="string">&quot;```&quot;</span>) <span class="keyword">and</span> result.endswith(<span class="string">&quot;```&quot;</span>):</span><br><span class="line">                result = result[<span class="built_in">len</span>(<span class="string">&quot;```&quot;</span>):-<span class="built_in">len</span>(<span class="string">&quot;```&quot;</span>)].strip()</span><br><span class="line">            </span><br><span class="line">            <span class="keyword">return</span> result</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;API 调用失败: <span class="subst">&#123;response.status_code&#125;</span> <span class="subst">&#123;response.text&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;API 调用出错: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+<h4 id="作用：-1"><a href="#作用：-1" class="headerlink" title="作用："></a><strong>作用：</strong></h4><ol>
+<li><strong>发送请求</strong> 给 LLM（大模型），让它把用户问题翻译成 <strong>数据库查询语句</strong>。</li>
+<li><strong>解析返回结果</strong>，提取真正的数据库查询语句。</li>
+<li><strong>如果出错</strong>，就打印错误信息。</li>
+</ol>
+<ul>
+<li>代码中的以下部分用于处理大模型输出含有代码标记块的情况，如果你的大模型输出含有代码标记块则查询语句会出现失败，在下方代码中添加代码标记块名称，避免查询出错.<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if result.startswith(&quot;```代码标记块内容&quot;) and result.endswith(&quot;```&quot;):</span><br><span class="line">  result = result[len(&quot;```&quot;):-len(&quot;```&quot;)].strip()</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p> <strong>示例：</strong></p>
+<ul>
+<li>你输入：“列出某个电子器件的所有相关参数”</li>
+<li>LLM 可能返回：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">MATCH (n:Component) RETURN n.parameters</span><br></pre></td></tr></table></figure>
+这个就是 <strong>Cypher 查询语句</strong>，可以直接在图数据库执行。</li>
+</ul>
+<hr>
+<h3 id="3-3-自定义-LLM-处理类生成查询语句"><a href="#3-3-自定义-LLM-处理类生成查询语句" class="headerlink" title="3.3 自定义 LLM 处理类生成查询语句"></a><strong>3.3 自定义 LLM 处理类生成查询语句</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> Runnable</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompt_values <span class="keyword">import</span> StringPromptValue</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomChatModel</span>(<span class="title class_ inherited__">Runnable</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">invoke</span>(<span class="params">self, <span class="built_in">input</span>, config: <span class="built_in">dict</span> = <span class="literal">None</span>, **kwargs</span>):</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">isinstance</span>(<span class="built_in">input</span>, StringPromptValue):</span><br><span class="line">            <span class="built_in">input</span> = <span class="built_in">input</span>.to_string()</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> <span class="built_in">isinstance</span>(<span class="built_in">input</span>, <span class="built_in">str</span>):</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">f&quot;Expected input to be a string, got <span class="subst">&#123;<span class="built_in">type</span>(<span class="built_in">input</span>)&#125;</span> instead.&quot;</span>)</span><br><span class="line">        </span><br><span class="line">        result = call_chat_api(<span class="built_in">input</span>)</span><br><span class="line">        <span class="keyword">if</span> result <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">&quot;API 调用未返回有效响应&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
+<h4 id="作用：-2"><a href="#作用：-2" class="headerlink" title="作用："></a><strong>作用：</strong></h4><ul>
+<li>让 <strong>LangChain 框架</strong> 知道如何调用 LLM。</li>
+<li>处理输入数据，确保 LLM <strong>可以正确理解问题</strong>。</li>
+<li>调用 <code>call_chat_api()</code>，获取 LLM 生成的数据库查询语句。</li>
+</ul>
+<hr>
+<h3 id="3-4-连接-NebulaGraph"><a href="#3-4-连接-NebulaGraph" class="headerlink" title="3.4 连接 NebulaGraph"></a><strong>3.4 连接 NebulaGraph</strong></h3><h4 id="代码：-1"><a href="#代码：-1" class="headerlink" title="代码："></a><strong>代码：</strong></h4><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.graphs <span class="keyword">import</span> NebulaGraph</span><br><span class="line"></span><br><span class="line">graph = NebulaGraph(</span><br><span class="line">    space=<span class="string">&quot;SPACE&quot;</span>,  <span class="comment">#将SPACE修改为自己的图空间名称</span></span><br><span class="line">    username=<span class="string">&quot;root&quot;</span>,</span><br><span class="line">    password=<span class="string">&quot;nebula&quot;</span>,</span><br><span class="line">    address=<span class="string">&quot;127.0.0.1&quot;</span>,</span><br><span class="line">    port=<span class="number">9669</span>,</span><br><span class="line">    session_pool_size=<span class="number">30</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<h4 id="作用：-3"><a href="#作用：-3" class="headerlink" title="作用："></a><strong>作用：</strong></h4><ul>
+<li>连接 <strong>NebulaGraph 图数据库</strong>，让代码可以查询数据。</li>
+<li>配置 <strong>数据库地址、用户名、密码</strong>。</li>
+</ul>
+<hr>
+<h3 id="3-5-运行查询示例"><a href="#3-5-运行查询示例" class="headerlink" title="3.5 运行查询示例"></a><strong>3.5 运行查询示例</strong></h3><h4 id="代码：-2"><a href="#代码：-2" class="headerlink" title="代码："></a><strong>代码：</strong></h4><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">query_graph</span>(<span class="params">question</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    运行 NebulaGraph QAChain，处理自然语言查询</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        answer = chain.run(question)</span><br><span class="line">        <span class="keyword">return</span> answer</span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;查询执行出错: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    test_question = <span class="built_in">input</span>(<span class="string">&quot;请输入您的查询问题: &quot;</span>)  <span class="comment"># 让用户在终端输入问题</span></span><br><span class="line">    response = query_graph(test_question)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;查询结果:&quot;</span>, response)</span><br></pre></td></tr></table></figure>
+<h4 id="作用：-4"><a href="#作用：-4" class="headerlink" title="作用："></a><strong>作用：</strong></h4><ul>
+<li>让用户输入问题。</li>
+<li>调用 <code>chain.run(question)</code> 处理查询。</li>
+<li><strong>返回查询语句和结果</strong>。</li>
+</ul>
+<p>📌 <strong>示例：</strong></p>
+<ol>
+<li>用户输入：<strong>“1N4736AT-D的应用有什么”</strong></li>
+<li>代码调用 LLM，获取 Cypher 语句</li>
+<li>执行数据库查询，返回结果。<br><img src="https://github.com/user-attachments/assets/fefb7d40-9737-4dc1-a3d0-266445ccc65a" alt="Query Execution"></li>
+<li>我们可以在图数据库中进行验证。<br><img src="https://github.com/user-attachments/assets/72b07b88-740e-4210-aaaf-823e29bfb3d1" alt="Nebula Graph Query"></li>
+<li>这里制作了一个简易的前端页面，可以查看效果和后端日志，详细代码可在本文开头的项目地址中获取。<br><img src="https://github.com/user-attachments/assets/8a1613eb-ec9a-4e2f-bce9-3876ebc80191" alt="image"></li>
+</ol>
+<hr>
+<p>该项目代码参考 <a href="https://github.com/hwchase17/langchain">LangChain</a> 和 <a href="http://doc.cnlangchain.com/modules/chains/examples/graph_nebula_qa.html">NebulaGraphQAChain</a>。</p>
+]]></content>
+      <categories>
+        <category>NebulaGraph</category>
+      </categories>
+      <tags>
+        <tag>图数据库</tag>
+        <tag>LangChain</tag>
+        <tag>NebulaGraph</tag>
+        <tag>GraphRAG</tag>
+        <tag>LLM</tag>
+        <tag>大模型</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Function Calling</title>
+    <url>/2025/03/21/Function-Calling/</url>
+    <content><![CDATA[<h1 id="Qwen-Function-Calling-详细解析"><a href="#Qwen-Function-Calling-详细解析" class="headerlink" title="Qwen Function Calling 详细解析"></a>Qwen Function Calling 详细解析</h1><hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="1-Function-Calling-简介"><a href="#1-Function-Calling-简介" class="headerlink" title="1. Function Calling 简介"></a><strong>1. Function Calling 简介</strong></h2><p>Function Calling 允许 LLM（大语言模型）在回答问题时调用外部工具，如 Python 函数、API 或数据库查询。</p>
+<p><strong>核心流程：</strong></p>
+<ol>
+<li><strong>用户输入问题</strong></li>
+<li><strong>AI 判断是否需要调用工具</strong></li>
+<li><strong>如果需要，AI 返回 <code>tool_calls</code>，请求调用特定函数</strong></li>
+<li><strong>开发者执行对应的 Python 函数，并返回执行结果</strong></li>
+<li><strong>AI 读取工具返回值，继续推理并生成最终回答</strong></li>
+</ol>
+<h2 id="2-代码拆解：Function-Calling-功能实现"><a href="#2-代码拆解：Function-Calling-功能实现" class="headerlink" title="2. 代码拆解：Function Calling 功能实现"></a><strong>2. 代码拆解：Function Calling 功能实现</strong></h2><p>本文定义了一个read_markdown函数，用于通过提问让大模型自主调用函数阅读markdown文本内容，回答问题。</p>
+<h3 id="（1）初始化-Qwen-客户端"><a href="#（1）初始化-Qwen-客户端" class="headerlink" title="（1）初始化 Qwen 客户端"></a><strong>（1）初始化 Qwen 客户端</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">client = OpenAI(</span><br><span class="line">    api_key=<span class="string">&quot;your_api_key&quot;</span>,</span><br><span class="line">    base_url=<span class="string">&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>连接 Qwen API 进行请求。</li>
+<li><code>api_key</code> 必须正确，否则请求会失败。</li>
+</ul>
+<hr>
+<h3 id="（2）定义工具（Function-Calling）"><a href="#（2）定义工具（Function-Calling）" class="headerlink" title="（2）定义工具（Function Calling）"></a><strong>（2）定义工具（Function Calling）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>告诉 Qwen 可调用的工具。</li>
+<li><code>name</code> 必须与 Python 函数名一致，否则无法正确调用。</li>
+<li><code>description</code> 用于让 AI 知道工具的用途。</li>
+<li>在 Qwen 的 Function Calling 中，工具的<code>parameters</code> 的 <code>type</code> 必须是 <code>object</code>。</li>
+<li><code>parameters</code> 为空 <code>&#123;&#125;</code>，表示此工具不需要参数。</li>
+<li><code>parameters</code> <strong>如果不为空</strong>，表示此工具需要<strong>传递参数</strong>。<ul>
+<li><code>properties</code> 定义了每个参数的名称、类型和描述。</li>
+<li><code>required</code> 指定了哪些参数是必填项。</li>
+</ul>
+</li>
+</ul>
+<p>如果代码中涉及到了多个工具的调用，可按照以下的格式进行多个工具的定义：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;fetch_weather&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;获取指定城市的天气信息。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                    <span class="string">&quot;city&quot;</span>: &#123;</span><br><span class="line">                        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;description&quot;</span>: <span class="string">&quot;要查询天气的城市名称&quot;</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;city&quot;</span>]</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>示例解释：</strong></p>
+<ul>
+<li><code>read_markdown</code> <strong>不需要参数</strong>，所以 <code>properties</code> 为空。</li>
+<li><code>fetch_weather</code> <strong>需要参数</strong>，它的 <code>parameters</code> 里包含 <code>city</code> 这个字符串参数。</li>
+<li>AI 在调用 <code>fetch_weather</code> 时，会传递 JSON 结构的 <code>arguments</code>，如：<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;city&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Shanghai&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<hr>
+<h3 id="（3）读取-Markdown-文件"><a href="#（3）读取-Markdown-文件" class="headerlink" title="（3）读取 Markdown 文件"></a><strong>（3）读取 Markdown 文件</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">read_markdown</span>():</span><br><span class="line">    doc_path = <span class="string">&quot;documents&quot;</span></span><br><span class="line">    md_file = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> file <span class="keyword">in</span> os.listdir(doc_path):</span><br><span class="line">        <span class="keyword">if</span> file.endswith(<span class="string">&quot;.md&quot;</span>):</span><br><span class="line">            md_file = os.path.join(doc_path, file)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> md_file:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;No markdown file found in the &#x27;documents&#x27; folder.&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(md_file, <span class="string">&quot;r&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        content = f.read()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> content[:<span class="number">5000</span>]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>读取 <code>documents/</code> 目录下后缀为 <code>.md</code> 文件。</li>
+<li>限制 5000 字符，防止超出 Token 限制。</li>
+<li>将<code>markdown</code>文本的前5000个字符传递给AI。</li>
+</ul>
+<hr>
+<h3 id="（4）获取天气信息（示例工具）"><a href="#（4）获取天气信息（示例工具）" class="headerlink" title="（4）获取天气信息（示例工具）"></a><strong>（4）获取天气信息（示例工具）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">fetch_weather</span>(<span class="params">city</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取指定城市的天气信息。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;当前 <span class="subst">&#123;city&#125;</span> 的天气：晴，25°C&quot;</span></span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>模拟获取天气信息，<strong>参数 <code>city</code> 必须传递</strong>。</li>
+<li>Qwen 在调用 <code>fetch_weather</code> 时，会自动提供 <code>city</code> 的值。</li>
+</ul>
+<h3 id="（5）主逻辑：工具调用的完整流程"><a href="#（5）主逻辑：工具调用的完整流程" class="headerlink" title="（5）主逻辑：工具调用的完整流程"></a><strong>（5）主逻辑：工具调用的完整流程</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    user_question = <span class="built_in">input</span>(<span class="string">&quot;请输入问题：&quot;</span>).strip()</span><br><span class="line">    messages = [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: user_question&#125;]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>让用户输入问题，并存入 <code>messages</code> 作为对话历史。</li>
+</ul>
+<hr>
+<h3 id="（6）第一次请求：看看-AI-是否调用工具"><a href="#（6）第一次请求：看看-AI-是否调用工具" class="headerlink" title="（6）第一次请求：看看 AI 是否调用工具"></a><strong>（6）第一次请求：看看 AI 是否调用工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">completion = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>调用 Qwen，让其决定是否需要调用工具。</li>
+</ul>
+<hr>
+<h3 id="（7）检查-Qwen-是否调用了工具"><a href="#（7）检查-Qwen-是否调用了工具" class="headerlink" title="（7）检查 Qwen 是否调用了工具"></a><strong>（7）检查 Qwen 是否调用了工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> tool_calls:</span><br><span class="line">    tool_results = []</span><br><span class="line">    <span class="keyword">for</span> tool_call <span class="keyword">in</span> tool_calls:</span><br><span class="line">        tool_name = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;name&quot;</span>]</span><br><span class="line">        tool_id = tool_call[<span class="string">&quot;id&quot;</span>]</span><br><span class="line">        tool_args = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;arguments&quot;</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> tool_name == <span class="string">&quot;read_markdown&quot;</span>:</span><br><span class="line">            result_content = read_markdown()</span><br><span class="line">        <span class="keyword">elif</span> tool_name == <span class="string">&quot;fetch_weather&quot;</span>:</span><br><span class="line">            city = tool_args.get(<span class="string">&quot;city&quot;</span>, <span class="string">&quot;未知城市&quot;</span>)</span><br><span class="line">            result_content = fetch_weather(city)</span><br><span class="line">        </span><br><span class="line">        tool_results.append(&#123;</span><br><span class="line">            <span class="string">&quot;role&quot;</span>: <span class="string">&quot;tool&quot;</span>,</span><br><span class="line">            <span class="string">&quot;tool_call_id&quot;</span>: tool_id,</span><br><span class="line">            <span class="string">&quot;content&quot;</span>: result_content</span><br><span class="line">        &#125;)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>解析 Qwen 返回的 <code>tool_calls</code>。</li>
+<li><strong>调用不同的工具</strong>，如 <code>read_markdown()</code> 或 <code>fetch_weather(city)</code> ，并存入 <code>tool</code> 消息。</li>
+<li><strong>如果工具需要参数</strong>，就从 <code>tool_args</code> 里提取。</li>
+<li>若 <code>tool_calls</code> 为空，说明 AI <strong>不需要调用工具</strong>。</li>
+</ul>
+<hr>
+<h3 id="（8）让-Qwen-继续推理"><a href="#（8）让-Qwen-继续推理" class="headerlink" title="（8）让 Qwen 继续推理"></a><strong>（8）让 Qwen 继续推理</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tool_calls&quot;</span>: tool_calls</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)</span><br><span class="line"></span><br><span class="line">completion2 = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>让 Qwen <strong>读取工具返回值，并继续回答</strong>。</li>
+</ul>
+<hr>
+<p>效果测试：</p>
+<p align="center">
+  <img width="1198" alt="function_calling" src="https://github.com/user-attachments/assets/6da63b40-55b2-4eb0-b13c-b5f30225ff33" />
+</p>
+
+<hr>
+<h2 id="3-以下是我在测试的时候一些工具调用失败的原因"><a href="#3-以下是我在测试的时候一些工具调用失败的原因" class="headerlink" title="3. 以下是我在测试的时候一些工具调用失败的原因"></a><strong>3. 以下是我在测试的时候一些工具调用失败的原因</strong></h2><ol>
+<li><code>name</code> 和 Python 函数不匹配，导致 AI 无法正确调用工具。</li>
+<li><code>role=&quot;tool&quot;</code> 消息未紧跟 <code>assistant</code>，导致 AI 解析错误。</li>
+</ol>
+<ul>
+<li>解决方法是在调用完工具之后，向 messages 中手动插入一条 role&#x3D;”assistant” 的空消息，附带 tool_calls 字段，然后紧接着添加 role&#x3D;”tool” 的返回结果，这样就保证了正确的调用链路。<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    &quot;role&quot;: &quot;assistant&quot;,</span><br><span class="line">    &quot;content&quot;: &quot;&quot;,  # 一定为空</span><br><span class="line">    &quot;tool_calls&quot;: tool_calls  # 将 AI 最初返回的 tool_calls 原样放回</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)  # 马上接上 tool 返回值</span><br></pre></td></tr></table></figure></li>
+<li>因为 Qwen 模型的调用链规则如下：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">用户消息（role=&quot;user&quot;）</span><br><span class="line">→ AI 返回 tool_calls（role=&quot;assistant&quot;，tool_calls）</span><br><span class="line">→ 工具执行，返回结果（role=&quot;tool&quot;，tool_call_id）</span><br><span class="line">→ AI 接收到结果，继续推理</span><br></pre></td></tr></table></figure></li>
+<li>如果 role&#x3D;”tool” 的消息不紧跟在带有 tool_calls 的 assistant 消息后面，模型就无法对上“这个工具调用返回了这个值”，于是会报错或输出异常。</li>
+</ul>
+<ol start="3">
+<li><code>parameters</code> 设置错误，导致 AI 传递了错误的参数。</li>
+<li><code>messages</code> 结构错误，导致 AI 不能正确读取历史对话。</li>
+</ol>
+<hr>
+<p>该项目代码参考 <a href="https://help.aliyun.com/zh/model-studio/user-guide/qwen-function-calling?spm=0.0.0.i4#8c41d25020ipz">Qwen官方Function Calling</a>。</p>
+]]></content>
+      <categories>
+        <category>LLM学习之路</category>
+      </categories>
+      <tags>
+        <tag>LLM</tag>
+        <tag>大模型</tag>
+        <tag>Function Calling</tag>
+        <tag>Agent</tag>
+        <tag>Qwen</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Sync Code Block Theme with Dark Mode in Hexo Chic</title>
+    <url>/2025/03/25/Sync-Code-Block-Theme-with-Dark-Mode-in-Hexo-Chic/</url>
+    <content><![CDATA[<h1 id="Hexo-Chic-主题为代码块实现明暗主题切换效果"><a href="#Hexo-Chic-主题为代码块实现明暗主题切换效果" class="headerlink" title="Hexo + Chic 主题为代码块实现明暗主题切换效果"></a>Hexo + Chic 主题为代码块实现明暗主题切换效果</h1><p>这份文档记录如何在 Hexo 博客（使用 Chic 主题），完成代码块 (highlight.js) 样式随明&#x2F;暗主题切换。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="背景知识"><a href="#背景知识" class="headerlink" title="背景知识"></a>背景知识</h2><ul>
+<li><strong>代码块</strong> 是你写文章时用 &#96;&#96;&#96; 包起来的那些 Python&#x2F;JavaScript 代码部分。</li>
+<li><strong>highlight.js</strong> 是用来给代码块加颜色的工具，它有“亮色”和“暗色”两套样式。</li>
+</ul>
+<p>希望解决的问题是：</p>
+<blockquote>
+<p>当我切换网站到暗色模式时，代码块还是白底，看起来很突兀。</p>
+</blockquote>
+<p>我们要做的就是：让代码块也能“跟着变黑”。</p>
+<hr>
+<h2 id="1-确认-Hexo-正在使用-highlight-js"><a href="#1-确认-Hexo-正在使用-highlight-js" class="headerlink" title="1. 确认 Hexo 正在使用 highlight.js"></a><strong>1. 确认 Hexo 正在使用 highlight.js</strong></h2><p>打开你博客根目录下的 <code>_config.yml</code> 文件，找到下面的内容并确保设置一致：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">syntax_highlighter:</span> <span class="string">highlight.js</span></span><br><span class="line"><span class="attr">highlight:</span></span><br><span class="line">  <span class="attr">line_number:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">auto_detect:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">tab_replace:</span> <span class="string">&#x27;&#x27;</span></span><br><span class="line">  <span class="attr">wrap:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">hljs:</span> <span class="literal">false</span></span><br></pre></td></tr></table></figure>
+
+<p>这段配置的意思是告诉 Hexo：我要用 highlight.js 来做代码高亮。</p>
+<hr>
+<h2 id="2-修改-head-ejs，引入代码高亮样式"><a href="#2-修改-head-ejs，引入代码高亮样式" class="headerlink" title="2.修改 head.ejs，引入代码高亮样式"></a><strong>2.修改 head.ejs，引入代码高亮样式</strong></h2><p>打开文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/head.ejs</span><br></pre></td></tr></table></figure>
+
+<p>在里面添加这几行（插入到已有的 <code>&lt;link&gt;</code> 标签之后即可）：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!-- highlight.js 样式（默认亮色） --&gt;</span><br><span class="line">&lt;link id=&quot;hljs-theme&quot; rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;&gt;</span><br><span class="line">&lt;!-- highlight.js 自动上色功能 --&gt;</span><br><span class="line">&lt;script src=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/highlight.min.js&quot;&gt;&lt;/script&gt;</span><br><span class="line">&lt;script&gt;hljs.highlightAll();&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>第一行是默认代码样式（亮色）。</li>
+<li>第二三行是让代码自动加颜色。</li>
+</ul>
+<hr>
+<h2 id="3-修改-script-js，切换暗色样式时动态修改链接"><a href="#3-修改-script-js，切换暗色样式时动态修改链接" class="headerlink" title="3. 修改 script.js，切换暗色样式时动态修改链接"></a><strong>3. 修改 script.js，切换暗色样式时动态修改链接</strong></h2><p>打开文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/source/js/script.js</span><br></pre></td></tr></table></figure>
+
+<p>找到我们添加主题切换的地方，添加以下 JavaScript 代码：</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> hljsTheme = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;hljs-theme&#x27;</span>);</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">updateCodeHighlightStyle</span>(<span class="params">isDarkMode</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!hljsTheme) <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">const</span> newHref = isDarkMode</span><br><span class="line">        ? <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github-dark.css&quot;</span></span><br><span class="line">        : <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;</span>;</span><br><span class="line">    hljsTheme.<span class="title function_">setAttribute</span>(<span class="string">&#x27;href&#x27;</span>, newHref);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后就可以在主题切换按钮事件里调用：</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="title function_">updateCodeHighlightStyle</span>(<span class="literal">true</span>); <span class="comment">// 或 false，根据你当前模式</span></span><br></pre></td></tr></table></figure>
+
+<p>每次切换主题时都调用它，就能切换代码样式。</p>
+<hr>
+<h2 id="4-创建一个-CSS-文件，解决代码块“白边”问题"><a href="#4-创建一个-CSS-文件，解决代码块“白边”问题" class="headerlink" title="4. 创建一个 CSS 文件，解决代码块“白边”问题"></a><strong>4. 创建一个 CSS 文件，解决代码块“白边”问题</strong></h2><p>这个步骤很关键，否则再暗色样式时代码块周围可能会留下一圈白色边框，如下方图片所示：<br><img src="https://github.com/user-attachments/assets/6baef8c8-887d-448f-a5c9-5f0501ab4ee2" alt="image"></p>
+<h3 id="第一步：创建文件夹和文件"><a href="#第一步：创建文件夹和文件" class="headerlink" title="第一步：创建文件夹和文件"></a>第一步：创建文件夹和文件</h3><p>在终端中运行：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd themes/hexo-theme-Chic/source/css</span><br><span class="line">mkdir custom</span><br><span class="line">cd custom</span><br><span class="line">nano custom.css</span><br></pre></td></tr></table></figure>
+<p>或者手动：在 <code>themes/hexo-theme-Chic/source/css/</code> 下创建文件夹 <code>custom</code>，然后在里面新建文件 <code>custom.css</code></p>
+<h3 id="第二步：填入以下内容："><a href="#第二步：填入以下内容：" class="headerlink" title="第二步：填入以下内容："></a>第二步：填入以下内容：</h3><figure class="highlight css"><table><tr><td class="code"><pre><span class="line">pre,</span><br><span class="line"><span class="selector-tag">code</span>,</span><br><span class="line">pre <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">color</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 暗色背景 */</span></span><br><span class="line">    <span class="attribute">color</span>: <span class="number">#c9d1d9</span> <span class="meta">!important</span>;       <span class="comment">/* 暗色文字 */</span></span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre::-webkit-scrollbar-track,</span><br><span class="line">body.dark-theme code::-webkit-scrollbar-track &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 修复滚动条白边 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="5-在-head-ejs-中引入自定义-CSS-文件"><a href="#5-在-head-ejs-中引入自定义-CSS-文件" class="headerlink" title="5. 在 head.ejs 中引入自定义 CSS 文件"></a><strong>5. 在 head.ejs 中引入自定义 CSS 文件</strong></h2><p>在 <code>head.ejs</code> 中再加一行：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;link rel=&quot;stylesheet&quot; href=&quot;&lt;%- url_for(&#x27;/css/custom/custom.css&#x27;) %&gt;&quot;&gt;</span><br></pre></td></tr></table></figure>
+
+<p>放在其他 <code>&lt;link&gt;</code> 标签的下面。</p>
+<hr>
+<h2 id="6-重新生成并运行-Hexo"><a href="#6-重新生成并运行-Hexo" class="headerlink" title="6. 重新生成并运行 Hexo"></a><strong>6. 重新生成并运行 Hexo</strong></h2><p>运行以下命令，重新生成并启动本地预览：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
+
+<p>然后访问你的本地博客文章页面 <code>http://localhost:4000</code>，尝试切换主题，看代码块是否也会随之变色。</p>
+<p>在两种不同主题下的效果展示：</p>
+<p><img src="https://github.com/user-attachments/assets/db87a928-293d-4c00-8299-6619722c92f8" alt="image"></p>
+<p><img src="https://github.com/user-attachments/assets/550ba759-3113-41b6-9737-887242fcfa14" alt="image"></p>
+<hr>
+<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+]]></content>
+      <categories>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>Blog</tag>
+        <tag>前端</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title></title>
+    <url>/2025/03/25/test/</url>
+    <content><![CDATA[<h1 id="Hexo-为代码块添加复制功能按钮"><a href="#Hexo-为代码块添加复制功能按钮" class="headerlink" title="Hexo 为代码块添加复制功能按钮"></a>Hexo 为代码块添加复制功能按钮</h1><p>本文详细记录如何在 Hexo 主题中为代码块添加一个 “复制” 按钮，实现一键复制代码功能。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="第-1-步：创建-JavaScript-脚本文件"><a href="#第-1-步：创建-JavaScript-脚本文件" class="headerlink" title="第 1 步：创建 JavaScript 脚本文件"></a>第 1 步：创建 JavaScript 脚本文件</h2><p>在 Hexo 博客项目的根目录下创建 JS 脚本文件,如果没有js文件夹则自己创建：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">source/js/code-copy.js</span><br></pre></td></tr></table></figure>
+
+<p>并填入以下完整内容：</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span><br><span class="line">  <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;figure.highlight&#x27;</span>).<span class="title function_">forEach</span>(<span class="function">(<span class="params">figure</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (figure.<span class="title function_">querySelector</span>(<span class="string">&#x27;.copy-btn&#x27;</span>)) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> copyBtn = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(<span class="string">&#x27;button&#x27;</span>);</span><br><span class="line">    copyBtn.<span class="property">className</span> = <span class="string">&#x27;copy-btn&#x27;</span>;</span><br><span class="line">    copyBtn.<span class="property">title</span> = <span class="string">&#x27;复制&#x27;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 缩小后的复制图标（14*15）</span></span><br><span class="line">    <span class="keyword">const</span> copyIcon = <span class="string">`</span></span><br><span class="line"><span class="string">      &lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; height=&quot;14&quot; width=&quot;15&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;white&quot;&gt;</span></span><br><span class="line"><span class="string">        &lt;path d=&quot;M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 18H8V7h11v16z&quot;/&gt;</span></span><br><span class="line"><span class="string">      &lt;/svg&gt;</span></span><br><span class="line"><span class="string">    `</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 成功后显示的勾（14*15）</span></span><br><span class="line">    <span class="keyword">const</span> checkIcon = <span class="string">`</span></span><br><span class="line"><span class="string">      &lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; height=&quot;14&quot; width=&quot;15&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;#00cc66&quot;&gt;</span></span><br><span class="line"><span class="string">        &lt;path d=&quot;M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z&quot;/&gt;</span></span><br><span class="line"><span class="string">      &lt;/svg&gt;</span></span><br><span class="line"><span class="string">    `</span>;</span><br><span class="line"></span><br><span class="line">    copyBtn.<span class="property">innerHTML</span> = copyIcon;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 按钮样式（浅灰底、缩小）</span></span><br><span class="line">    <span class="title class_">Object</span>.<span class="title function_">assign</span>(copyBtn.<span class="property">style</span>, &#123;</span><br><span class="line">      <span class="attr">position</span>: <span class="string">&#x27;absolute&#x27;</span>,</span><br><span class="line">      <span class="attr">top</span>: <span class="string">&#x27;8px&#x27;</span>,</span><br><span class="line">      <span class="attr">right</span>: <span class="string">&#x27;8px&#x27;</span>,</span><br><span class="line">      <span class="attr">padding</span>: <span class="string">&#x27;4px&#x27;</span>,</span><br><span class="line">      <span class="attr">background</span>: <span class="string">&#x27;#aaa&#x27;</span>, <span class="comment">// 浅灰背景 ✅</span></span><br><span class="line">      <span class="attr">border</span>: <span class="string">&#x27;none&#x27;</span>,</span><br><span class="line">      <span class="attr">borderRadius</span>: <span class="string">&#x27;4px&#x27;</span>,</span><br><span class="line">      <span class="attr">cursor</span>: <span class="string">&#x27;pointer&#x27;</span>,</span><br><span class="line">      <span class="attr">opacity</span>: <span class="string">&#x27;0.85&#x27;</span>,</span><br><span class="line">      <span class="attr">zIndex</span>: <span class="number">1000</span>,</span><br><span class="line">      <span class="attr">transition</span>: <span class="string">&#x27;opacity 0.2s ease&#x27;</span>,</span><br><span class="line">      <span class="attr">boxShadow</span>: <span class="string">&#x27;0 1px 3px rgba(0, 0, 0, 0.15)&#x27;</span></span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    copyBtn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;mouseover&#x27;</span>, <span class="function">() =&gt;</span> copyBtn.<span class="property">style</span>.<span class="property">opacity</span> = <span class="string">&#x27;1&#x27;</span>);</span><br><span class="line">    copyBtn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;mouseout&#x27;</span>, <span class="function">() =&gt;</span> copyBtn.<span class="property">style</span>.<span class="property">opacity</span> = <span class="string">&#x27;0.85&#x27;</span>);</span><br><span class="line"></span><br><span class="line">    copyBtn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">const</span> code = figure.<span class="title function_">querySelector</span>(<span class="string">&#x27;td.code&#x27;</span>);</span><br><span class="line">      <span class="keyword">const</span> text = code ? code.<span class="property">innerText</span> : <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">      navigator.<span class="property">clipboard</span>.<span class="title function_">writeText</span>(text).<span class="title function_">then</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">        copyBtn.<span class="property">innerHTML</span> = checkIcon;</span><br><span class="line">        <span class="built_in">setTimeout</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">          copyBtn.<span class="property">innerHTML</span> = copyIcon;</span><br><span class="line">        &#125;, <span class="number">1000</span>);</span><br><span class="line">      &#125;);</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    figure.<span class="property">style</span>.<span class="property">position</span> = <span class="string">&#x27;relative&#x27;</span>;</span><br><span class="line">    figure.<span class="title function_">appendChild</span>(copyBtn);</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="第-2-步：在页面底部引入-JS-文件"><a href="#第-2-步：在页面底部引入-JS-文件" class="headerlink" title="第 2 步：在页面底部引入 JS 文件"></a>第 2 步：在页面底部引入 JS 文件</h2><p>打开文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/footer.ejs</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>&lt;/footer&gt;</code> 标签之后添加以下代码：</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;/js/code-copy.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>这样可以确保复制按钮脚本在页面加载完毕后自动运行。</p>
+<hr>
+<h2 id="第-3-步：生成并本地预览效果"><a href="#第-3-步：生成并本地预览效果" class="headerlink" title="第 3 步：生成并本地预览效果"></a>第 3 步：生成并本地预览效果</h2><p>运行以下命令，重新生成并启动本地预览：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+
+<p>然后访问 <code>http://localhost:4000</code>，查看任意一段代码块，右上角应出现复制图标按钮。</p>
+<hr>
+<h2 id="结构要求与适配说明"><a href="#结构要求与适配说明" class="headerlink" title="结构要求与适配说明"></a>结构要求与适配说明</h2><p>本复制功能脚本适用于以下结构的代码块：</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">figure</span> <span class="attr">class</span>=<span class="string">&quot;highlight&quot;</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">table</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">&quot;gutter&quot;</span>&gt;</span>...<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">&quot;code&quot;</span>&gt;</span><span class="tag">&lt;<span class="name">pre</span>&gt;</span><span class="tag">&lt;<span class="name">code</span>&gt;</span>...<span class="tag">&lt;/<span class="name">code</span>&gt;</span><span class="tag">&lt;/<span class="name">pre</span>&gt;</span><span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">table</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">figure</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>这是 Hexo 中多数主题（包括 Chic、NexT、Butterfly 等）默认的代码块渲染结构。</p>
+<h3 id="如何检查自己主题的结构是否符合？"><a href="#如何检查自己主题的结构是否符合？" class="headerlink" title="如何检查自己主题的结构是否符合？"></a>如何检查自己主题的结构是否符合？</h3><ol>
+<li>启动本地博客：<code>hexo s</code></li>
+<li>在浏览器中打开博客页面</li>
+<li>右键代码块 → 点击“检查”</li>
+<li>查看代码块的外层 HTML 标签是否为 <code>figure.highlight</code> </li>
+<li>或者直接在浏览器中点击 <code>F12</code> ，在 <code>Elements</code> 中直接搜索是否含有 <code>figure.highlight</code></li>
+</ol>
+<hr>
+<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+]]></content>
+  </entry>
+  <entry>
+    <title>about</title>
+    <url>/about/index.html</url>
+    <content><![CDATA[]]></content>
+  </entry>
+  <entry>
+    <title></title>
+    <url>/js/code-copy.js</url>
+    <content><![CDATA[document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('figure.highlight').forEach((figure) => {
+    if (figure.querySelector('.copy-btn')) return;
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'copy-btn';
+    copyBtn.title = '复制';
+
+    // 缩小后的复制图标（14*15）
+    const copyIcon = `
+      <svg xmlns="http://www.w3.org/2000/svg" height="14" width="15" viewBox="0 0 24 24" fill="white">
+        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 18H8V7h11v16z"/>
+      </svg>
+    `;
+
+    // 成功后显示的勾（14*15）
+    const checkIcon = `
+      <svg xmlns="http://www.w3.org/2000/svg" height="14" width="15" viewBox="0 0 24 24" fill="#00cc66">
+        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+      </svg>
+    `;
+
+    copyBtn.innerHTML = copyIcon;
+
+    // 按钮样式（浅灰底、缩小）
+    Object.assign(copyBtn.style, {
+      position: 'absolute',
+      top: '8px',
+      right: '8px',
+      padding: '4px',
+      background: '#aaa', // 浅灰背景 ✅
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      opacity: '0.85',
+      zIndex: 1000,
+      transition: 'opacity 0.2s ease',
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.15)'
+    });
+
+    copyBtn.addEventListener('mouseover', () => copyBtn.style.opacity = '1');
+    copyBtn.addEventListener('mouseout', () => copyBtn.style.opacity = '0.85');
+
+    copyBtn.addEventListener('click', () => {
+      const code = figure.querySelector('td.code');
+      const text = code ? code.innerText : '';
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.innerHTML = checkIcon;
+        setTimeout(() => {
+          copyBtn.innerHTML = copyIcon;
+        }, 1000);
+      });
+    });
+
+    figure.style.position = 'relative';
+    figure.appendChild(copyBtn);
+  });
+});
+]]></content>
+  </entry>
+  <entry>
+    <title>tag</title>
+    <url>/tag/index.html</url>
+    <content><![CDATA[]]></content>
+  </entry>
+  <entry>
+    <title>category</title>
+    <url>/category/index.html</url>
+    <content><![CDATA[]]></content>
+  </entry>
+</search>
