@@ -26,6 +26,8 @@
     
     <link rel="stylesheet" href="/css/style.css">
     
+    <link rel="stylesheet" href="/css/search.css">
+    
 
 <link rel="stylesheet" href="/css/custom/custom.css">
 <!-- ✅ highlight.js 亮暗主题样式切换 -->
@@ -97,14 +99,14 @@
           <div id="nav-search-result" class="nav-search-result"></div>
         </div>
 
-        <!-- ✅ 主题切换按钮（保留原结构） -->
+        <!-- ✅ 主题切换按钮 -->
         <input id="switch_default" type="checkbox" class="switch_default">
         <label for="switch_default" class="toggleBtn"></label>
       </div>
     </div>
   </nav>
 
-  <!-- ✅ 移动端导航保持原样，新增搜索入口 -->
+  <!-- ✅ 移动端 -->
   <nav class="navbar-mobile" id="nav-mobile">
     <div class="container">
       <div class="navbar-header">
@@ -123,7 +125,6 @@
         
           <a class="menu-item" href="/about">About</a>
         
-        <!-- ✅ 移动端搜索 -->
         <a class="menu-item" href="javascript:;" onclick="toggleSearchInput()">🔍 Search</a>
         <input type="text" id="nav-search-input-mobile" class="nav-search-input" placeholder="Search..." oninput="navSearch(this)">
         <div id="nav-search-result" class="nav-search-result"></div>
@@ -207,108 +208,30 @@
 
     resultContainer.style.display = 'block';
   }
+
+  // ✅ 点击空白关闭搜索框并清空
+  document.addEventListener('click', function (e) {
+    const searchAreas = document.querySelectorAll('.search-container');
+    let clickedInsideSearch = false;
+
+    searchAreas.forEach(area => {
+      if (area.contains(e.target)) {
+        clickedInsideSearch = true;
+      }
+    });
+
+    if (!clickedInsideSearch) {
+      document.querySelectorAll('.nav-search-input').forEach(input => {
+        input.classList.remove('active');
+        input.value = ''; // 清空
+      });
+      document.querySelectorAll('.nav-search-result').forEach(result => {
+        result.style.display = 'none';
+      });
+    }
+  });
 </script>
 
-<style>
-/* 搜索框容器 */
-.search-container {
-  position: relative;
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 10px;
-}
-.search-container a {
-  padding-right: 6px;
-  cursor: pointer;
-  font-size: 1.1em;
-}
-
-.nav-search-input {
-  display: none;
-  padding: 6px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 260px;
-  transition: all 0.3s ease;
-  vertical-align: middle;
-}
-.nav-search-input.active {
-  display: inline-block;
-}
-
-.nav-search-result {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  margin-top: 6px;
-  padding: 0.4em;
-  min-width: 260px;
-  max-height: 360px;
-  overflow-y: auto;
-  display: none;
-  z-index: 999;
-}
-
-/* 搜索结果卡片样式 */
-.search-card {
-  padding: 4px 6px;
-  margin-bottom: 3px;
-  border-bottom: 1px solid #eee;
-  transition: background 0.2s;
-}
-.search-card:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-}
-.search-card:hover {
-  background: #f9f9f9;
-}
-
-.search-card-title {
-  display: block;
-  font-weight: bold;
-  color: #1a0dab;
-  font-size: 1em;
-  line-height: 1.2em;
-  text-decoration: none;
-  margin: 0;
-  padding: 0;
-  text-align: left;
-}
-.search-card-title:hover {
-  text-decoration: underline;
-}
-
-.search-card-snippet {
-  font-size: 0.88em;
-  color: #444;
-  margin-top: 2px;
-  line-height: 1.3em;
-
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* 移动端支持 */
-@media (max-width: 768px) {
-  .nav-search-input {
-    width: 90%;
-    display: block;
-    margin: 10px auto;
-  }
-  .nav-search-result {
-    position: static;
-    width: 90%;
-    margin: 0 auto;
-  }
-}
-</style>
 
         <div class="main">
             <div class="post-wrap archive">

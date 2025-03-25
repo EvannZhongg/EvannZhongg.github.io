@@ -417,6 +417,11 @@
     <content><![CDATA[]]></content>
   </entry>
   <entry>
+    <title>category</title>
+    <url>/category/index.html</url>
+    <content><![CDATA[]]></content>
+  </entry>
+  <entry>
     <title></title>
     <url>/js/code-copy.js</url>
     <content><![CDATA[document.addEventListener('DOMContentLoaded', () => {
@@ -482,11 +487,6 @@
   <entry>
     <title>tag</title>
     <url>/tag/index.html</url>
-    <content><![CDATA[]]></content>
-  </entry>
-  <entry>
-    <title>category</title>
-    <url>/category/index.html</url>
     <content><![CDATA[]]></content>
   </entry>
 </search>
