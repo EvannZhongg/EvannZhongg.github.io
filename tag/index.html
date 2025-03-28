@@ -244,14 +244,6 @@
 
             <div class="tag-cloud-tags">
                 
-                    <a href="/tags/OCR/">OCR<small>(1)</small></a>
-                
-                    <a href="/tags/PaddleOCR/">PaddleOCR<small>(1)</small></a>
-                
-                    <a href="/tags/PDF/">PDF<small>(1)</small></a>
-                
-                    <a href="/tags/AI/">AI<small>(3)</small></a>
-                
                     <a href="/tags/Hexo/">Hexo<small>(4)</small></a>
                 
                     <a href="/tags/%E5%8D%9A%E5%AE%A2/">博客<small>(4)</small></a>
@@ -259,6 +251,14 @@
                     <a href="/tags/Blog/">Blog<small>(4)</small></a>
                 
                     <a href="/tags/%E5%89%8D%E7%AB%AF/">前端<small>(4)</small></a>
+                
+                    <a href="/tags/OCR/">OCR<small>(1)</small></a>
+                
+                    <a href="/tags/PaddleOCR/">PaddleOCR<small>(1)</small></a>
+                
+                    <a href="/tags/PDF/">PDF<small>(1)</small></a>
+                
+                    <a href="/tags/AI/">AI<small>(3)</small></a>
                 
                     <a href="/tags/LLM/">LLM<small>(2)</small></a>
                 
@@ -437,7 +437,7 @@
     appendMessage('user', query);
     chatInput.value = '';
 
-    const response = await fetch('https://flask-api.evanzhong.cn/ask', {
+    const response = await fetch('https://c2a4-49-72-58-214.ngrok-free.app/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
