@@ -230,6 +230,25 @@
       });
     }
   });
+  // ✅ 页面加载时预加载 search.xml
+  document.addEventListener('DOMContentLoaded', function () {
+    if (searchData.length === 0) {
+      fetch('/search.xml')
+        .then(res => res.text())
+        .then(xmlText => {
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(xmlText, 'text/xml');
+          const entries = xml.getElementsByTagName('entry');
+          for (let entry of entries) {
+            searchData.push({
+              title: entry.getElementsByTagName('title')[0]?.textContent || '',
+              content: entry.getElementsByTagName('content')[0]?.textContent || '',
+              url: entry.getElementsByTagName('url')[0]?.textContent || ''
+            });
+          }
+        });
+    }
+  });
 </script>
 
 
@@ -246,10 +265,10 @@
                     
                     <div class="card-item">
                         <div class="categories">
-                            <a href="/categories/Hexo/">
+                            <a href="/categories/OCR/">
                                 <h3>
                                     <i class="iconfont icon-category" style="padding-right:3px"></i>
-                                    Hexo
+                                    OCR
                                 </h3>
                             </a>
                             
@@ -257,9 +276,23 @@
                                 
                                     <article class="archive-item">
                                         <a class="archive-item-link"
-                                           href="/2025/03/26/Add-Copy-Button-to-Code-Blocks-in-Hexo/">Add Copy Button to Code Blocks in Hexo</a>
+                                           href="/2025/03/28/Convert-PDF-Tables-to-Readable-Text/">Convert PDF Tables to Readable Text</a>
                                     </article>
                                 
+                            
+                            
+                        </div>
+                    </div>
+                
+                    
+                    <div class="card-item">
+                        <div class="categories">
+                            <a href="/categories/Hexo/">
+                                <h3>
+                                    <i class="iconfont icon-category" style="padding-right:3px"></i>
+                                    Hexo
+                                </h3>
+                            </a>
                             
                                 
                                 
@@ -285,25 +318,11 @@
                                     </article>
                                 
                             
-                            
-                        </div>
-                    </div>
-                
-                    
-                    <div class="card-item">
-                        <div class="categories">
-                            <a href="/categories/OCR/">
-                                <h3>
-                                    <i class="iconfont icon-category" style="padding-right:3px"></i>
-                                    OCR
-                                </h3>
-                            </a>
-                            
                                 
                                 
                                     <article class="archive-item">
                                         <a class="archive-item-link"
-                                           href="/2025/03/28/Convert-PDF-Tables-to-Readable-Text/">Convert PDF Tables to Readable Text</a>
+                                           href="/2025/03/26/Add-Copy-Button-to-Code-Blocks-in-Hexo/">Add Copy Button to Code Blocks in Hexo</a>
                                     </article>
                                 
                             

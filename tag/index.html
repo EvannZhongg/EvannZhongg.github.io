@@ -230,6 +230,25 @@
       });
     }
   });
+  // ✅ 页面加载时预加载 search.xml
+  document.addEventListener('DOMContentLoaded', function () {
+    if (searchData.length === 0) {
+      fetch('/search.xml')
+        .then(res => res.text())
+        .then(xmlText => {
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(xmlText, 'text/xml');
+          const entries = xml.getElementsByTagName('entry');
+          for (let entry of entries) {
+            searchData.push({
+              title: entry.getElementsByTagName('title')[0]?.textContent || '',
+              content: entry.getElementsByTagName('content')[0]?.textContent || '',
+              url: entry.getElementsByTagName('url')[0]?.textContent || ''
+            });
+          }
+        });
+    }
+  });
 </script>
 
 
@@ -242,14 +261,6 @@
 
             <div class="tag-cloud-tags">
                 
-                    <a href="/tags/Hexo/">Hexo<small>(4)</small></a>
-                
-                    <a href="/tags/%E5%8D%9A%E5%AE%A2/">博客<small>(4)</small></a>
-                
-                    <a href="/tags/Blog/">Blog<small>(4)</small></a>
-                
-                    <a href="/tags/%E5%89%8D%E7%AB%AF/">前端<small>(4)</small></a>
-                
                     <a href="/tags/OCR/">OCR<small>(1)</small></a>
                 
                     <a href="/tags/PaddleOCR/">PaddleOCR<small>(1)</small></a>
@@ -257,6 +268,14 @@
                     <a href="/tags/PDF/">PDF<small>(1)</small></a>
                 
                     <a href="/tags/AI/">AI<small>(3)</small></a>
+                
+                    <a href="/tags/Hexo/">Hexo<small>(4)</small></a>
+                
+                    <a href="/tags/%E5%8D%9A%E5%AE%A2/">博客<small>(4)</small></a>
+                
+                    <a href="/tags/Blog/">Blog<small>(4)</small></a>
+                
+                    <a href="/tags/%E5%89%8D%E7%AB%AF/">前端<small>(4)</small></a>
                 
                     <a href="/tags/LLM/">LLM<small>(2)</small></a>
                 
