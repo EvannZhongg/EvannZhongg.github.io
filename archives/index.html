@@ -492,6 +492,17 @@
   chatInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") sendMessage();
   });
+
+  window.addEventListener("click", (e) => {
+    if (
+      isChatVisible &&
+      !chatWindow.contains(e.target) &&
+      !toggleBtn.contains(e.target)
+    ) {
+      isChatVisible = false;
+      chatWindow.style.display = 'none';
+    }
+  });
 </script>
 
     </div>

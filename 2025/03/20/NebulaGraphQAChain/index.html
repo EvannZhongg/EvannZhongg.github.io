@@ -437,11 +437,11 @@
                 <span class="tag">
                     
                     
+                        <a href="/tags/AI/"># AI</a>
+                    
                         <a href="/tags/LLM/"># LLM</a>
                     
                         <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"># 大模型</a>
-                    
-                        <a href="/tags/AI/"># AI</a>
                     
                         <a href="/tags/%E5%9B%BE%E6%95%B0%E6%8D%AE%E5%BA%93/"># 图数据库</a>
                     
@@ -719,6 +719,17 @@
   sendBtn.onclick = sendMessage;
   chatInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") sendMessage();
+  });
+
+  window.addEventListener("click", (e) => {
+    if (
+      isChatVisible &&
+      !chatWindow.contains(e.target) &&
+      !toggleBtn.contains(e.target)
+    ) {
+      isChatVisible = false;
+      chatWindow.style.display = 'none';
+    }
   });
 </script>
 

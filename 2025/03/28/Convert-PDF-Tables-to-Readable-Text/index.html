@@ -445,13 +445,13 @@
                 <span class="tag">
                     
                     
-                        <a href="/tags/AI/"># AI</a>
-                    
                         <a href="/tags/OCR/"># OCR</a>
                     
                         <a href="/tags/PaddleOCR/"># PaddleOCR</a>
                     
                         <a href="/tags/PDF/"># PDF</a>
+                    
+                        <a href="/tags/AI/"># AI</a>
                     
                         
                 </span>
@@ -721,6 +721,17 @@
   sendBtn.onclick = sendMessage;
   chatInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") sendMessage();
+  });
+
+  window.addEventListener("click", (e) => {
+    if (
+      isChatVisible &&
+      !chatWindow.contains(e.target) &&
+      !toggleBtn.contains(e.target)
+    ) {
+      isChatVisible = false;
+      chatWindow.style.display = 'none';
+    }
   });
 </script>
 

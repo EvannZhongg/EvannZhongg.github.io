@@ -250,6 +250,14 @@
                 
                     <a href="/tags/%E5%89%8D%E7%AB%AF/">前端<small>(4)</small></a>
                 
+                    <a href="/tags/OCR/">OCR<small>(1)</small></a>
+                
+                    <a href="/tags/PaddleOCR/">PaddleOCR<small>(1)</small></a>
+                
+                    <a href="/tags/PDF/">PDF<small>(1)</small></a>
+                
+                    <a href="/tags/AI/">AI<small>(3)</small></a>
+                
                     <a href="/tags/LLM/">LLM<small>(2)</small></a>
                 
                     <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/">大模型<small>(2)</small></a>
@@ -259,14 +267,6 @@
                     <a href="/tags/Agent/">Agent<small>(1)</small></a>
                 
                     <a href="/tags/Qwen/">Qwen<small>(1)</small></a>
-                
-                    <a href="/tags/AI/">AI<small>(3)</small></a>
-                
-                    <a href="/tags/OCR/">OCR<small>(1)</small></a>
-                
-                    <a href="/tags/PaddleOCR/">PaddleOCR<small>(1)</small></a>
-                
-                    <a href="/tags/PDF/">PDF<small>(1)</small></a>
                 
                     <a href="/tags/%E5%9B%BE%E6%95%B0%E6%8D%AE%E5%BA%93/">图数据库<small>(1)</small></a>
                 
@@ -468,6 +468,17 @@
   sendBtn.onclick = sendMessage;
   chatInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") sendMessage();
+  });
+
+  window.addEventListener("click", (e) => {
+    if (
+      isChatVisible &&
+      !chatWindow.contains(e.target) &&
+      !toggleBtn.contains(e.target)
+    ) {
+      isChatVisible = false;
+      chatWindow.style.display = 'none';
+    }
   });
 </script>
 
