@@ -1,59 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Add Copy Button to Code Blocks in Hexo</title>
-    <url>/2025/03/26/Add-Copy-Button-to-Code-Blocks-in-Hexo/</url>
-    <content><![CDATA[<h1 id="Hexo-为代码块添加复制功能按钮"><a href="#Hexo-为代码块添加复制功能按钮" class="headerlink" title="Hexo 为代码块添加复制功能按钮"></a>Hexo 为代码块添加复制功能按钮</h1><p>本文详细记录如何在 Hexo 中为代码块添加一个 “复制” 按钮，实现一键复制代码功能。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
-<hr>
-<h2 id="结构要求与适配说明"><a href="#结构要求与适配说明" class="headerlink" title="结构要求与适配说明"></a>结构要求与适配说明</h2><p>本复制功能脚本适用于以下结构的代码块：</p>
-<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">figure</span> <span class="attr">class</span>=<span class="string">&quot;highlight&quot;</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">table</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">&quot;gutter&quot;</span>&gt;</span>...<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">&quot;code&quot;</span>&gt;</span><span class="tag">&lt;<span class="name">pre</span>&gt;</span><span class="tag">&lt;<span class="name">code</span>&gt;</span>...<span class="tag">&lt;/<span class="name">code</span>&gt;</span><span class="tag">&lt;/<span class="name">pre</span>&gt;</span><span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">table</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">figure</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<p>这是 Hexo 中多数主题（包括 Chic、NexT、Butterfly 等）默认的代码块渲染结构。</p>
-<h3 id="如何检查自己主题的结构是否符合？"><a href="#如何检查自己主题的结构是否符合？" class="headerlink" title="如何检查自己主题的结构是否符合？"></a>如何检查自己主题的结构是否符合？</h3><ol>
-<li>启动本地博客：<code>hexo s</code></li>
-<li>在浏览器中打开博客页面</li>
-<li>右键代码块 → 点击“检查”</li>
-<li>查看代码块的外层 HTML 标签是否为 <code>figure.highlight</code> </li>
-<li>或者直接在浏览器中点击 <code>F12</code> ，在 <code>Elements</code> 中直接搜索是否含有 <code>figure.highlight</code></li>
-</ol>
-<hr>
-<h2 id="1-创建-JavaScript-脚本文件"><a href="#1-创建-JavaScript-脚本文件" class="headerlink" title="1. 创建 JavaScript 脚本文件"></a><strong>1. 创建 JavaScript 脚本文件</strong></h2><p>在 Hexo 博客项目的根目录下创建 JS 脚本文件 <code>code-copy.js</code> ,如果没有js文件夹则自己创建：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">source/js/code-copy.js</span><br></pre></td></tr></table></figure>
-
-<p>并填入以下完整内容：</p>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span><br><span class="line">  <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;figure.highlight&#x27;</span>).<span class="title function_">forEach</span>(<span class="function">(<span class="params">figure</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (figure.<span class="title function_">querySelector</span>(<span class="string">&#x27;.copy-btn&#x27;</span>)) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> copyBtn = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(<span class="string">&#x27;button&#x27;</span>);</span><br><span class="line">    copyBtn.<span class="property">className</span> = <span class="string">&#x27;copy-btn&#x27;</span>;</span><br><span class="line">    copyBtn.<span class="property">title</span> = <span class="string">&#x27;复制&#x27;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 缩小后的复制图标（14*15）</span></span><br><span class="line">    <span class="keyword">const</span> copyIcon = <span class="string">`</span></span><br><span class="line"><span class="string">      &lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; height=&quot;14&quot; width=&quot;15&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;white&quot;&gt;</span></span><br><span class="line"><span class="string">        &lt;path d=&quot;M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 18H8V7h11v16z&quot;/&gt;</span></span><br><span class="line"><span class="string">      &lt;/svg&gt;</span></span><br><span class="line"><span class="string">    `</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 成功后显示的勾（14*15）</span></span><br><span class="line">    <span class="keyword">const</span> checkIcon = <span class="string">`</span></span><br><span class="line"><span class="string">      &lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; height=&quot;14&quot; width=&quot;15&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;#00cc66&quot;&gt;</span></span><br><span class="line"><span class="string">        &lt;path d=&quot;M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z&quot;/&gt;</span></span><br><span class="line"><span class="string">      &lt;/svg&gt;</span></span><br><span class="line"><span class="string">    `</span>;</span><br><span class="line"></span><br><span class="line">    copyBtn.<span class="property">innerHTML</span> = copyIcon;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 按钮样式（浅灰底、缩小）</span></span><br><span class="line">    <span class="title class_">Object</span>.<span class="title function_">assign</span>(copyBtn.<span class="property">style</span>, &#123;</span><br><span class="line">      <span class="attr">position</span>: <span class="string">&#x27;absolute&#x27;</span>,</span><br><span class="line">      <span class="attr">top</span>: <span class="string">&#x27;8px&#x27;</span>,</span><br><span class="line">      <span class="attr">right</span>: <span class="string">&#x27;8px&#x27;</span>,</span><br><span class="line">      <span class="attr">padding</span>: <span class="string">&#x27;4px&#x27;</span>,</span><br><span class="line">      <span class="attr">background</span>: <span class="string">&#x27;#aaa&#x27;</span>, </span><br><span class="line">      <span class="attr">border</span>: <span class="string">&#x27;none&#x27;</span>,</span><br><span class="line">      <span class="attr">borderRadius</span>: <span class="string">&#x27;4px&#x27;</span>,</span><br><span class="line">      <span class="attr">cursor</span>: <span class="string">&#x27;pointer&#x27;</span>,</span><br><span class="line">      <span class="attr">opacity</span>: <span class="string">&#x27;0.85&#x27;</span>,</span><br><span class="line">      <span class="attr">zIndex</span>: <span class="number">1000</span>,</span><br><span class="line">      <span class="attr">transition</span>: <span class="string">&#x27;opacity 0.2s ease&#x27;</span>,</span><br><span class="line">      <span class="attr">boxShadow</span>: <span class="string">&#x27;0 1px 3px rgba(0, 0, 0, 0.15)&#x27;</span></span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    copyBtn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;mouseover&#x27;</span>, <span class="function">() =&gt;</span> copyBtn.<span class="property">style</span>.<span class="property">opacity</span> = <span class="string">&#x27;1&#x27;</span>);</span><br><span class="line">    copyBtn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;mouseout&#x27;</span>, <span class="function">() =&gt;</span> copyBtn.<span class="property">style</span>.<span class="property">opacity</span> = <span class="string">&#x27;0.85&#x27;</span>);</span><br><span class="line"></span><br><span class="line">    copyBtn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">const</span> code = figure.<span class="title function_">querySelector</span>(<span class="string">&#x27;td.code&#x27;</span>);</span><br><span class="line">      <span class="keyword">const</span> text = code ? code.<span class="property">innerText</span> : <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">      navigator.<span class="property">clipboard</span>.<span class="title function_">writeText</span>(text).<span class="title function_">then</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">        copyBtn.<span class="property">innerHTML</span> = checkIcon;</span><br><span class="line">        <span class="built_in">setTimeout</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">          copyBtn.<span class="property">innerHTML</span> = copyIcon;</span><br><span class="line">        &#125;, <span class="number">1000</span>);</span><br><span class="line">      &#125;);</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    figure.<span class="property">style</span>.<span class="property">position</span> = <span class="string">&#x27;relative&#x27;</span>;</span><br><span class="line">    figure.<span class="title function_">appendChild</span>(copyBtn);</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="2-在页面底部引入-JS-文件"><a href="#2-在页面底部引入-JS-文件" class="headerlink" title="2. 在页面底部引入 JS 文件"></a><strong>2. 在页面底部引入 JS 文件</strong></h2><p>打开文件：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/footer.ejs</span><br></pre></td></tr></table></figure>
-
-<p>在 <code>&lt;/footer&gt;</code> 标签之后添加以下代码：</p>
-<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;/js/code-copy.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<p>这样可以确保复制按钮脚本在页面加载完毕后自动运行。</p>
-<hr>
-<h2 id="3-生成并本地预览效果"><a href="#3-生成并本地预览效果" class="headerlink" title="3. 生成并本地预览效果"></a><strong>3. 生成并本地预览效果</strong></h2><p>运行以下命令，重新生成并启动本地预览：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
-
-<p>然后访问 <code>http://localhost:4000</code>，查看任意一段代码块，右上角应出现复制图标按钮。</p>
-<hr>
-<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
-]]></content>
-      <categories>
-        <category>Hexo</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-        <tag>博客</tag>
-        <tag>Blog</tag>
-        <tag>前端</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Convert PDF Tables to Readable Text</title>
     <url>/2025/03/28/Convert-PDF-Tables-to-Readable-Text/</url>
     <content><![CDATA[<h1 id="PDF-表格提取转为纯文本结构数据"><a href="#PDF-表格提取转为纯文本结构数据" class="headerlink" title="PDF 表格提取转为纯文本结构数据"></a>PDF 表格提取转为纯文本结构数据</h1><p>本文详细记录了如何使用读光的  Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。</p>
@@ -146,6 +93,59 @@
         <tag>PaddleOCR</tag>
         <tag>PDF</tag>
         <tag>AI</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Add Copy Button to Code Blocks in Hexo</title>
+    <url>/2025/03/26/Add-Copy-Button-to-Code-Blocks-in-Hexo/</url>
+    <content><![CDATA[<h1 id="Hexo-为代码块添加复制功能按钮"><a href="#Hexo-为代码块添加复制功能按钮" class="headerlink" title="Hexo 为代码块添加复制功能按钮"></a>Hexo 为代码块添加复制功能按钮</h1><p>本文详细记录如何在 Hexo 中为代码块添加一个 “复制” 按钮，实现一键复制代码功能。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="结构要求与适配说明"><a href="#结构要求与适配说明" class="headerlink" title="结构要求与适配说明"></a>结构要求与适配说明</h2><p>本复制功能脚本适用于以下结构的代码块：</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">figure</span> <span class="attr">class</span>=<span class="string">&quot;highlight&quot;</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">table</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">&quot;gutter&quot;</span>&gt;</span>...<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">&quot;code&quot;</span>&gt;</span><span class="tag">&lt;<span class="name">pre</span>&gt;</span><span class="tag">&lt;<span class="name">code</span>&gt;</span>...<span class="tag">&lt;/<span class="name">code</span>&gt;</span><span class="tag">&lt;/<span class="name">pre</span>&gt;</span><span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">table</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">figure</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>这是 Hexo 中多数主题（包括 Chic、NexT、Butterfly 等）默认的代码块渲染结构。</p>
+<h3 id="如何检查自己主题的结构是否符合？"><a href="#如何检查自己主题的结构是否符合？" class="headerlink" title="如何检查自己主题的结构是否符合？"></a>如何检查自己主题的结构是否符合？</h3><ol>
+<li>启动本地博客：<code>hexo s</code></li>
+<li>在浏览器中打开博客页面</li>
+<li>右键代码块 → 点击“检查”</li>
+<li>查看代码块的外层 HTML 标签是否为 <code>figure.highlight</code> </li>
+<li>或者直接在浏览器中点击 <code>F12</code> ，在 <code>Elements</code> 中直接搜索是否含有 <code>figure.highlight</code></li>
+</ol>
+<hr>
+<h2 id="1-创建-JavaScript-脚本文件"><a href="#1-创建-JavaScript-脚本文件" class="headerlink" title="1. 创建 JavaScript 脚本文件"></a><strong>1. 创建 JavaScript 脚本文件</strong></h2><p>在 Hexo 博客项目的根目录下创建 JS 脚本文件 <code>code-copy.js</code> ,如果没有js文件夹则自己创建：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">source/js/code-copy.js</span><br></pre></td></tr></table></figure>
+
+<p>并填入以下完整内容：</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span><br><span class="line">  <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;figure.highlight&#x27;</span>).<span class="title function_">forEach</span>(<span class="function">(<span class="params">figure</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (figure.<span class="title function_">querySelector</span>(<span class="string">&#x27;.copy-btn&#x27;</span>)) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> copyBtn = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(<span class="string">&#x27;button&#x27;</span>);</span><br><span class="line">    copyBtn.<span class="property">className</span> = <span class="string">&#x27;copy-btn&#x27;</span>;</span><br><span class="line">    copyBtn.<span class="property">title</span> = <span class="string">&#x27;复制&#x27;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 缩小后的复制图标（14*15）</span></span><br><span class="line">    <span class="keyword">const</span> copyIcon = <span class="string">`</span></span><br><span class="line"><span class="string">      &lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; height=&quot;14&quot; width=&quot;15&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;white&quot;&gt;</span></span><br><span class="line"><span class="string">        &lt;path d=&quot;M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 18H8V7h11v16z&quot;/&gt;</span></span><br><span class="line"><span class="string">      &lt;/svg&gt;</span></span><br><span class="line"><span class="string">    `</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 成功后显示的勾（14*15）</span></span><br><span class="line">    <span class="keyword">const</span> checkIcon = <span class="string">`</span></span><br><span class="line"><span class="string">      &lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; height=&quot;14&quot; width=&quot;15&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;#00cc66&quot;&gt;</span></span><br><span class="line"><span class="string">        &lt;path d=&quot;M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z&quot;/&gt;</span></span><br><span class="line"><span class="string">      &lt;/svg&gt;</span></span><br><span class="line"><span class="string">    `</span>;</span><br><span class="line"></span><br><span class="line">    copyBtn.<span class="property">innerHTML</span> = copyIcon;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 按钮样式（浅灰底、缩小）</span></span><br><span class="line">    <span class="title class_">Object</span>.<span class="title function_">assign</span>(copyBtn.<span class="property">style</span>, &#123;</span><br><span class="line">      <span class="attr">position</span>: <span class="string">&#x27;absolute&#x27;</span>,</span><br><span class="line">      <span class="attr">top</span>: <span class="string">&#x27;8px&#x27;</span>,</span><br><span class="line">      <span class="attr">right</span>: <span class="string">&#x27;8px&#x27;</span>,</span><br><span class="line">      <span class="attr">padding</span>: <span class="string">&#x27;4px&#x27;</span>,</span><br><span class="line">      <span class="attr">background</span>: <span class="string">&#x27;#aaa&#x27;</span>, </span><br><span class="line">      <span class="attr">border</span>: <span class="string">&#x27;none&#x27;</span>,</span><br><span class="line">      <span class="attr">borderRadius</span>: <span class="string">&#x27;4px&#x27;</span>,</span><br><span class="line">      <span class="attr">cursor</span>: <span class="string">&#x27;pointer&#x27;</span>,</span><br><span class="line">      <span class="attr">opacity</span>: <span class="string">&#x27;0.85&#x27;</span>,</span><br><span class="line">      <span class="attr">zIndex</span>: <span class="number">1000</span>,</span><br><span class="line">      <span class="attr">transition</span>: <span class="string">&#x27;opacity 0.2s ease&#x27;</span>,</span><br><span class="line">      <span class="attr">boxShadow</span>: <span class="string">&#x27;0 1px 3px rgba(0, 0, 0, 0.15)&#x27;</span></span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    copyBtn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;mouseover&#x27;</span>, <span class="function">() =&gt;</span> copyBtn.<span class="property">style</span>.<span class="property">opacity</span> = <span class="string">&#x27;1&#x27;</span>);</span><br><span class="line">    copyBtn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;mouseout&#x27;</span>, <span class="function">() =&gt;</span> copyBtn.<span class="property">style</span>.<span class="property">opacity</span> = <span class="string">&#x27;0.85&#x27;</span>);</span><br><span class="line"></span><br><span class="line">    copyBtn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">const</span> code = figure.<span class="title function_">querySelector</span>(<span class="string">&#x27;td.code&#x27;</span>);</span><br><span class="line">      <span class="keyword">const</span> text = code ? code.<span class="property">innerText</span> : <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">      navigator.<span class="property">clipboard</span>.<span class="title function_">writeText</span>(text).<span class="title function_">then</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">        copyBtn.<span class="property">innerHTML</span> = checkIcon;</span><br><span class="line">        <span class="built_in">setTimeout</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">          copyBtn.<span class="property">innerHTML</span> = copyIcon;</span><br><span class="line">        &#125;, <span class="number">1000</span>);</span><br><span class="line">      &#125;);</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    figure.<span class="property">style</span>.<span class="property">position</span> = <span class="string">&#x27;relative&#x27;</span>;</span><br><span class="line">    figure.<span class="title function_">appendChild</span>(copyBtn);</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="2-在页面底部引入-JS-文件"><a href="#2-在页面底部引入-JS-文件" class="headerlink" title="2. 在页面底部引入 JS 文件"></a><strong>2. 在页面底部引入 JS 文件</strong></h2><p>打开文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/footer.ejs</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>&lt;/footer&gt;</code> 标签之后添加以下代码：</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;/js/code-copy.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>这样可以确保复制按钮脚本在页面加载完毕后自动运行。</p>
+<hr>
+<h2 id="3-生成并本地预览效果"><a href="#3-生成并本地预览效果" class="headerlink" title="3. 生成并本地预览效果"></a><strong>3. 生成并本地预览效果</strong></h2><p>运行以下命令，重新生成并启动本地预览：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+
+<p>然后访问 <code>http://localhost:4000</code>，查看任意一段代码块，右上角应出现复制图标按钮。</p>
+<hr>
+<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+]]></content>
+      <categories>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>Blog</tag>
+        <tag>前端</tag>
       </tags>
   </entry>
   <entry>
@@ -348,6 +348,342 @@
       </tags>
   </entry>
   <entry>
+    <title>GraphRag Visualization</title>
+    <url>/2025/04/11/GraphRag-Visualization/</url>
+    <content><![CDATA[<h1 id="GraphRag-图谱可视化"><a href="#GraphRag-图谱可视化" class="headerlink" title="GraphRag 图谱可视化"></a>GraphRag 图谱可视化</h1><p>本文将详细介绍如何将微软 GraphRAG 框架生成的 <code>entities.parquet</code> 与 <code>relationships.parquet</code> 文件转换为 GraphML 图结构在 Gephi 中实现可视化。我们将逐步解释数据格式、图构建逻辑及 Python 代码实现的每个模块功能。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="效果展示"><a href="#效果展示" class="headerlink" title="效果展示"></a>效果展示</h2><p><img src="https://github.com/user-attachments/assets/df017c54-9d42-4708-bf90-7a6a7f25a632" alt="image"></p>
+<hr>
+<h2 id="1-GraphRAG-简介与数据说明"><a href="#1-GraphRAG-简介与数据说明" class="headerlink" title="1. GraphRAG 简介与数据说明"></a>1. GraphRAG 简介与数据说明</h2><p>Microsoft GraphRAG 是一种结合图结构与检索增强生成（<strong>Retrieval-Augmented Generation</strong>）的知识增强方案。它会自动从文本中提取实体及其关系，分别存储为 <code>entities.parquet</code> 和 <code>relationships.parquet</code> 文件。用户可基于此图谱进行可视化分析、结构化检索及上下文增强生成任务。</p>
+<p>如果不知道怎么配置 GraphRag，可以参考<a href="https://microsoft.github.io/graphrag/get_started/">官方文档</a></p>
+<p>GraphRAG 输出文件说明如下：</p>
+<h3 id="1-entities-parquet"><a href="#1-entities-parquet" class="headerlink" title="1. entities.parquet"></a>1. <code>entities.parquet</code></h3><p>该文件用于存储图中的节点信息，每一行表示一个实体（节点）。字段如下：</p>
+<table>
+<thead>
+<tr>
+<th>字段名</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>实体的唯一标识（主键）</td>
+</tr>
+<tr>
+<td><code>human_readable_id</code></td>
+<td>可读ID（序号或别名）</td>
+</tr>
+<tr>
+<td><code>title</code></td>
+<td>实体的标题或名称</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td>实体类型（如概念&#x2F;术语）</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>实体的文本描述信息</td>
+</tr>
+<tr>
+<td><code>text_unit_ids</code></td>
+<td>所属文本单元ID集合</td>
+</tr>
+<tr>
+<td><code>frequency</code></td>
+<td>出现频率</td>
+</tr>
+<tr>
+<td><code>degree</code></td>
+<td>在图中的连接度（可选）</td>
+</tr>
+<tr>
+<td><code>x</code>, <code>y</code></td>
+<td>可视化坐标（可选）</td>
+</tr>
+</tbody></table>
+<h3 id="示例："><a href="#示例：" class="headerlink" title="示例："></a>示例：</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">id: 053f7bde-5adf-4185-9964-0d51ccc5c313</span><br><span class="line">title: Transformer Model</span><br><span class="line">type: Concept</span><br><span class="line">description: A deep learning model architecture...</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="2-relationships-parquet"><a href="#2-relationships-parquet" class="headerlink" title="2. relationships.parquet"></a>2. <code>relationships.parquet</code></h3><p>该文件表示图中的边（关系），每一行表示两个实体之间的连线及其属性。</p>
+<table>
+<thead>
+<tr>
+<th>字段名</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>关系的唯一ID</td>
+</tr>
+<tr>
+<td><code>human_readable_id</code></td>
+<td>可读ID</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>起点实体的ID（对应entities.id）</td>
+</tr>
+<tr>
+<td><code>target</code></td>
+<td>终点实体的ID</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>边的标签（如”引出”、”属于”）</td>
+</tr>
+<tr>
+<td><code>weight</code></td>
+<td>权重值（如关系强度）</td>
+</tr>
+<tr>
+<td><code>combined_degree</code></td>
+<td>综合度量（可选）</td>
+</tr>
+<tr>
+<td><code>text_unit_ids</code></td>
+<td>来源文本ID集合</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="2-从-Parquet-到-GraphML-的字段映射关系"><a href="#2-从-Parquet-到-GraphML-的字段映射关系" class="headerlink" title="2. 从 Parquet 到 GraphML 的字段映射关系"></a>2. 从 Parquet 到 GraphML 的字段映射关系</h2><h3 id="1-entities-parquet-→-GraphML-节点（node）"><a href="#1-entities-parquet-→-GraphML-节点（node）" class="headerlink" title="1. entities.parquet → GraphML 节点（node）"></a>1. <code>entities.parquet</code> → GraphML 节点（node）</h3><table>
+<thead>
+<tr>
+<th><code>.parquet</code> 字段</th>
+<th>GraphML中映射内容</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td><code>node id</code></td>
+<td>节点的唯一标识，GraphML 中 <code>&lt;node id=&quot;...&quot;&gt;</code></td>
+</tr>
+<tr>
+<td><code>title</code></td>
+<td><code>label</code>（属性）</td>
+<td>节点显示标签</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td><code>type</code>（属性）</td>
+<td>节点类型</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td><code>description</code>（属性）</td>
+<td>节点的文本描述</td>
+</tr>
+<tr>
+<td><code>text_unit_ids</code></td>
+<td><code>text_unit_ids</code>（属性）</td>
+<td>来源文本段落 ID</td>
+</tr>
+<tr>
+<td><code>frequency</code></td>
+<td><code>frequency</code>（属性）</td>
+<td>出现频率（可选）</td>
+</tr>
+<tr>
+<td><code>degree</code></td>
+<td><code>degree</code>（属性）</td>
+<td>图中连接度（可选）</td>
+</tr>
+<tr>
+<td><code>x</code>, <code>y</code></td>
+<td><code>x</code>, <code>y</code>（属性）</td>
+<td>可视化坐标位置（可选）</td>
+</tr>
+</tbody></table>
+<h3 id="2-relationships-parquet-→-GraphML-边（edge）"><a href="#2-relationships-parquet-→-GraphML-边（edge）" class="headerlink" title="2. relationships.parquet → GraphML 边（edge）"></a>2. <code>relationships.parquet</code> → GraphML 边（edge）</h3><table>
+<thead>
+<tr>
+<th><code>.parquet</code> 字段</th>
+<th>GraphML中映射内容</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>source</code></td>
+<td><code>edge source</code></td>
+<td>边的起点</td>
+</tr>
+<tr>
+<td><code>target</code></td>
+<td><code>edge target</code></td>
+<td>边的终点</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td><code>label</code>（属性）</td>
+<td>边的标签</td>
+</tr>
+<tr>
+<td><code>weight</code></td>
+<td><code>weight</code>（属性）</td>
+<td>边的权重</td>
+</tr>
+<tr>
+<td><code>text_unit_ids</code></td>
+<td><code>text_unit_ids</code>（属性）</td>
+<td>来源文本 ID</td>
+</tr>
+<tr>
+<td><code>combined_degree</code></td>
+<td><code>combined_degree</code>（属性）</td>
+<td>综合度量（可选）</td>
+</tr>
+</tbody></table>
+<h3 id="GraphML-输出结构示例"><a href="#GraphML-输出结构示例" class="headerlink" title="GraphML 输出结构示例"></a>GraphML 输出结构示例</h3><figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">node</span> <span class="attr">id</span>=<span class="string">&quot;523ff398-4659-461e-810a-1b00e4af85df&quot;</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">data</span> <span class="attr">key</span>=<span class="string">&quot;label&quot;</span>&gt;</span>Transformer Model<span class="tag">&lt;/<span class="name">data</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">data</span> <span class="attr">key</span>=<span class="string">&quot;type&quot;</span>&gt;</span>Concept<span class="tag">&lt;/<span class="name">data</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">data</span> <span class="attr">key</span>=<span class="string">&quot;description&quot;</span>&gt;</span>A deep learning model architecture...<span class="tag">&lt;/<span class="name">data</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">data</span> <span class="attr">key</span>=<span class="string">&quot;frequency&quot;</span>&gt;</span>3<span class="tag">&lt;/<span class="name">data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">node</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">edge</span> <span class="attr">source</span>=<span class="string">&quot;523ff398-4659-461e-810a-1b00e4af85df&quot;</span> <span class="attr">target</span>=<span class="string">&quot;23a77be7-1b36-4fac-a505-f9424d3dbce2&quot;</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">data</span> <span class="attr">key</span>=<span class="string">&quot;label&quot;</span>&gt;</span>based on<span class="tag">&lt;/<span class="name">data</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">data</span> <span class="attr">key</span>=<span class="string">&quot;weight&quot;</span>&gt;</span>1.0<span class="tag">&lt;/<span class="name">data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">edge</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="3-代码结构与功能解释"><a href="#3-代码结构与功能解释" class="headerlink" title="3. 代码结构与功能解释"></a>3. 代码结构与功能解释</h2><h3 id="文件选择界面"><a href="#文件选择界面" class="headerlink" title="文件选择界面"></a>文件选择界面</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">root = tk.Tk()</span><br><span class="line">root.withdraw()</span><br><span class="line">entities_path = filedialog.askopenfilename(...)</span><br><span class="line">relations_path = filedialog.askopenfilename(...)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>利用 <code>tkinter</code> 弹出图形界面，分别选择实体文件和关系文件路径。</li>
+<li>若用户未选择文件，则程序中断退出。</li>
+</ul>
+<h3 id="加载-parquet-文件"><a href="#加载-parquet-文件" class="headerlink" title="加载 parquet 文件"></a>加载 parquet 文件</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">entities_df = pd.read_parquet(entities_path)</span><br><span class="line">relations_df = pd.read_parquet(relations_path)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>使用 <code>pandas</code> 将 <code>.parquet</code> 文件读取为 <code>DataFrame</code>。</li>
+<li>后续操作以 <code>DataFrame</code> 行为单位进行图构建。</li>
+</ul>
+<h3 id="创建图结构"><a href="#创建图结构" class="headerlink" title="创建图结构"></a>创建图结构</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">G = nx.DiGraph()</span><br></pre></td></tr></table></figure>
+<ul>
+<li>构建 NetworkX 有向图对象 <code>DiGraph()</code>。</li>
+<li>若希望生成无向图，替换为 <code>nx.Graph()</code> 即可。</li>
+</ul>
+<h3 id="添加节点"><a href="#添加节点" class="headerlink" title="添加节点"></a>添加节点</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> _, row <span class="keyword">in</span> entities_df.iterrows():</span><br><span class="line">    G.add_node(row[<span class="string">&quot;id&quot;</span>], label=row[<span class="string">&quot;title&quot;</span>], <span class="built_in">type</span>=row[<span class="string">&quot;type&quot;</span>], description=row[<span class="string">&quot;description&quot;</span>])</span><br></pre></td></tr></table></figure>
+<ul>
+<li>遍历 <code>entities_df</code> 的每一行。</li>
+<li>每行数据作为图中的一个节点：<ul>
+<li>ID 为 <code>row[&quot;id&quot;]</code></li>
+<li>附带属性包括 <code>label</code>, <code>type</code>, <code>description</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="添加边"><a href="#添加边" class="headerlink" title="添加边"></a>添加边</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> _, row <span class="keyword">in</span> relations_df.iterrows():</span><br><span class="line">    G.add_edge(row[<span class="string">&quot;source&quot;</span>], row[<span class="string">&quot;target&quot;</span>], label=row[<span class="string">&quot;description&quot;</span>], weight=row.get(<span class="string">&quot;weight&quot;</span>, <span class="number">1.0</span>))</span><br></pre></td></tr></table></figure>
+<ul>
+<li>遍历 <code>relationships_df</code> 的每一行。</li>
+<li>使用 <code>add_edge(source, target, **attrs)</code> 方式添加有向边。</li>
+<li>边的属性包括：<ul>
+<li><code>label</code>: 描述关系含义</li>
+<li><code>weight</code>: 权重，默认为 1.0</li>
+</ul>
+</li>
+</ul>
+<h3 id="导出为-GraphML-文件"><a href="#导出为-GraphML-文件" class="headerlink" title="导出为 GraphML 文件"></a>导出为 GraphML 文件</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">output_path = os.path.join(output_dir, <span class="string">&quot;output.graphml&quot;</span>)</span><br><span class="line">nx.write_graphml(G, output_path, encoding=<span class="string">&quot;utf-8&quot;</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>设置输出路径到本地 <code>output_graphml/</code> 文件夹中。</li>
+<li>利用 <code>networkx.write_graphml()</code> 将图写为 <code>.graphml</code> 文件。</li>
+<li>GraphML 是 XML 格式，便于被 Gephi、Cytoscape 等图分析工具读取。</li>
+</ul>
+<hr>
+<h2 id="4-将-GraphML-导入-Gephi-实现可视化"><a href="#4-将-GraphML-导入-Gephi-实现可视化" class="headerlink" title="4. 将 GraphML 导入 Gephi 实现可视化"></a>4. 将 GraphML 导入 Gephi 实现可视化</h2><h3 id="1-下载-Gephi"><a href="#1-下载-Gephi" class="headerlink" title="1. 下载 Gephi"></a>1. 下载 Gephi</h3><p>下载地址：<a href="https://gephi.org/users/download/">https://gephi.org/users/download/</a></p>
+<h3 id="2-在-Gephi-中打开转换后的-graphml-文件"><a href="#2-在-Gephi-中打开转换后的-graphml-文件" class="headerlink" title="2. 在 Gephi 中打开转换后的.graphml 文件"></a>2. 在 Gephi 中打开转换后的<code>.graphml</code> 文件</h3><p>点击左上方的 <strong>数据资料</strong>，查看节点与边的信息是否均被正确导入。</p>
+<h3 id="3-节点与边的渲染"><a href="#3-节点与边的渲染" class="headerlink" title="3. 节点与边的渲染"></a>3. 节点与边的渲染</h3><ul>
+<li>打开 <strong>窗口</strong>, 选择 <strong>外观</strong>。</li>
+<li>在 <strong>外观</strong> 中的 <strong>节点</strong> 窗口，点击 <strong>分割</strong> ，选择 <strong>description</strong> 或是 <strong>type</strong> 进行渲染，点击 <strong>应用</strong>。</li>
+<li>如果需要节点与边的具体信息被渲染在窗口，根据图中的配置自行处理。</li>
+</ul>
+<p><img src="https://github.com/user-attachments/assets/8a2cfa7c-de43-4200-a7f4-74d2e0b57f7b" alt="image"></p>
+<hr>
+<p>该项目代码参考 <a href="https://github.com/microsoft/graphrag.git">GraphRag</a>。</p>
+]]></content>
+      <categories>
+        <category>Knowledge Graph</category>
+      </categories>
+      <tags>
+        <tag>AI</tag>
+        <tag>LLM</tag>
+        <tag>大模型</tag>
+        <tag>GraphRAG</tag>
+        <tag>RAG</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hexo and Chic themes add Giscus comment system</title>
+    <url>/2025/03/24/Hexo-and-Chic-themes-add-Giscus-comment-system/</url>
+    <content><![CDATA[<h1 id="Hexo-Chic-主题集成-Giscus-评论系统详细教程"><a href="#Hexo-Chic-主题集成-Giscus-评论系统详细教程" class="headerlink" title="Hexo + Chic 主题集成 Giscus 评论系统详细教程"></a>Hexo + Chic 主题集成 Giscus 评论系统详细教程</h1><p>本教程将教你如何在 Hexo 博客（使用 Chic 主题）中添加 Giscus 评论系统，让你的博客拥有简洁现代的评论功能，并且支持明暗模式自动切换。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="一、准备工作"><a href="#一、准备工作" class="headerlink" title="一、准备工作"></a>一、准备工作</h2><h3 id="1-确保你已完成以下条件："><a href="#1-确保你已完成以下条件：" class="headerlink" title="1. 确保你已完成以下条件："></a>1. 确保你已完成以下条件：</h3><ul>
+<li>博客已搭建并使用 Hexo 框架</li>
+<li>正在使用 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 主题</li>
+<li>博客托管在 GitHub</li>
+</ul>
+<h3 id="2-启用-GitHub-Discussions-功能"><a href="#2-启用-GitHub-Discussions-功能" class="headerlink" title="2. 启用 GitHub Discussions 功能"></a>2. 启用 GitHub Discussions 功能</h3><ol>
+<li>打开你的博客仓库页面</li>
+<li>点击顶部的 <strong>Settings</strong></li>
+<li>在 <strong>General</strong> 中 <strong>Features</strong> 区域点击 <strong>Discussions</strong></li>
+<li>勾选 <strong>“Enable discussions for this repository”</strong></li>
+</ol>
+<p><img src="https://github.com/user-attachments/assets/6686f60e-f2d4-4a87-8b0d-d3425070c2cd" alt="setting_discussions"></p>
+<hr>
+<h2 id="二、使用-Giscus-app-获取评论配置代码"><a href="#二、使用-Giscus-app-获取评论配置代码" class="headerlink" title="二、使用 Giscus.app 获取评论配置代码"></a>二、使用 Giscus.app 获取评论配置代码</h2><ol>
+<li>打开 Giscus 官网：<a href="https://giscus.app/">https://giscus.app</a></li>
+<li>登录 GitHub 账号</li>
+<li>安装 <a href="https://github.com/apps/giscus">giscus</a> app  ，否则访客将无法评论和回应</li>
+<li>按照如下选择进行配置：<ul>
+<li>Repository: 选择你的博客仓库（注意填写格式为 <strong>用户名&#x2F;仓库名</strong>）</li>
+<li>Discussion Category: 建议选择 <strong>Announcements</strong>（防止读者随意发帖）</li>
+<li>Page ↔️ Discussion Mapping: 选择 <strong>pathname</strong></li>
+<li>Theme: 选择任意（我们后续会动态控制）</li>
+<li>Language: 选择 <code>zh-CN</code></li>
+</ul>
+</li>
+<li>点击页面底部的 <strong>“Copy code snippet”</strong>，复制生成的 <code>&lt;script&gt;</code> 标签代码</li>
+</ol>
+<hr>
+<h2 id="三、创建评论模块文件"><a href="#三、创建评论模块文件" class="headerlink" title="三、创建评论模块文件"></a>三、创建评论模块文件</h2><h3 id="1-打开博客主题目录"><a href="#1-打开博客主题目录" class="headerlink" title="1. 打开博客主题目录"></a>1. 打开博客主题目录</h3><p>路径：<code>themes/hexo-theme-Chic/layout/_partial/</code></p>
+<h3 id="2-创建或编辑-livers-ejs-文件"><a href="#2-创建或编辑-livers-ejs-文件" class="headerlink" title="2. 创建或编辑 livers.ejs 文件"></a>2. 创建或编辑 <code>livers.ejs</code> 文件</h3><p>将 Giscus 中生成的 <code>&lt;script&gt;</code> 标签代码填入文件（注意部分参数的区别），同时增加主题自动同步功能代码：</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- Giscus 评论区挂载点 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">&quot;giscus-container&quot;</span> <span class="attr">style</span>=<span class="string">&quot;margin-top: 2.5rem;&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- Giscus 动态加载脚本：初始加载 + 明暗主题切换 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">createGiscus</span>(<span class="params">theme</span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> giscusContainer = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;giscus-container&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">if</span> (!giscusContainer) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 清除旧的评论 iframe</span></span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="property">innerHTML</span> = <span class="string">&#x27;&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> script = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(<span class="string">&#x27;script&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">src</span> = <span class="string">&#x27;https://giscus.app/client.js&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 替换为你的 GitHub 仓库信息（格式：username/repo）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo&#x27;</span>, <span class="string">&#x27;your-github-username/your-repo-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">   <span class="comment">// 替换为你的 repo-id 和 category-id（在 giscus.app 配置页面生成）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo-id&#x27;</span>, <span class="string">&#x27;your-repo-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category&#x27;</span>, <span class="string">&#x27;your-category-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category-id&#x27;</span>, <span class="string">&#x27;your-category-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 其他常规推荐设置</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-mapping&#x27;</span>, <span class="string">&#x27;pathname&#x27;</span>);           <span class="comment">// 用页面路径匹配评论帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-strict&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);                   <span class="comment">// 若无匹配帖则创建新帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-reactions-enabled&#x27;</span>, <span class="string">&#x27;1&#x27;</span>);        <span class="comment">// 启用表情反应</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-emit-metadata&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);            <span class="comment">// 不输出元数据</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-input-position&#x27;</span>, <span class="string">&#x27;top&#x27;</span>);         <span class="comment">// 输入框在评论上方</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-theme&#x27;</span>, theme);                </span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-lang&#x27;</span>, <span class="string">&#x27;zh-CN&#x27;</span>);                 <span class="comment">// 中文界面</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;crossorigin&#x27;</span>, <span class="string">&#x27;anonymous&#x27;</span>);           <span class="comment">// 跨域资源安全</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">async</span> = <span class="literal">true</span>;                                       </span></span><br><span class="line"><span class="language-javascript">     </span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="title function_">appendChild</span>(script);</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">getCurrentTheme</span>(<span class="params"></span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">return</span> <span class="variable language_">document</span>.<span class="property">body</span>.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;dark-theme&#x27;</span>) ? <span class="string">&#x27;dark&#x27;</span> : <span class="string">&#x27;light&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 页面首次加载，根据当前主题挂载评论</span></span></span><br><span class="line"><span class="language-javascript">    <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听按钮点击切换主题 → 重载评论区</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> buttons = [</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">querySelector</span>(<span class="string">&#x27;.toggleBtn&#x27;</span>),</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;mobile-toggle-theme&#x27;</span>)</span></span><br><span class="line"><span class="language-javascript">    ];</span></span><br><span class="line"><span class="language-javascript">    buttons.<span class="title function_">forEach</span>(<span class="function"><span class="params">btn</span> =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="keyword">if</span> (!btn) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript">      btn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="built_in">setTimeout</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">          <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">        &#125;, <span class="number">400</span>); <span class="comment">// 稍作延迟，确保 class 切换完毕</span></span></span><br><span class="line"><span class="language-javascript">      &#125;);</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听 body class 改变（保险方案）</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> observer = <span class="keyword">new</span> <span class="title class_">MutationObserver</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript">    observer.<span class="title function_">observe</span>(<span class="variable language_">document</span>.<span class="property">body</span>, &#123; <span class="attr">attributes</span>: <span class="literal">true</span>, <span class="attr">attributeFilter</span>: [<span class="string">&#x27;class&#x27;</span>] &#125;);</span></span><br><span class="line"><span class="language-javascript">  &#125;);</span></span><br><span class="line"><span class="language-javascript"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>⚠️ 请将 <code>data-repo-id</code> 和 <code>data-category-id</code> 替换为你从 giscus.app 获取的值。</p>
+</blockquote>
+<hr>
+<h2 id="四、引入评论模块到文章模板"><a href="#四、引入评论模块到文章模板" class="headerlink" title="四、引入评论模块到文章模板"></a>四、引入评论模块到文章模板</h2><p>打开文件：<code>themes/hexo-theme-Chic/layout/_page/post.ejs</code></p>
+<p>找到代码底部，在 <code>&lt;/article&gt;</code> 上方添加一行代码 <code>&lt;%- partial(&#39;_partial/livers&#39;) %&gt;</code> ：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">        &lt;section class=&quot;post-nav&quot;&gt;</span><br><span class="line">            &lt;% if(post.prev)&#123; %&gt;</span><br><span class="line">                &lt;a class=&quot;prev&quot; rel=&quot;prev&quot; href=&quot;&lt;%- url_for(post.prev.path)%&gt;&quot;&gt;&lt;%- post.prev.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">            &lt;% if(post.next)&#123; %&gt;</span><br><span class="line">            &lt;a class=&quot;next&quot; rel=&quot;next&quot; href=&quot;&lt;%- url_for(post.next.path)%&gt;&quot;&gt;&lt;%- post.next.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">        &lt;/section&gt;</span><br><span class="line"></span><br><span class="line">	&lt;%- partial(&#x27;_partial/livers&#x27;) %&gt;</span><br><span class="line"></span><br><span class="line">    &lt;/article&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+
+<p>这会让评论区出现在每篇文章的底部。</p>
+<hr>
+<h2 id="五、重新部署博客"><a href="#五、重新部署博客" class="headerlink" title="五、重新部署博客"></a>五、重新部署博客</h2><p>执行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+
+<p>然后访问你的博客文章页面，应该就能看到 Giscus 评论框</p>
+<hr>
+<h2 id="成功效果"><a href="#成功效果" class="headerlink" title="成功效果"></a>成功效果</h2><p><img src="https://github.com/user-attachments/assets/b75a7ffd-d99b-4d4a-9e95-cb43b06b36aa" alt="discussions"> </p>
+<ul>
+<li>支持 GitHub 登录评论</li>
+<li>评论存储在 Discussions 中，便于管理</li>
+<li>评论区支持明暗主题自动切换，与 Chic 博客风格一致</li>
+</ul>
+<hr>
+<p>如有问题，可以：</p>
+<ul>
+<li>检查浏览器控制台是否有加载错误</li>
+<li>确保 repo-id 和 category-id 正确</li>
+<li>确保启用了 Discussions 功能</li>
+</ul>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+]]></content>
+      <categories>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>Blog</tag>
+        <tag>前端</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Hexo AI Assistant</title>
     <url>/2025/03/29/Hexo-AI-Assistant/</url>
     <content><![CDATA[<h1 id="Hexo-博客专属AI助手"><a href="#Hexo-博客专属AI助手" class="headerlink" title="Hexo 博客专属AI助手"></a>Hexo 博客专属AI助手</h1><p>本项目通过向量检索 + 大语言模型（RAG）结合本地 Hexo 博客内容，实现基于语义的智能问答接口。</p>
@@ -443,175 +779,17 @@
         <category>Hexo</category>
       </categories>
       <tags>
+        <tag>AI</tag>
         <tag>Hexo</tag>
         <tag>博客</tag>
         <tag>Blog</tag>
         <tag>前端</tag>
-        <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
         <tag>Agent</tag>
-        <tag>后端</tag>
         <tag>RAG</tag>
+        <tag>后端</tag>
         <tag>Ngrok</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Hexo and Chic themes add Giscus comment system</title>
-    <url>/2025/03/24/Hexo-and-Chic-themes-add-Giscus-comment-system/</url>
-    <content><![CDATA[<h1 id="Hexo-Chic-主题集成-Giscus-评论系统详细教程"><a href="#Hexo-Chic-主题集成-Giscus-评论系统详细教程" class="headerlink" title="Hexo + Chic 主题集成 Giscus 评论系统详细教程"></a>Hexo + Chic 主题集成 Giscus 评论系统详细教程</h1><p>本教程将教你如何在 Hexo 博客（使用 Chic 主题）中添加 Giscus 评论系统，让你的博客拥有简洁现代的评论功能，并且支持明暗模式自动切换。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
-<hr>
-<h2 id="一、准备工作"><a href="#一、准备工作" class="headerlink" title="一、准备工作"></a>一、准备工作</h2><h3 id="1-确保你已完成以下条件："><a href="#1-确保你已完成以下条件：" class="headerlink" title="1. 确保你已完成以下条件："></a>1. 确保你已完成以下条件：</h3><ul>
-<li>博客已搭建并使用 Hexo 框架</li>
-<li>正在使用 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 主题</li>
-<li>博客托管在 GitHub</li>
-</ul>
-<h3 id="2-启用-GitHub-Discussions-功能"><a href="#2-启用-GitHub-Discussions-功能" class="headerlink" title="2. 启用 GitHub Discussions 功能"></a>2. 启用 GitHub Discussions 功能</h3><ol>
-<li>打开你的博客仓库页面</li>
-<li>点击顶部的 <strong>Settings</strong></li>
-<li>在 <strong>General</strong> 中 <strong>Features</strong> 区域点击 <strong>Discussions</strong></li>
-<li>勾选 <strong>“Enable discussions for this repository”</strong></li>
-</ol>
-<p><img src="https://github.com/user-attachments/assets/6686f60e-f2d4-4a87-8b0d-d3425070c2cd" alt="setting_discussions"></p>
-<hr>
-<h2 id="二、使用-Giscus-app-获取评论配置代码"><a href="#二、使用-Giscus-app-获取评论配置代码" class="headerlink" title="二、使用 Giscus.app 获取评论配置代码"></a>二、使用 Giscus.app 获取评论配置代码</h2><ol>
-<li>打开 Giscus 官网：<a href="https://giscus.app/">https://giscus.app</a></li>
-<li>登录 GitHub 账号</li>
-<li>安装 <a href="https://github.com/apps/giscus">giscus</a> app  ，否则访客将无法评论和回应</li>
-<li>按照如下选择进行配置：<ul>
-<li>Repository: 选择你的博客仓库（注意填写格式为 <strong>用户名&#x2F;仓库名</strong>）</li>
-<li>Discussion Category: 建议选择 <strong>Announcements</strong>（防止读者随意发帖）</li>
-<li>Page ↔️ Discussion Mapping: 选择 <strong>pathname</strong></li>
-<li>Theme: 选择任意（我们后续会动态控制）</li>
-<li>Language: 选择 <code>zh-CN</code></li>
-</ul>
-</li>
-<li>点击页面底部的 <strong>“Copy code snippet”</strong>，复制生成的 <code>&lt;script&gt;</code> 标签代码</li>
-</ol>
-<hr>
-<h2 id="三、创建评论模块文件"><a href="#三、创建评论模块文件" class="headerlink" title="三、创建评论模块文件"></a>三、创建评论模块文件</h2><h3 id="1-打开博客主题目录"><a href="#1-打开博客主题目录" class="headerlink" title="1. 打开博客主题目录"></a>1. 打开博客主题目录</h3><p>路径：<code>themes/hexo-theme-Chic/layout/_partial/</code></p>
-<h3 id="2-创建或编辑-livers-ejs-文件"><a href="#2-创建或编辑-livers-ejs-文件" class="headerlink" title="2. 创建或编辑 livers.ejs 文件"></a>2. 创建或编辑 <code>livers.ejs</code> 文件</h3><p>将 Giscus 中生成的 <code>&lt;script&gt;</code> 标签代码填入文件（注意部分参数的区别），同时增加主题自动同步功能代码：</p>
-<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- Giscus 评论区挂载点 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">&quot;giscus-container&quot;</span> <span class="attr">style</span>=<span class="string">&quot;margin-top: 2.5rem;&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- Giscus 动态加载脚本：初始加载 + 明暗主题切换 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">createGiscus</span>(<span class="params">theme</span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> giscusContainer = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;giscus-container&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">if</span> (!giscusContainer) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 清除旧的评论 iframe</span></span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="property">innerHTML</span> = <span class="string">&#x27;&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> script = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(<span class="string">&#x27;script&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">src</span> = <span class="string">&#x27;https://giscus.app/client.js&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 替换为你的 GitHub 仓库信息（格式：username/repo）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo&#x27;</span>, <span class="string">&#x27;your-github-username/your-repo-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">   <span class="comment">// 替换为你的 repo-id 和 category-id（在 giscus.app 配置页面生成）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo-id&#x27;</span>, <span class="string">&#x27;your-repo-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category&#x27;</span>, <span class="string">&#x27;your-category-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category-id&#x27;</span>, <span class="string">&#x27;your-category-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 其他常规推荐设置</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-mapping&#x27;</span>, <span class="string">&#x27;pathname&#x27;</span>);           <span class="comment">// 用页面路径匹配评论帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-strict&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);                   <span class="comment">// 若无匹配帖则创建新帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-reactions-enabled&#x27;</span>, <span class="string">&#x27;1&#x27;</span>);        <span class="comment">// 启用表情反应</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-emit-metadata&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);            <span class="comment">// 不输出元数据</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-input-position&#x27;</span>, <span class="string">&#x27;top&#x27;</span>);         <span class="comment">// 输入框在评论上方</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-theme&#x27;</span>, theme);                </span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-lang&#x27;</span>, <span class="string">&#x27;zh-CN&#x27;</span>);                 <span class="comment">// 中文界面</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;crossorigin&#x27;</span>, <span class="string">&#x27;anonymous&#x27;</span>);           <span class="comment">// 跨域资源安全</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">async</span> = <span class="literal">true</span>;                                       </span></span><br><span class="line"><span class="language-javascript">     </span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="title function_">appendChild</span>(script);</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">getCurrentTheme</span>(<span class="params"></span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">return</span> <span class="variable language_">document</span>.<span class="property">body</span>.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;dark-theme&#x27;</span>) ? <span class="string">&#x27;dark&#x27;</span> : <span class="string">&#x27;light&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 页面首次加载，根据当前主题挂载评论</span></span></span><br><span class="line"><span class="language-javascript">    <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听按钮点击切换主题 → 重载评论区</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> buttons = [</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">querySelector</span>(<span class="string">&#x27;.toggleBtn&#x27;</span>),</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;mobile-toggle-theme&#x27;</span>)</span></span><br><span class="line"><span class="language-javascript">    ];</span></span><br><span class="line"><span class="language-javascript">    buttons.<span class="title function_">forEach</span>(<span class="function"><span class="params">btn</span> =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="keyword">if</span> (!btn) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript">      btn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="built_in">setTimeout</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">          <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">        &#125;, <span class="number">400</span>); <span class="comment">// 稍作延迟，确保 class 切换完毕</span></span></span><br><span class="line"><span class="language-javascript">      &#125;);</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听 body class 改变（保险方案）</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> observer = <span class="keyword">new</span> <span class="title class_">MutationObserver</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript">    observer.<span class="title function_">observe</span>(<span class="variable language_">document</span>.<span class="property">body</span>, &#123; <span class="attr">attributes</span>: <span class="literal">true</span>, <span class="attr">attributeFilter</span>: [<span class="string">&#x27;class&#x27;</span>] &#125;);</span></span><br><span class="line"><span class="language-javascript">  &#125;);</span></span><br><span class="line"><span class="language-javascript"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>⚠️ 请将 <code>data-repo-id</code> 和 <code>data-category-id</code> 替换为你从 giscus.app 获取的值。</p>
-</blockquote>
-<hr>
-<h2 id="四、引入评论模块到文章模板"><a href="#四、引入评论模块到文章模板" class="headerlink" title="四、引入评论模块到文章模板"></a>四、引入评论模块到文章模板</h2><p>打开文件：<code>themes/hexo-theme-Chic/layout/_page/post.ejs</code></p>
-<p>找到代码底部，在 <code>&lt;/article&gt;</code> 上方添加一行代码 <code>&lt;%- partial(&#39;_partial/livers&#39;) %&gt;</code> ：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">        &lt;section class=&quot;post-nav&quot;&gt;</span><br><span class="line">            &lt;% if(post.prev)&#123; %&gt;</span><br><span class="line">                &lt;a class=&quot;prev&quot; rel=&quot;prev&quot; href=&quot;&lt;%- url_for(post.prev.path)%&gt;&quot;&gt;&lt;%- post.prev.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">            &lt;% if(post.next)&#123; %&gt;</span><br><span class="line">            &lt;a class=&quot;next&quot; rel=&quot;next&quot; href=&quot;&lt;%- url_for(post.next.path)%&gt;&quot;&gt;&lt;%- post.next.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">        &lt;/section&gt;</span><br><span class="line"></span><br><span class="line">	&lt;%- partial(&#x27;_partial/livers&#x27;) %&gt;</span><br><span class="line"></span><br><span class="line">    &lt;/article&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-
-<p>这会让评论区出现在每篇文章的底部。</p>
-<hr>
-<h2 id="五、重新部署博客"><a href="#五、重新部署博客" class="headerlink" title="五、重新部署博客"></a>五、重新部署博客</h2><p>执行以下命令：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
-
-<p>然后访问你的博客文章页面，应该就能看到 Giscus 评论框</p>
-<hr>
-<h2 id="成功效果"><a href="#成功效果" class="headerlink" title="成功效果"></a>成功效果</h2><p><img src="https://github.com/user-attachments/assets/b75a7ffd-d99b-4d4a-9e95-cb43b06b36aa" alt="discussions"> </p>
-<ul>
-<li>支持 GitHub 登录评论</li>
-<li>评论存储在 Discussions 中，便于管理</li>
-<li>评论区支持明暗主题自动切换，与 Chic 博客风格一致</li>
-</ul>
-<hr>
-<p>如有问题，可以：</p>
-<ul>
-<li>检查浏览器控制台是否有加载错误</li>
-<li>确保 repo-id 和 category-id 正确</li>
-<li>确保启用了 Discussions 功能</li>
-</ul>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
-]]></content>
-      <categories>
-        <category>Hexo</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-        <tag>博客</tag>
-        <tag>Blog</tag>
-        <tag>前端</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Sync Code Block Theme with Dark Mode in Hexo Chic</title>
-    <url>/2025/03/25/Sync-Code-Block-Theme-with-Dark-Mode-in-Hexo-Chic/</url>
-    <content><![CDATA[<h1 id="Hexo-Chic-主题为代码块实现明暗主题切换效果"><a href="#Hexo-Chic-主题为代码块实现明暗主题切换效果" class="headerlink" title="Hexo + Chic 主题为代码块实现明暗主题切换效果"></a>Hexo + Chic 主题为代码块实现明暗主题切换效果</h1><p>这份文档记录如何在 Hexo 博客（使用 Chic 主题），完成代码块 (highlight.js) 样式随明&#x2F;暗主题切换。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
-<hr>
-<h2 id="背景知识"><a href="#背景知识" class="headerlink" title="背景知识"></a>背景知识</h2><ul>
-<li><strong>代码块</strong> 是你写文章时用 &#96;&#96;&#96; 包起来的那些 Python&#x2F;JavaScript 代码部分。</li>
-<li><strong>highlight.js</strong> 是用来给代码块加颜色的工具，它有“亮色”和“暗色”两套样式。</li>
-</ul>
-<p>希望解决的问题是：</p>
-<blockquote>
-<p>当我切换网站到暗色模式时，代码块还是白底，看起来很突兀。</p>
-</blockquote>
-<p>我们要做的就是：让代码块也能“跟着变黑”。</p>
-<hr>
-<h2 id="1-确认-Hexo-正在使用-highlight-js"><a href="#1-确认-Hexo-正在使用-highlight-js" class="headerlink" title="1. 确认 Hexo 正在使用 highlight.js"></a><strong>1. 确认 Hexo 正在使用 highlight.js</strong></h2><p>打开你博客根目录下的 <code>_config.yml</code> 文件，找到下面的内容并确保设置一致：</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">syntax_highlighter:</span> <span class="string">highlight.js</span></span><br><span class="line"><span class="attr">highlight:</span></span><br><span class="line">  <span class="attr">line_number:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">auto_detect:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">tab_replace:</span> <span class="string">&#x27;&#x27;</span></span><br><span class="line">  <span class="attr">wrap:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">hljs:</span> <span class="literal">false</span></span><br></pre></td></tr></table></figure>
-
-<p>这段配置的意思是告诉 Hexo：我要用 highlight.js 来做代码高亮。</p>
-<hr>
-<h2 id="2-修改-head-ejs，引入代码高亮样式"><a href="#2-修改-head-ejs，引入代码高亮样式" class="headerlink" title="2.修改 head.ejs，引入代码高亮样式"></a><strong>2.修改 head.ejs，引入代码高亮样式</strong></h2><p>打开文件：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/head.ejs</span><br></pre></td></tr></table></figure>
-
-<p>在里面添加这几行（插入到已有的 <code>&lt;link&gt;</code> 标签之后即可）：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!-- highlight.js 样式（默认亮色） --&gt;</span><br><span class="line">&lt;link id=&quot;hljs-theme&quot; rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;&gt;</span><br><span class="line">&lt;!-- highlight.js 自动上色功能 --&gt;</span><br><span class="line">&lt;script src=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/highlight.min.js&quot;&gt;&lt;/script&gt;</span><br><span class="line">&lt;script&gt;hljs.highlightAll();&lt;/script&gt;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>第一行是默认代码样式（亮色）。</li>
-<li>第二三行是让代码自动加颜色。</li>
-</ul>
-<hr>
-<h2 id="3-修改-script-js，切换暗色样式时动态修改链接"><a href="#3-修改-script-js，切换暗色样式时动态修改链接" class="headerlink" title="3. 修改 script.js，切换暗色样式时动态修改链接"></a><strong>3. 修改 script.js，切换暗色样式时动态修改链接</strong></h2><p>打开文件：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/source/js/script.js</span><br></pre></td></tr></table></figure>
-
-<p>找到我们添加主题切换的地方，添加以下 JavaScript 代码：</p>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> hljsTheme = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;hljs-theme&#x27;</span>);</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">updateCodeHighlightStyle</span>(<span class="params">isDarkMode</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!hljsTheme) <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">const</span> newHref = isDarkMode</span><br><span class="line">        ? <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github-dark.css&quot;</span></span><br><span class="line">        : <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;</span>;</span><br><span class="line">    hljsTheme.<span class="title function_">setAttribute</span>(<span class="string">&#x27;href&#x27;</span>, newHref);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>然后就可以在主题切换按钮事件里调用：</p>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="title function_">updateCodeHighlightStyle</span>(<span class="literal">true</span>); <span class="comment">// 或 false，根据你当前模式</span></span><br></pre></td></tr></table></figure>
-
-<p>每次切换主题时都调用它，就能切换代码样式。</p>
-<hr>
-<h2 id="4-创建一个-CSS-文件，解决代码块“白边”问题"><a href="#4-创建一个-CSS-文件，解决代码块“白边”问题" class="headerlink" title="4. 创建一个 CSS 文件，解决代码块“白边”问题"></a><strong>4. 创建一个 CSS 文件，解决代码块“白边”问题</strong></h2><p>这个步骤很关键，否则在暗色样式时代码块周围可能会留下一圈白色边框，如下方图片所示：<br><img src="https://github.com/user-attachments/assets/6baef8c8-887d-448f-a5c9-5f0501ab4ee2" alt="image"></p>
-<h3 id="第一步：创建文件夹和文件"><a href="#第一步：创建文件夹和文件" class="headerlink" title="第一步：创建文件夹和文件"></a>第一步：创建文件夹和文件</h3><p>在终端中运行：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd themes/hexo-theme-Chic/source/css</span><br><span class="line">mkdir custom</span><br><span class="line">cd custom</span><br><span class="line">nano custom.css</span><br></pre></td></tr></table></figure>
-<p>或者手动：在 <code>themes/hexo-theme-Chic/source/css/</code> 下创建文件夹 <code>custom</code>，然后在里面新建文件 <code>custom.css</code></p>
-<h3 id="第二步：填入以下内容："><a href="#第二步：填入以下内容：" class="headerlink" title="第二步：填入以下内容："></a>第二步：填入以下内容：</h3><figure class="highlight css"><table><tr><td class="code"><pre><span class="line">pre,</span><br><span class="line"><span class="selector-tag">code</span>,</span><br><span class="line">pre <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">color</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 暗色背景 */</span></span><br><span class="line">    <span class="attribute">color</span>: <span class="number">#c9d1d9</span> <span class="meta">!important</span>;       <span class="comment">/* 暗色文字 */</span></span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre::-webkit-scrollbar-track,</span><br><span class="line">body.dark-theme code::-webkit-scrollbar-track &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 修复滚动条白边 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="5-在-head-ejs-中引入自定义-CSS-文件"><a href="#5-在-head-ejs-中引入自定义-CSS-文件" class="headerlink" title="5. 在 head.ejs 中引入自定义 CSS 文件"></a><strong>5. 在 head.ejs 中引入自定义 CSS 文件</strong></h2><p>在 <code>head.ejs</code> 中再加一行：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;link rel=&quot;stylesheet&quot; href=&quot;&lt;%- url_for(&#x27;/css/custom/custom.css&#x27;) %&gt;&quot;&gt;</span><br></pre></td></tr></table></figure>
-
-<p>放在其他 <code>&lt;link&gt;</code> 标签的下面。</p>
-<hr>
-<h2 id="6-重新生成并运行-Hexo"><a href="#6-重新生成并运行-Hexo" class="headerlink" title="6. 重新生成并运行 Hexo"></a><strong>6. 重新生成并运行 Hexo</strong></h2><p>运行以下命令，重新生成并启动本地预览：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
-
-<p>然后访问你的本地博客文章页面 <code>http://localhost:4000</code>，尝试切换主题，看代码块是否也会随之变色。</p>
-<p>在两种不同主题下的效果展示：</p>
-<p><img src="https://github.com/user-attachments/assets/db87a928-293d-4c00-8299-6619722c92f8" alt="image"></p>
-<p><img src="https://github.com/user-attachments/assets/550ba759-3113-41b6-9737-887242fcfa14" alt="image"></p>
-<hr>
-<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
-]]></content>
-      <categories>
-        <category>Hexo</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-        <tag>博客</tag>
-        <tag>Blog</tag>
-        <tag>前端</tag>
       </tags>
   </entry>
   <entry>
@@ -692,17 +870,95 @@
 <p>该项目代码参考 <a href="https://github.com/hwchase17/langchain">LangChain</a> 和 <a href="http://doc.cnlangchain.com/modules/chains/examples/graph_nebula_qa.html">NebulaGraphQAChain</a>。</p>
 ]]></content>
       <categories>
-        <category>LLM学习之路</category>
+        <category>Knowledge Graph</category>
       </categories>
       <tags>
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
+        <tag>GraphRAG</tag>
         <tag>RAG</tag>
         <tag>图数据库</tag>
         <tag>LangChain</tag>
         <tag>NebulaGraph</tag>
-        <tag>GraphRAG</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Sync Code Block Theme with Dark Mode in Hexo Chic</title>
+    <url>/2025/03/25/Sync-Code-Block-Theme-with-Dark-Mode-in-Hexo-Chic/</url>
+    <content><![CDATA[<h1 id="Hexo-Chic-主题为代码块实现明暗主题切换效果"><a href="#Hexo-Chic-主题为代码块实现明暗主题切换效果" class="headerlink" title="Hexo + Chic 主题为代码块实现明暗主题切换效果"></a>Hexo + Chic 主题为代码块实现明暗主题切换效果</h1><p>这份文档记录如何在 Hexo 博客（使用 Chic 主题），完成代码块 (highlight.js) 样式随明&#x2F;暗主题切换。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="背景知识"><a href="#背景知识" class="headerlink" title="背景知识"></a>背景知识</h2><ul>
+<li><strong>代码块</strong> 是你写文章时用 &#96;&#96;&#96; 包起来的那些 Python&#x2F;JavaScript 代码部分。</li>
+<li><strong>highlight.js</strong> 是用来给代码块加颜色的工具，它有“亮色”和“暗色”两套样式。</li>
+</ul>
+<p>希望解决的问题是：</p>
+<blockquote>
+<p>当我切换网站到暗色模式时，代码块还是白底，看起来很突兀。</p>
+</blockquote>
+<p>我们要做的就是：让代码块也能“跟着变黑”。</p>
+<hr>
+<h2 id="1-确认-Hexo-正在使用-highlight-js"><a href="#1-确认-Hexo-正在使用-highlight-js" class="headerlink" title="1. 确认 Hexo 正在使用 highlight.js"></a><strong>1. 确认 Hexo 正在使用 highlight.js</strong></h2><p>打开你博客根目录下的 <code>_config.yml</code> 文件，找到下面的内容并确保设置一致：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">syntax_highlighter:</span> <span class="string">highlight.js</span></span><br><span class="line"><span class="attr">highlight:</span></span><br><span class="line">  <span class="attr">line_number:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">auto_detect:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">tab_replace:</span> <span class="string">&#x27;&#x27;</span></span><br><span class="line">  <span class="attr">wrap:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">hljs:</span> <span class="literal">false</span></span><br></pre></td></tr></table></figure>
+
+<p>这段配置的意思是告诉 Hexo：我要用 highlight.js 来做代码高亮。</p>
+<hr>
+<h2 id="2-修改-head-ejs，引入代码高亮样式"><a href="#2-修改-head-ejs，引入代码高亮样式" class="headerlink" title="2.修改 head.ejs，引入代码高亮样式"></a><strong>2.修改 head.ejs，引入代码高亮样式</strong></h2><p>打开文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/head.ejs</span><br></pre></td></tr></table></figure>
+
+<p>在里面添加这几行（插入到已有的 <code>&lt;link&gt;</code> 标签之后即可）：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!-- highlight.js 样式（默认亮色） --&gt;</span><br><span class="line">&lt;link id=&quot;hljs-theme&quot; rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;&gt;</span><br><span class="line">&lt;!-- highlight.js 自动上色功能 --&gt;</span><br><span class="line">&lt;script src=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/highlight.min.js&quot;&gt;&lt;/script&gt;</span><br><span class="line">&lt;script&gt;hljs.highlightAll();&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>第一行是默认代码样式（亮色）。</li>
+<li>第二三行是让代码自动加颜色。</li>
+</ul>
+<hr>
+<h2 id="3-修改-script-js，切换暗色样式时动态修改链接"><a href="#3-修改-script-js，切换暗色样式时动态修改链接" class="headerlink" title="3. 修改 script.js，切换暗色样式时动态修改链接"></a><strong>3. 修改 script.js，切换暗色样式时动态修改链接</strong></h2><p>打开文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/source/js/script.js</span><br></pre></td></tr></table></figure>
+
+<p>找到我们添加主题切换的地方，添加以下 JavaScript 代码：</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> hljsTheme = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;hljs-theme&#x27;</span>);</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">updateCodeHighlightStyle</span>(<span class="params">isDarkMode</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!hljsTheme) <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">const</span> newHref = isDarkMode</span><br><span class="line">        ? <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github-dark.css&quot;</span></span><br><span class="line">        : <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;</span>;</span><br><span class="line">    hljsTheme.<span class="title function_">setAttribute</span>(<span class="string">&#x27;href&#x27;</span>, newHref);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后就可以在主题切换按钮事件里调用：</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="title function_">updateCodeHighlightStyle</span>(<span class="literal">true</span>); <span class="comment">// 或 false，根据你当前模式</span></span><br></pre></td></tr></table></figure>
+
+<p>每次切换主题时都调用它，就能切换代码样式。</p>
+<hr>
+<h2 id="4-创建一个-CSS-文件，解决代码块“白边”问题"><a href="#4-创建一个-CSS-文件，解决代码块“白边”问题" class="headerlink" title="4. 创建一个 CSS 文件，解决代码块“白边”问题"></a><strong>4. 创建一个 CSS 文件，解决代码块“白边”问题</strong></h2><p>这个步骤很关键，否则在暗色样式时代码块周围可能会留下一圈白色边框，如下方图片所示：<br><img src="https://github.com/user-attachments/assets/6baef8c8-887d-448f-a5c9-5f0501ab4ee2" alt="image"></p>
+<h3 id="第一步：创建文件夹和文件"><a href="#第一步：创建文件夹和文件" class="headerlink" title="第一步：创建文件夹和文件"></a>第一步：创建文件夹和文件</h3><p>在终端中运行：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd themes/hexo-theme-Chic/source/css</span><br><span class="line">mkdir custom</span><br><span class="line">cd custom</span><br><span class="line">nano custom.css</span><br></pre></td></tr></table></figure>
+<p>或者手动：在 <code>themes/hexo-theme-Chic/source/css/</code> 下创建文件夹 <code>custom</code>，然后在里面新建文件 <code>custom.css</code></p>
+<h3 id="第二步：填入以下内容："><a href="#第二步：填入以下内容：" class="headerlink" title="第二步：填入以下内容："></a>第二步：填入以下内容：</h3><figure class="highlight css"><table><tr><td class="code"><pre><span class="line">pre,</span><br><span class="line"><span class="selector-tag">code</span>,</span><br><span class="line">pre <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">color</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 暗色背景 */</span></span><br><span class="line">    <span class="attribute">color</span>: <span class="number">#c9d1d9</span> <span class="meta">!important</span>;       <span class="comment">/* 暗色文字 */</span></span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre::-webkit-scrollbar-track,</span><br><span class="line">body.dark-theme code::-webkit-scrollbar-track &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 修复滚动条白边 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="5-在-head-ejs-中引入自定义-CSS-文件"><a href="#5-在-head-ejs-中引入自定义-CSS-文件" class="headerlink" title="5. 在 head.ejs 中引入自定义 CSS 文件"></a><strong>5. 在 head.ejs 中引入自定义 CSS 文件</strong></h2><p>在 <code>head.ejs</code> 中再加一行：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;link rel=&quot;stylesheet&quot; href=&quot;&lt;%- url_for(&#x27;/css/custom/custom.css&#x27;) %&gt;&quot;&gt;</span><br></pre></td></tr></table></figure>
+
+<p>放在其他 <code>&lt;link&gt;</code> 标签的下面。</p>
+<hr>
+<h2 id="6-重新生成并运行-Hexo"><a href="#6-重新生成并运行-Hexo" class="headerlink" title="6. 重新生成并运行 Hexo"></a><strong>6. 重新生成并运行 Hexo</strong></h2><p>运行以下命令，重新生成并启动本地预览：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
+
+<p>然后访问你的本地博客文章页面 <code>http://localhost:4000</code>，尝试切换主题，看代码块是否也会随之变色。</p>
+<p>在两种不同主题下的效果展示：</p>
+<p><img src="https://github.com/user-attachments/assets/db87a928-293d-4c00-8299-6619722c92f8" alt="image"></p>
+<p><img src="https://github.com/user-attachments/assets/550ba759-3113-41b6-9737-887242fcfa14" alt="image"></p>
+<hr>
+<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+]]></content>
+      <categories>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>Blog</tag>
+        <tag>前端</tag>
       </tags>
   </entry>
   <entry>
@@ -1006,6 +1262,11 @@
       </tags>
   </entry>
   <entry>
+    <title>category</title>
+    <url>/category/index.html</url>
+    <content><![CDATA[]]></content>
+  </entry>
+  <entry>
     <title>About Me</title>
     <url>/about/index.html</url>
     <content><![CDATA[<h2 id="👋-你好，我是-Evan-Zhong！"><a href="#👋-你好，我是-Evan-Zhong！" class="headerlink" title="👋 你好，我是 Evan Zhong！"></a>👋 你好，我是 Evan Zhong！</h2><ul>
@@ -1091,11 +1352,6 @@
   });
 });
 ]]></content>
-  </entry>
-  <entry>
-    <title>category</title>
-    <url>/category/index.html</url>
-    <content><![CDATA[]]></content>
   </entry>
   <entry>
     <title>tag</title>
