@@ -344,9 +344,9 @@
 <h2 id="3-如何将本地图片上传至大模型"><a href="#3-如何将本地图片上传至大模型" class="headerlink" title="3. 如何将本地图片上传至大模型"></a>3. 如何将本地图片上传至大模型</h2><p>这里我将介绍一个本地图片上传至 Qwen 视觉模型，并让模型根据prompt生成图像的描述的方法。</p>
 <p>以下是完整的代码模板：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">from PIL import Image</span><br><span class="line">import base64</span><br><span class="line">from io import BytesIO</span><br><span class="line">from openai import OpenAI</span><br><span class="line"></span><br><span class="line"># 初始化 API 客户端</span><br><span class="line">client = OpenAI(</span><br><span class="line">    api_key=&quot;你的百炼Key&quot;,</span><br><span class="line">    base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># === 准备图像（PIL）并转为 base64 ===</span><br><span class="line">def pil_image_to_base64(pil_img: Image.Image) -&gt; str:</span><br><span class="line">    buffered = BytesIO()</span><br><span class="line">    pil_img.save(buffered, format=&quot;JPEG&quot;)</span><br><span class="line">    return base64.b64encode(buffered.getvalue()).decode(&quot;utf-8&quot;)</span><br><span class="line"></span><br><span class="line"># === 构建调用内容并发送 ===</span><br><span class="line">def call_qwen_vl(pil_img: Image.Image, prompt_text: str = &quot;请描述图像内容&quot;) -&gt; str:</span><br><span class="line">    img_b64 = pil_image_to_base64(pil_img)</span><br><span class="line"></span><br><span class="line">    content = [</span><br><span class="line">        &#123;&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: prompt_text&#125;,</span><br><span class="line">        &#123;&quot;type&quot;: &quot;image_url&quot;, &quot;image_url&quot;: &#123;</span><br><span class="line">            &quot;url&quot;: f&quot;data:image/jpeg;base64,&#123;img_b64&#125;&quot;</span><br><span class="line">        &#125;&#125;</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    response = client.chat.completions.create(</span><br><span class="line">        model=&quot;qwen-vl-plus&quot;,</span><br><span class="line">        messages=[&#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: content&#125;]</span><br><span class="line">    )</span><br><span class="line">    return response.choices[0].message.content.strip()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>相比官方的 API 调用方法，这个方法通过将图像转换为 Base64 编码 字符串的方式传输图像，这样就可以将图像嵌入到请求中，你可以直接将本地图片上传至视觉大模型进行理解</p>
+<p>相比官方的 API 调用方法，这个方法通过将图像转换为 Base64 编码 字符串的方式传输图像，这样就可以将图像嵌入到请求中，直接将本地图片上传至视觉大模型进行理解</p>
 <hr>
-<h2 id="4-代码解析"><a href="#4-代码解析" class="headerlink" title="4. 代码解析"></a>4. 代码解析</h2><p>接下来，我们来看看如何写 Python 代码实现这个过程。整个代码的核心分为几个步骤：图像加载、图像转换为 base64 编码、构建 API 请求、获取并处理模型的响应。</p>
+<h2 id="4-代码解析"><a href="#4-代码解析" class="headerlink" title="4. 代码解析"></a>4. 代码解析</h2><p>接下来，我们来看如何实现这个过程。整个代码的核心分为几个步骤：图像加载、图像转换为 base64 编码、构建 API 请求、获取并处理模型的响应。</p>
 <h3 id="4-1-导入必要的库"><a href="#4-1-导入必要的库" class="headerlink" title="4.1 导入必要的库"></a>4.1 导入必要的库</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"><span class="keyword">from</span> io <span class="keyword">import</span> BytesIO</span><br><span class="line"><span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI</span><br></pre></td></tr></table></figure>
 
 <ul>
@@ -432,17 +432,17 @@
                 <span class="tag">
                     
                     
-                        <a href="/tags/AI/"># AI</a>
-                    
                         <a href="/tags/LLM/"># LLM</a>
                     
                         <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"># 大模型</a>
                     
-                        <a href="/tags/Python/"># Python</a>
-                    
                         <a href="/tags/Agent/"># Agent</a>
                     
                         <a href="/tags/Qwen/"># Qwen</a>
+                    
+                        <a href="/tags/AI/"># AI</a>
+                    
+                        <a href="/tags/Python/"># Python</a>
                     
                         <a href="/tags/%E8%A7%86%E8%A7%89/"># 视觉</a>
                     
