@@ -394,7 +394,7 @@
 <h2 id="5-示例：如何使用该代码"><a href="#5-示例：如何使用该代码" class="headerlink" title="5. 示例：如何使用该代码"></a>5. 示例：如何使用该代码</h2><p>假设你有一个本地的图像文件 <code>example.jpg</code>，你想让视觉模型描述它的内容。以下是一个简单的代码示例：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"></span><br><span class="line"><span class="comment"># 打开本地图像文件</span></span><br><span class="line">image_path = <span class="string">&quot;example.jpg&quot;</span></span><br><span class="line">img = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用 Qwen-VL 模型获取图像描述</span></span><br><span class="line">description = call_qwen_vl(img)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;图像描述：&quot;</span>, description)</span><br></pre></td></tr></table></figure>
 
-<h3 id="4-1-结果"><a href="#4-1-结果" class="headerlink" title="4.1 结果"></a>4.1 结果</h3><p>当你运行这段代码时，模型会分析图像并生成对该图像的描述。例如，它可能会返回类似这样的描述：</p>
+<h3 id="5-1-结果"><a href="#5-1-结果" class="headerlink" title="5.1 结果"></a>5.1 结果</h3><p>当你运行这段代码时，模型会分析图像并生成对该图像的描述。例如，它可能会返回类似这样的描述：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">图像描述：这是一张包含一个绿色苹果的照片，苹果放置在白色背景上，旁边还有一些小草。</span><br></pre></td></tr></table></figure>
 
 <hr>
@@ -432,17 +432,17 @@
                 <span class="tag">
                     
                     
+                        <a href="/tags/AI/"># AI</a>
+                    
                         <a href="/tags/LLM/"># LLM</a>
                     
                         <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"># 大模型</a>
                     
+                        <a href="/tags/Python/"># Python</a>
+                    
                         <a href="/tags/Agent/"># Agent</a>
                     
                         <a href="/tags/Qwen/"># Qwen</a>
-                    
-                        <a href="/tags/AI/"># AI</a>
-                    
-                        <a href="/tags/Python/"># Python</a>
                     
                         <a href="/tags/%E8%A7%86%E8%A7%89/"># 视觉</a>
                     
