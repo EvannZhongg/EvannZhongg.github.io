@@ -54,6 +54,101 @@
       </tags>
   </entry>
   <entry>
+    <title>Convert PDF Tables to Readable Text</title>
+    <url>/2025/03/28/Convert-PDF-Tables-to-Readable-Text/</url>
+    <content><![CDATA[<h1 id="PDF-表格提取转为纯文本结构数据"><a href="#PDF-表格提取转为纯文本结构数据" class="headerlink" title="PDF 表格提取转为纯文本结构数据"></a>PDF 表格提取转为纯文本结构数据</h1><p>本文详细记录了如何使用读光的  Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Table_Extraction.git">https://github.com/EvannZhongg/Table_Extraction.git</a></p>
+<hr>
+<h2 id="项目概览"><a href="#项目概览" class="headerlink" title="项目概览"></a><strong>项目概览</strong></h2><p>本项目的主要目标是将 PDF 文件中存在的表格，作为图片提取参数信息，尤其是结构化表格。整个流程分为两个阶段：</p>
+<ol>
+<li><strong>表格结构识别</strong> —— 使用 Cycle-CenterNet 模型识别表格中每个单元格的位置（多边形坐标）。</li>
+<li><strong>OCR 文本识别</strong> —— 使用 PaddleOCR 识别图像中所有文字及其位置坐标。</li>
+</ol>
+<hr>
+<h2 id="环境与设置"><a href="#环境与设置" class="headerlink" title="环境与设置"></a><strong>环境与设置</strong></h2><h3 id="1-表格识别模型配置"><a href="#1-表格识别模型配置" class="headerlink" title="1. 表格识别模型配置"></a><strong>1. 表格识别模型配置</strong></h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git lfs install</span><br><span class="line">git <span class="built_in">clone</span> https://www.modelscope.cn/iic/cv_dla34_table-structure-recognition_cycle-centernet.git</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">model_path = <span class="string">&quot;your_absolute_path_to_cv_dla34_table-structure-recognition_cycle-centernet&quot;</span></span><br></pre></td></tr></table></figure>
+<p>建议自定义路径使用绝对路径</p>
+<p>例如：<code>model_path = &quot;D:/Table_Extraction/cv_dla34_table-structure-recognition_cycle-centernet&quot;</code></p>
+<h3 id="2-PaddleOCR-配置"><a href="#2-PaddleOCR-配置" class="headerlink" title="2. PaddleOCR 配置"></a><strong>2. PaddleOCR 配置</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">ocr = PaddleOCR(</span><br><span class="line">    use_gpu=<span class="literal">True</span>,</span><br><span class="line">    lang=<span class="string">&#x27;ch&#x27;</span>,</span><br><span class="line">    det_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_det_infer&#x27;</span>,</span><br><span class="line">    rec_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_rec_infer&#x27;</span>,</span><br><span class="line">    cls_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_ppocr_mobile_v2.0_cls_infer&#x27;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>建议自定义路径使用绝对路径</p>
+<p>例如： <code>det_model_dir=&#39;D:/Table_Extraction/PaddleOCR/models/ch_PP-OCRv4_det_infer/&#39;</code></p>
+<hr>
+<h2 id="核心函数详解"><a href="#核心函数详解" class="headerlink" title="核心函数详解"></a><strong>核心函数详解</strong></h2><h3 id="1-函数-calculate-iot-cell-text"><a href="#1-函数-calculate-iot-cell-text" class="headerlink" title="1. 函数 calculate_iot(cell, text)"></a><strong>1. 函数 <code>calculate_iot(cell, text)</code></strong></h3><p><strong>功能</strong>：计算 OCR 文本框与表格单元格的交并比（IoT, Intersection over Text）。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>利用两组矩形坐标，计算它们重叠区域的面积。</li>
+<li>然后用重叠面积 &#x2F; 文本框面积作为 IoT 值。</li>
+<li>若值越大，表示文本越“贴合”单元格。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">calculate_iot</span>(<span class="params">cell, text</span>):</span><br><span class="line">    intersection_x1 = <span class="built_in">max</span>(cell[<span class="number">0</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>])</span><br><span class="line">    intersection_y1 = <span class="built_in">max</span>(cell[<span class="number">1</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    intersection_x2 = <span class="built_in">min</span>(cell[<span class="number">2</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>])</span><br><span class="line">    intersection_y2 = <span class="built_in">min</span>(cell[<span class="number">3</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> intersection_x1 &gt;= intersection_x2 <span class="keyword">or</span> intersection_y1 &gt;= intersection_y2:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.0</span></span><br><span class="line"></span><br><span class="line">    intersection_area = (intersection_x2 - intersection_x1) * (intersection_y2 - intersection_y1)</span><br><span class="line">    text_area = (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>]) * (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    <span class="keyword">return</span> intersection_area / text_area</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="2-函数-merge-text-into-cells-cell-coords-ocr-results"><a href="#2-函数-merge-text-into-cells-cell-coords-ocr-results" class="headerlink" title="2. 函数 merge_text_into_cells(cell_coords, ocr_results)"></a><strong>2. 函数 <code>merge_text_into_cells(cell_coords, ocr_results)</code></strong></h3><p><strong>功能</strong>：将 OCR 识别到的文字分配到表格对应单元格中。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>对每个单元格遍历所有 OCR 文本框，计算 IoT。</li>
+<li>若 IoT &gt; 0.5，则认为该文字属于该单元格。</li>
+<li>同时记录那些与所有单元格 IoT &lt; 0.1 的文字（非表格内容）。</li>
+<li>将属于单元格的文字合并为一个字符串。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">merge_text_into_cells</span>(<span class="params">cell_coords, ocr_results</span>):</span><br><span class="line">    cell_text_dict = &#123;cell: [] <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords&#125;</span><br><span class="line">    noncell_text_dict = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords:</span><br><span class="line">        <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">            <span class="keyword">if</span> calculate_iot(cell, result) &gt; <span class="number">0.5</span>:</span><br><span class="line">                cell_text_dict[cell].append(result[<span class="string">&#x27;text&#x27;</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">all</span>(calculate_iot(cell, result) &lt; <span class="number">0.1</span> <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords):</span><br><span class="line">            noncell_text_dict[result[<span class="string">&#x27;coords&#x27;</span>]] = result[<span class="string">&#x27;text&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    merged_text = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> cell, texts <span class="keyword">in</span> cell_text_dict.items():</span><br><span class="line">        merged_text[cell] = <span class="string">&#x27;&#x27;</span>.join(texts).strip()</span><br><span class="line">    <span class="keyword">for</span> coords, text <span class="keyword">in</span> noncell_text_dict.items():</span><br><span class="line">        merged_text[coords] = <span class="string">&#x27;&#x27;</span>.join(text).strip()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> merged_text</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="3-函数-adjust-coordinates-merged-text-image-path"><a href="#3-函数-adjust-coordinates-merged-text-image-path" class="headerlink" title="3. 函数 adjust_coordinates(merged_text, image_path)"></a><strong>3. 函数 <code>adjust_coordinates(merged_text, image_path)</code></strong></h3><p><strong>功能</strong>：将 y 坐标相近的单元格进行聚类并统一化，方便后续行级别排序。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>图像越高，容许的 y 偏差越大，使用 height &#x2F; 100 作为容差。</li>
+<li>将 y 值差距小于阈值的单元格归为一组。</li>
+<li>每组内统一 y 值为该组的平均 y 值，确保在同一“水平行”内。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">adjust_coordinates</span>(<span class="params">merged_text, image_path</span>):</span><br><span class="line">    image = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    width, height = image.size</span><br><span class="line">    threshold = height / <span class="number">100</span></span><br><span class="line">    groups = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> coordinates, text <span class="keyword">in</span> merged_text.items():</span><br><span class="line">        found_group = <span class="literal">False</span></span><br><span class="line">        <span class="keyword">for</span> group_y <span class="keyword">in</span> groups.keys():</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">abs</span>(coordinates[<span class="number">1</span>] - group_y) &lt;= threshold:</span><br><span class="line">                groups[group_y].append((coordinates, text))</span><br><span class="line">                found_group = <span class="literal">True</span></span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> found_group:</span><br><span class="line">            groups[coordinates[<span class="number">1</span>]] = [(coordinates, text)]</span><br><span class="line"></span><br><span class="line">    adjusted_coordinates = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> group_y, group_coords <span class="keyword">in</span> groups.items():</span><br><span class="line">        avg_y = <span class="built_in">sum</span>(coord[<span class="number">0</span>][<span class="number">1</span>] <span class="keyword">for</span> coord <span class="keyword">in</span> group_coords) / <span class="built_in">len</span>(group_coords)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> group_coords:</span><br><span class="line">            adjusted_coordinates[(i[<span class="number">0</span>][<span class="number">0</span>], avg_y, i[<span class="number">0</span>][<span class="number">2</span>], i[<span class="number">0</span>][<span class="number">3</span>])] = i[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> adjusted_coordinates</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="4-函数-draw-text-boxes-image-path-boxes-texts"><a href="#4-函数-draw-text-boxes-image-path-boxes-texts" class="headerlink" title="4.函数 draw_text_boxes(image_path, boxes, texts)"></a><strong>4.函数 <code>draw_text_boxes(image_path, boxes, texts)</code></strong></h3><p><strong>功能</strong>：在图像上绘制表格框与文字内容，进行可视化标注。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>利用 PIL 创建空白图层，绘制框线与文字。</li>
+<li>若文字宽度超出单元格宽度，则使用 textwrap 进行自动换行。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">draw_text_boxes</span>(<span class="params">image_path, boxes, texts</span>):</span><br><span class="line">    img = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    img = Image.new(<span class="string">&#x27;RGB&#x27;</span>, img.size, (<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>))</span><br><span class="line">    draw = ImageDraw.Draw(img)</span><br><span class="line">    font = ImageFont.truetype(<span class="string">&quot;./chinese_cht.ttf&quot;</span>, size=<span class="number">15</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> box, text <span class="keyword">in</span> <span class="built_in">zip</span>(boxes, texts):</span><br><span class="line">        x0, y0, x1, y1 = box</span><br><span class="line">        x0, x1 = <span class="built_in">sorted</span>([x0, x1])</span><br><span class="line">        y0, y1 = <span class="built_in">sorted</span>([y0, y1])</span><br><span class="line">        normalized_box = (x0, y0, x1, y1)</span><br><span class="line">        draw.rectangle(normalized_box, outline=<span class="string">&#x27;red&#x27;</span>, width=<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        text_len = draw.textbbox((x0, y0), text, font=font)</span><br><span class="line">        <span class="keyword">if</span> (text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) &gt; (x1 - x0):</span><br><span class="line">            text = <span class="string">&#x27;\n&#x27;</span>.join(textwrap.wrap(text, width=<span class="built_in">int</span>(</span><br><span class="line">                np.ceil(<span class="built_in">len</span>(text) / np.ceil((text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) / (x1 - x0))))))</span><br><span class="line"></span><br><span class="line">        draw.text((x0, y0), text, font=font, fill=<span class="string">&#x27;black&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    img.save(<span class="string">&#x27;your_image_storage_path/output.png&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="5-最终文本输出（结构化行）"><a href="#5-最终文本输出（结构化行）" class="headerlink" title="5. 最终文本输出（结构化行）"></a><strong>5. 最终文本输出（结构化行）</strong></h2><p><strong>功能</strong>：将所有坐标按 y → x 排序，按行归组输出结构化文本。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">adjusted_merged_text_sorted = <span class="built_in">sorted</span>(adjusted_merged_text.items(), key=<span class="keyword">lambda</span> x: (x[<span class="number">0</span>][<span class="number">1</span>], x[<span class="number">0</span>][<span class="number">0</span>]))</span><br><span class="line">adjusted_merged_text_sorted_group = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> coordinates, text <span class="keyword">in</span> adjusted_merged_text_sorted:</span><br><span class="line">    <span class="keyword">if</span> coordinates[<span class="number">1</span>] <span class="keyword">not</span> <span class="keyword">in</span> adjusted_merged_text_sorted_group:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]] = [text]</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]].append(text)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> text_list <span class="keyword">in</span> adjusted_merged_text_sorted_group.values():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27; | &#x27;</span>.join(text_list))</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a><strong>使用方法</strong></h2><ol>
+<li>运行脚本选择表格图片：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python Table_Extraction.py</span><br></pre></td></tr></table></figure>
+<p>或</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python main.py</span><br></pre></td></tr></table></figure>
+
+<p>在项目目录会输出效果图片，终端会输出文本结果</p>
+<ol start="2">
+<li>效果展示<br><img src="https://github.com/user-attachments/assets/8e0f21d8-af6c-4da2-beb7-dcc7f5f73115" alt="image"><br><img src="https://github.com/user-attachments/assets/45ad3906-09df-431e-a4ec-4f0779137195" alt="image"><br>输出结果如下，你可以用这组结果测试大模型是否能读懂这组表格： <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PartNumber | TotalCapacitance(Ct) @ 50 V,(pF) | TotalCapacitance(Ct) @ 0 V,(pF) | SeriesResistance (Rs),@10 mA,(②) | MinorityCarrierLifetime (TL)@ 10 mA(ns) | VoltageRating2(M) | I-RegionThickness(μm) | ThermalResistance(0JC)(°C/W)</span><br><span class="line">Maximum | Typical | Maximum | Typical | Minimum | Nominal | Maximum</span><br><span class="line"></span><br><span class="line">Switching Applications(continued)</span><br><span class="line">| APD0810-203 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 174</span><br><span class="line">| APD0810-210 | 0.40 | 0.45 | 1.5 | 160 | 100 | 8 | 75</span><br><span class="line">| APD0810-219 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 143</span><br><span class="line">| APD0810-240 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 155</span><br><span class="line">| APD1505-203 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 172</span><br><span class="line">| APD1505-210 | 0.40 | 0.45@10 V | 2.5 | 350 | 200 | 15 | 74</span><br><span class="line">| APD1505-219 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 142</span><br><span class="line">| APD1505-240 | 0.40 | 0.45 @ 10 V | 2.5 | 350 | 200 | 15 | 150</span><br><span class="line">| APD1510-203 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 168</span><br><span class="line">| APD1510-210 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 70</span><br><span class="line">| APD1510-219 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 137</span><br><span class="line">| APD1510-240 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 149</span><br><span class="line">| APD1520-203 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 155</span><br><span class="line">| APD1520-210 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 57</span><br><span class="line">| APD1520-219 | 0.45 | 0.50 | 1.2 | 900 | 200 | 15 | 124</span><br><span class="line">| APD1520-240 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 136</span><br><span class="line"></span><br><span class="line">AttenuatorApplications</span><br><span class="line">| APD2220-203 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 132</span><br><span class="line">| APD2220-210 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 32</span><br><span class="line">| APD2220-219 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 104</span><br><span class="line">| APD2220-240 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 115</span><br></pre></td></tr></table></figure></li>
+</ol>
+<hr>
+<h2 id="补充说明"><a href="#补充说明" class="headerlink" title="补充说明"></a><strong>补充说明</strong></h2><ul>
+<li>字体文件 <code>chinese_cht.ttf</code> 必须存在，或替换为系统可识别的中文字体。</li>
+<li>对于复杂结构表格，当前模型仍然无法很好的处理。</li>
+</ul>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/wyf3/llm_related/tree/main">wyf3</a> 和 <a href="https://github.com/PaddlePaddle/PaddleOCR">PaddleOCR</a></p>
+]]></content>
+      <categories>
+        <category>OCR</category>
+      </categories>
+      <tags>
+        <tag>OCR</tag>
+        <tag>PaddleOCR</tag>
+        <tag>PDF</tag>
+        <tag>AI</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Docling2md</title>
     <url>/2025/05/01/Docling2md/</url>
     <content><![CDATA[<h1 id="基于Docling结合多模态大模型的的PDF转Markdown"><a href="#基于Docling结合多模态大模型的的PDF转Markdown" class="headerlink" title="基于Docling结合多模态大模型的的PDF转Markdown"></a>基于Docling结合多模态大模型的的PDF转Markdown</h1><hr>
@@ -238,107 +333,135 @@
       <tags>
         <tag>OCR</tag>
         <tag>PDF</tag>
-        <tag>Markdown</tag>
         <tag>AI</tag>
+        <tag>Markdown</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
         <tag>Qwen</tag>
         <tag>Docling</tag>
+        <tag>Knowledge Graph</tag>
       </tags>
   </entry>
   <entry>
-    <title>Convert PDF Tables to Readable Text</title>
-    <url>/2025/03/28/Convert-PDF-Tables-to-Readable-Text/</url>
-    <content><![CDATA[<h1 id="PDF-表格提取转为纯文本结构数据"><a href="#PDF-表格提取转为纯文本结构数据" class="headerlink" title="PDF 表格提取转为纯文本结构数据"></a>PDF 表格提取转为纯文本结构数据</h1><p>本文详细记录了如何使用读光的  Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。</p>
+    <title>Function Calling</title>
+    <url>/2025/03/21/Function-Calling/</url>
+    <content><![CDATA[<h1 id="Qwen-Function-Calling-详细解析"><a href="#Qwen-Function-Calling-详细解析" class="headerlink" title="Qwen Function Calling 详细解析"></a>Qwen Function Calling 详细解析</h1><hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
 <hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Table_Extraction.git">https://github.com/EvannZhongg/Table_Extraction.git</a></p>
-<hr>
-<h2 id="项目概览"><a href="#项目概览" class="headerlink" title="项目概览"></a><strong>项目概览</strong></h2><p>本项目的主要目标是将 PDF 文件中存在的表格，作为图片提取参数信息，尤其是结构化表格。整个流程分为两个阶段：</p>
+<h2 id="1-Function-Calling-简介"><a href="#1-Function-Calling-简介" class="headerlink" title="1. Function Calling 简介"></a><strong>1. Function Calling 简介</strong></h2><p>Function Calling 允许 LLM（大语言模型）在回答问题时调用外部工具，如 Python 函数、API 或数据库查询。</p>
+<p><strong>核心流程：</strong></p>
 <ol>
-<li><strong>表格结构识别</strong> —— 使用 Cycle-CenterNet 模型识别表格中每个单元格的位置（多边形坐标）。</li>
-<li><strong>OCR 文本识别</strong> —— 使用 PaddleOCR 识别图像中所有文字及其位置坐标。</li>
+<li><strong>用户输入问题</strong></li>
+<li><strong>AI 判断是否需要调用工具</strong></li>
+<li><strong>如果需要，AI 返回 <code>tool_calls</code>，请求调用特定函数</strong></li>
+<li><strong>开发者执行对应的 Python 函数，并返回执行结果</strong></li>
+<li><strong>AI 读取工具返回值，继续推理并生成最终回答</strong></li>
+</ol>
+<h2 id="2-代码拆解：Function-Calling-功能实现"><a href="#2-代码拆解：Function-Calling-功能实现" class="headerlink" title="2. 代码拆解：Function Calling 功能实现"></a><strong>2. 代码拆解：Function Calling 功能实现</strong></h2><p>本文定义了一个read_markdown函数，用于通过提问让大模型自主调用函数阅读markdown文本内容，回答问题。</p>
+<h3 id="（1）初始化-Qwen-客户端"><a href="#（1）初始化-Qwen-客户端" class="headerlink" title="（1）初始化 Qwen 客户端"></a><strong>（1）初始化 Qwen 客户端</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">client = OpenAI(</span><br><span class="line">    api_key=<span class="string">&quot;your_api_key&quot;</span>,</span><br><span class="line">    base_url=<span class="string">&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>连接 Qwen API 进行请求。</li>
+<li><code>api_key</code> 必须正确，否则请求会失败。</li>
+</ul>
+<hr>
+<h3 id="（2）定义工具（Function-Calling）"><a href="#（2）定义工具（Function-Calling）" class="headerlink" title="（2）定义工具（Function Calling）"></a><strong>（2）定义工具（Function Calling）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>告诉 Qwen 可调用的工具。</li>
+<li><code>name</code> 必须与 Python 函数名一致，否则无法正确调用。</li>
+<li><code>description</code> 用于让 AI 知道工具的用途。</li>
+<li>在 Qwen 的 Function Calling 中，工具的<code>parameters</code> 的 <code>type</code> 必须是 <code>object</code>。</li>
+<li><code>parameters</code> 为空 <code>&#123;&#125;</code>，表示此工具不需要参数。</li>
+<li><code>parameters</code> <strong>如果不为空</strong>，表示此工具需要<strong>传递参数</strong>。<ul>
+<li><code>properties</code> 定义了每个参数的名称、类型和描述。</li>
+<li><code>required</code> 指定了哪些参数是必填项。</li>
+</ul>
+</li>
+</ul>
+<p>如果代码中涉及到了多个工具的调用，可按照以下的格式进行多个工具的定义：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;fetch_weather&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;获取指定城市的天气信息。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                    <span class="string">&quot;city&quot;</span>: &#123;</span><br><span class="line">                        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;description&quot;</span>: <span class="string">&quot;要查询天气的城市名称&quot;</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;city&quot;</span>]</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>示例解释：</strong></p>
+<ul>
+<li><code>read_markdown</code> <strong>不需要参数</strong>，所以 <code>properties</code> 为空。</li>
+<li><code>fetch_weather</code> <strong>需要参数</strong>，它的 <code>parameters</code> 里包含 <code>city</code> 这个字符串参数。</li>
+<li>AI 在调用 <code>fetch_weather</code> 时，会传递 JSON 结构的 <code>arguments</code>，如：<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;city&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Shanghai&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<hr>
+<h3 id="（3）读取-Markdown-文件"><a href="#（3）读取-Markdown-文件" class="headerlink" title="（3）读取 Markdown 文件"></a><strong>（3）读取 Markdown 文件</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">read_markdown</span>():</span><br><span class="line">    doc_path = <span class="string">&quot;documents&quot;</span></span><br><span class="line">    md_file = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> file <span class="keyword">in</span> os.listdir(doc_path):</span><br><span class="line">        <span class="keyword">if</span> file.endswith(<span class="string">&quot;.md&quot;</span>):</span><br><span class="line">            md_file = os.path.join(doc_path, file)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> md_file:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;No markdown file found in the &#x27;documents&#x27; folder.&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(md_file, <span class="string">&quot;r&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        content = f.read()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> content[:<span class="number">5000</span>]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>读取 <code>documents/</code> 目录下后缀为 <code>.md</code> 文件。</li>
+<li>限制 5000 字符，防止超出 Token 限制。</li>
+<li>将<code>markdown</code>文本的前5000个字符传递给AI。</li>
+</ul>
+<hr>
+<h3 id="（4）获取天气信息（示例工具）"><a href="#（4）获取天气信息（示例工具）" class="headerlink" title="（4）获取天气信息（示例工具）"></a><strong>（4）获取天气信息（示例工具）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">fetch_weather</span>(<span class="params">city</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取指定城市的天气信息。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;当前 <span class="subst">&#123;city&#125;</span> 的天气：晴，25°C&quot;</span></span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>模拟获取天气信息，<strong>参数 <code>city</code> 必须传递</strong>。</li>
+<li>Qwen 在调用 <code>fetch_weather</code> 时，会自动提供 <code>city</code> 的值。</li>
+</ul>
+<h3 id="（5）主逻辑：工具调用的完整流程"><a href="#（5）主逻辑：工具调用的完整流程" class="headerlink" title="（5）主逻辑：工具调用的完整流程"></a><strong>（5）主逻辑：工具调用的完整流程</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    user_question = <span class="built_in">input</span>(<span class="string">&quot;请输入问题：&quot;</span>).strip()</span><br><span class="line">    messages = [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: user_question&#125;]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>让用户输入问题，并存入 <code>messages</code> 作为对话历史。</li>
+</ul>
+<hr>
+<h3 id="（6）第一次请求：看看-AI-是否调用工具"><a href="#（6）第一次请求：看看-AI-是否调用工具" class="headerlink" title="（6）第一次请求：看看 AI 是否调用工具"></a><strong>（6）第一次请求：看看 AI 是否调用工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">completion = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>调用 Qwen，让其决定是否需要调用工具。</li>
+</ul>
+<hr>
+<h3 id="（7）检查-Qwen-是否调用了工具"><a href="#（7）检查-Qwen-是否调用了工具" class="headerlink" title="（7）检查 Qwen 是否调用了工具"></a><strong>（7）检查 Qwen 是否调用了工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> tool_calls:</span><br><span class="line">    tool_results = []</span><br><span class="line">    <span class="keyword">for</span> tool_call <span class="keyword">in</span> tool_calls:</span><br><span class="line">        tool_name = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;name&quot;</span>]</span><br><span class="line">        tool_id = tool_call[<span class="string">&quot;id&quot;</span>]</span><br><span class="line">        tool_args = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;arguments&quot;</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> tool_name == <span class="string">&quot;read_markdown&quot;</span>:</span><br><span class="line">            result_content = read_markdown()</span><br><span class="line">        <span class="keyword">elif</span> tool_name == <span class="string">&quot;fetch_weather&quot;</span>:</span><br><span class="line">            city = tool_args.get(<span class="string">&quot;city&quot;</span>, <span class="string">&quot;未知城市&quot;</span>)</span><br><span class="line">            result_content = fetch_weather(city)</span><br><span class="line">        </span><br><span class="line">        tool_results.append(&#123;</span><br><span class="line">            <span class="string">&quot;role&quot;</span>: <span class="string">&quot;tool&quot;</span>,</span><br><span class="line">            <span class="string">&quot;tool_call_id&quot;</span>: tool_id,</span><br><span class="line">            <span class="string">&quot;content&quot;</span>: result_content</span><br><span class="line">        &#125;)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>解析 Qwen 返回的 <code>tool_calls</code>。</li>
+<li><strong>调用不同的工具</strong>，如 <code>read_markdown()</code> 或 <code>fetch_weather(city)</code> ，并存入 <code>tool</code> 消息。</li>
+<li><strong>如果工具需要参数</strong>，就从 <code>tool_args</code> 里提取。</li>
+<li>若 <code>tool_calls</code> 为空，说明 AI <strong>不需要调用工具</strong>。</li>
+</ul>
+<hr>
+<h3 id="（8）让-Qwen-继续推理"><a href="#（8）让-Qwen-继续推理" class="headerlink" title="（8）让 Qwen 继续推理"></a><strong>（8）让 Qwen 继续推理</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tool_calls&quot;</span>: tool_calls</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)</span><br><span class="line"></span><br><span class="line">completion2 = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>让 Qwen <strong>读取工具返回值，并继续回答</strong>。</li>
+</ul>
+<hr>
+<p>效果测试：</p>
+<p align="center">
+  <img width="1198" alt="function_calling" src="https://github.com/user-attachments/assets/6da63b40-55b2-4eb0-b13c-b5f30225ff33" />
+</p>
+
+<hr>
+<h2 id="3-以下是我在测试的时候一些工具调用失败的原因"><a href="#3-以下是我在测试的时候一些工具调用失败的原因" class="headerlink" title="3. 以下是我在测试的时候一些工具调用失败的原因"></a><strong>3. 以下是我在测试的时候一些工具调用失败的原因</strong></h2><ol>
+<li><code>name</code> 和 Python 函数不匹配，导致 AI 无法正确调用工具。</li>
+<li><code>role=&quot;tool&quot;</code> 消息未紧跟 <code>assistant</code>，导致 AI 解析错误。</li>
+</ol>
+<ul>
+<li>解决方法是在调用完工具之后，向 messages 中手动插入一条 role&#x3D;”assistant” 的空消息，附带 tool_calls 字段，然后紧接着添加 role&#x3D;”tool” 的返回结果，这样就保证了正确的调用链路。<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    &quot;role&quot;: &quot;assistant&quot;,</span><br><span class="line">    &quot;content&quot;: &quot;&quot;,  # 一定为空</span><br><span class="line">    &quot;tool_calls&quot;: tool_calls  # 将 AI 最初返回的 tool_calls 原样放回</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)  # 马上接上 tool 返回值</span><br></pre></td></tr></table></figure></li>
+<li>因为 Qwen 模型的调用链规则如下：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">用户消息（role=&quot;user&quot;）</span><br><span class="line">→ AI 返回 tool_calls（role=&quot;assistant&quot;，tool_calls）</span><br><span class="line">→ 工具执行，返回结果（role=&quot;tool&quot;，tool_call_id）</span><br><span class="line">→ AI 接收到结果，继续推理</span><br></pre></td></tr></table></figure></li>
+<li>如果 role&#x3D;”tool” 的消息不紧跟在带有 tool_calls 的 assistant 消息后面，模型就无法对上“这个工具调用返回了这个值”，于是会报错或输出异常。</li>
+</ul>
+<ol start="3">
+<li><code>parameters</code> 设置错误，导致 AI 传递了错误的参数。</li>
+<li><code>messages</code> 结构错误，导致 AI 不能正确读取历史对话。</li>
 </ol>
 <hr>
-<h2 id="环境与设置"><a href="#环境与设置" class="headerlink" title="环境与设置"></a><strong>环境与设置</strong></h2><h3 id="1-表格识别模型配置"><a href="#1-表格识别模型配置" class="headerlink" title="1. 表格识别模型配置"></a><strong>1. 表格识别模型配置</strong></h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git lfs install</span><br><span class="line">git <span class="built_in">clone</span> https://www.modelscope.cn/iic/cv_dla34_table-structure-recognition_cycle-centernet.git</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">model_path = <span class="string">&quot;your_absolute_path_to_cv_dla34_table-structure-recognition_cycle-centernet&quot;</span></span><br></pre></td></tr></table></figure>
-<p>建议自定义路径使用绝对路径</p>
-<p>例如：<code>model_path = &quot;D:/Table_Extraction/cv_dla34_table-structure-recognition_cycle-centernet&quot;</code></p>
-<h3 id="2-PaddleOCR-配置"><a href="#2-PaddleOCR-配置" class="headerlink" title="2. PaddleOCR 配置"></a><strong>2. PaddleOCR 配置</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">ocr = PaddleOCR(</span><br><span class="line">    use_gpu=<span class="literal">True</span>,</span><br><span class="line">    lang=<span class="string">&#x27;ch&#x27;</span>,</span><br><span class="line">    det_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_det_infer&#x27;</span>,</span><br><span class="line">    rec_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_rec_infer&#x27;</span>,</span><br><span class="line">    cls_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_ppocr_mobile_v2.0_cls_infer&#x27;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p>建议自定义路径使用绝对路径</p>
-<p>例如： <code>det_model_dir=&#39;D:/Table_Extraction/PaddleOCR/models/ch_PP-OCRv4_det_infer/&#39;</code></p>
-<hr>
-<h2 id="核心函数详解"><a href="#核心函数详解" class="headerlink" title="核心函数详解"></a><strong>核心函数详解</strong></h2><h3 id="1-函数-calculate-iot-cell-text"><a href="#1-函数-calculate-iot-cell-text" class="headerlink" title="1. 函数 calculate_iot(cell, text)"></a><strong>1. 函数 <code>calculate_iot(cell, text)</code></strong></h3><p><strong>功能</strong>：计算 OCR 文本框与表格单元格的交并比（IoT, Intersection over Text）。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>利用两组矩形坐标，计算它们重叠区域的面积。</li>
-<li>然后用重叠面积 &#x2F; 文本框面积作为 IoT 值。</li>
-<li>若值越大，表示文本越“贴合”单元格。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">calculate_iot</span>(<span class="params">cell, text</span>):</span><br><span class="line">    intersection_x1 = <span class="built_in">max</span>(cell[<span class="number">0</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>])</span><br><span class="line">    intersection_y1 = <span class="built_in">max</span>(cell[<span class="number">1</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    intersection_x2 = <span class="built_in">min</span>(cell[<span class="number">2</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>])</span><br><span class="line">    intersection_y2 = <span class="built_in">min</span>(cell[<span class="number">3</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> intersection_x1 &gt;= intersection_x2 <span class="keyword">or</span> intersection_y1 &gt;= intersection_y2:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.0</span></span><br><span class="line"></span><br><span class="line">    intersection_area = (intersection_x2 - intersection_x1) * (intersection_y2 - intersection_y1)</span><br><span class="line">    text_area = (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>]) * (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    <span class="keyword">return</span> intersection_area / text_area</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="2-函数-merge-text-into-cells-cell-coords-ocr-results"><a href="#2-函数-merge-text-into-cells-cell-coords-ocr-results" class="headerlink" title="2. 函数 merge_text_into_cells(cell_coords, ocr_results)"></a><strong>2. 函数 <code>merge_text_into_cells(cell_coords, ocr_results)</code></strong></h3><p><strong>功能</strong>：将 OCR 识别到的文字分配到表格对应单元格中。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>对每个单元格遍历所有 OCR 文本框，计算 IoT。</li>
-<li>若 IoT &gt; 0.5，则认为该文字属于该单元格。</li>
-<li>同时记录那些与所有单元格 IoT &lt; 0.1 的文字（非表格内容）。</li>
-<li>将属于单元格的文字合并为一个字符串。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">merge_text_into_cells</span>(<span class="params">cell_coords, ocr_results</span>):</span><br><span class="line">    cell_text_dict = &#123;cell: [] <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords&#125;</span><br><span class="line">    noncell_text_dict = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords:</span><br><span class="line">        <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">            <span class="keyword">if</span> calculate_iot(cell, result) &gt; <span class="number">0.5</span>:</span><br><span class="line">                cell_text_dict[cell].append(result[<span class="string">&#x27;text&#x27;</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">all</span>(calculate_iot(cell, result) &lt; <span class="number">0.1</span> <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords):</span><br><span class="line">            noncell_text_dict[result[<span class="string">&#x27;coords&#x27;</span>]] = result[<span class="string">&#x27;text&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    merged_text = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> cell, texts <span class="keyword">in</span> cell_text_dict.items():</span><br><span class="line">        merged_text[cell] = <span class="string">&#x27;&#x27;</span>.join(texts).strip()</span><br><span class="line">    <span class="keyword">for</span> coords, text <span class="keyword">in</span> noncell_text_dict.items():</span><br><span class="line">        merged_text[coords] = <span class="string">&#x27;&#x27;</span>.join(text).strip()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> merged_text</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="3-函数-adjust-coordinates-merged-text-image-path"><a href="#3-函数-adjust-coordinates-merged-text-image-path" class="headerlink" title="3. 函数 adjust_coordinates(merged_text, image_path)"></a><strong>3. 函数 <code>adjust_coordinates(merged_text, image_path)</code></strong></h3><p><strong>功能</strong>：将 y 坐标相近的单元格进行聚类并统一化，方便后续行级别排序。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>图像越高，容许的 y 偏差越大，使用 height &#x2F; 100 作为容差。</li>
-<li>将 y 值差距小于阈值的单元格归为一组。</li>
-<li>每组内统一 y 值为该组的平均 y 值，确保在同一“水平行”内。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">adjust_coordinates</span>(<span class="params">merged_text, image_path</span>):</span><br><span class="line">    image = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    width, height = image.size</span><br><span class="line">    threshold = height / <span class="number">100</span></span><br><span class="line">    groups = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> coordinates, text <span class="keyword">in</span> merged_text.items():</span><br><span class="line">        found_group = <span class="literal">False</span></span><br><span class="line">        <span class="keyword">for</span> group_y <span class="keyword">in</span> groups.keys():</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">abs</span>(coordinates[<span class="number">1</span>] - group_y) &lt;= threshold:</span><br><span class="line">                groups[group_y].append((coordinates, text))</span><br><span class="line">                found_group = <span class="literal">True</span></span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> found_group:</span><br><span class="line">            groups[coordinates[<span class="number">1</span>]] = [(coordinates, text)]</span><br><span class="line"></span><br><span class="line">    adjusted_coordinates = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> group_y, group_coords <span class="keyword">in</span> groups.items():</span><br><span class="line">        avg_y = <span class="built_in">sum</span>(coord[<span class="number">0</span>][<span class="number">1</span>] <span class="keyword">for</span> coord <span class="keyword">in</span> group_coords) / <span class="built_in">len</span>(group_coords)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> group_coords:</span><br><span class="line">            adjusted_coordinates[(i[<span class="number">0</span>][<span class="number">0</span>], avg_y, i[<span class="number">0</span>][<span class="number">2</span>], i[<span class="number">0</span>][<span class="number">3</span>])] = i[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> adjusted_coordinates</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="4-函数-draw-text-boxes-image-path-boxes-texts"><a href="#4-函数-draw-text-boxes-image-path-boxes-texts" class="headerlink" title="4.函数 draw_text_boxes(image_path, boxes, texts)"></a><strong>4.函数 <code>draw_text_boxes(image_path, boxes, texts)</code></strong></h3><p><strong>功能</strong>：在图像上绘制表格框与文字内容，进行可视化标注。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>利用 PIL 创建空白图层，绘制框线与文字。</li>
-<li>若文字宽度超出单元格宽度，则使用 textwrap 进行自动换行。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">draw_text_boxes</span>(<span class="params">image_path, boxes, texts</span>):</span><br><span class="line">    img = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    img = Image.new(<span class="string">&#x27;RGB&#x27;</span>, img.size, (<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>))</span><br><span class="line">    draw = ImageDraw.Draw(img)</span><br><span class="line">    font = ImageFont.truetype(<span class="string">&quot;./chinese_cht.ttf&quot;</span>, size=<span class="number">15</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> box, text <span class="keyword">in</span> <span class="built_in">zip</span>(boxes, texts):</span><br><span class="line">        x0, y0, x1, y1 = box</span><br><span class="line">        x0, x1 = <span class="built_in">sorted</span>([x0, x1])</span><br><span class="line">        y0, y1 = <span class="built_in">sorted</span>([y0, y1])</span><br><span class="line">        normalized_box = (x0, y0, x1, y1)</span><br><span class="line">        draw.rectangle(normalized_box, outline=<span class="string">&#x27;red&#x27;</span>, width=<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        text_len = draw.textbbox((x0, y0), text, font=font)</span><br><span class="line">        <span class="keyword">if</span> (text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) &gt; (x1 - x0):</span><br><span class="line">            text = <span class="string">&#x27;\n&#x27;</span>.join(textwrap.wrap(text, width=<span class="built_in">int</span>(</span><br><span class="line">                np.ceil(<span class="built_in">len</span>(text) / np.ceil((text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) / (x1 - x0))))))</span><br><span class="line"></span><br><span class="line">        draw.text((x0, y0), text, font=font, fill=<span class="string">&#x27;black&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    img.save(<span class="string">&#x27;your_image_storage_path/output.png&#x27;</span>)</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="5-最终文本输出（结构化行）"><a href="#5-最终文本输出（结构化行）" class="headerlink" title="5. 最终文本输出（结构化行）"></a><strong>5. 最终文本输出（结构化行）</strong></h2><p><strong>功能</strong>：将所有坐标按 y → x 排序，按行归组输出结构化文本。</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">adjusted_merged_text_sorted = <span class="built_in">sorted</span>(adjusted_merged_text.items(), key=<span class="keyword">lambda</span> x: (x[<span class="number">0</span>][<span class="number">1</span>], x[<span class="number">0</span>][<span class="number">0</span>]))</span><br><span class="line">adjusted_merged_text_sorted_group = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> coordinates, text <span class="keyword">in</span> adjusted_merged_text_sorted:</span><br><span class="line">    <span class="keyword">if</span> coordinates[<span class="number">1</span>] <span class="keyword">not</span> <span class="keyword">in</span> adjusted_merged_text_sorted_group:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]] = [text]</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]].append(text)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> text_list <span class="keyword">in</span> adjusted_merged_text_sorted_group.values():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27; | &#x27;</span>.join(text_list))</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a><strong>使用方法</strong></h2><ol>
-<li>运行脚本选择表格图片：</li>
-</ol>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python Table_Extraction.py</span><br></pre></td></tr></table></figure>
-<p>或</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python main.py</span><br></pre></td></tr></table></figure>
-
-<p>在项目目录会输出效果图片，终端会输出文本结果</p>
-<ol start="2">
-<li>效果展示<br><img src="https://github.com/user-attachments/assets/8e0f21d8-af6c-4da2-beb7-dcc7f5f73115" alt="image"><br><img src="https://github.com/user-attachments/assets/45ad3906-09df-431e-a4ec-4f0779137195" alt="image"><br>输出结果如下，你可以用这组结果测试大模型是否能读懂这组表格： <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PartNumber | TotalCapacitance(Ct) @ 50 V,(pF) | TotalCapacitance(Ct) @ 0 V,(pF) | SeriesResistance (Rs),@10 mA,(②) | MinorityCarrierLifetime (TL)@ 10 mA(ns) | VoltageRating2(M) | I-RegionThickness(μm) | ThermalResistance(0JC)(°C/W)</span><br><span class="line">Maximum | Typical | Maximum | Typical | Minimum | Nominal | Maximum</span><br><span class="line"></span><br><span class="line">Switching Applications(continued)</span><br><span class="line">| APD0810-203 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 174</span><br><span class="line">| APD0810-210 | 0.40 | 0.45 | 1.5 | 160 | 100 | 8 | 75</span><br><span class="line">| APD0810-219 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 143</span><br><span class="line">| APD0810-240 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 155</span><br><span class="line">| APD1505-203 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 172</span><br><span class="line">| APD1505-210 | 0.40 | 0.45@10 V | 2.5 | 350 | 200 | 15 | 74</span><br><span class="line">| APD1505-219 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 142</span><br><span class="line">| APD1505-240 | 0.40 | 0.45 @ 10 V | 2.5 | 350 | 200 | 15 | 150</span><br><span class="line">| APD1510-203 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 168</span><br><span class="line">| APD1510-210 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 70</span><br><span class="line">| APD1510-219 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 137</span><br><span class="line">| APD1510-240 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 149</span><br><span class="line">| APD1520-203 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 155</span><br><span class="line">| APD1520-210 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 57</span><br><span class="line">| APD1520-219 | 0.45 | 0.50 | 1.2 | 900 | 200 | 15 | 124</span><br><span class="line">| APD1520-240 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 136</span><br><span class="line"></span><br><span class="line">AttenuatorApplications</span><br><span class="line">| APD2220-203 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 132</span><br><span class="line">| APD2220-210 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 32</span><br><span class="line">| APD2220-219 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 104</span><br><span class="line">| APD2220-240 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 115</span><br></pre></td></tr></table></figure></li>
-</ol>
-<hr>
-<h2 id="补充说明"><a href="#补充说明" class="headerlink" title="补充说明"></a><strong>补充说明</strong></h2><ul>
-<li>字体文件 <code>chinese_cht.ttf</code> 必须存在，或替换为系统可识别的中文字体。</li>
-<li>对于复杂结构表格，当前模型仍然无法很好的处理。</li>
-</ul>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/wyf3/llm_related/tree/main">wyf3</a> 和 <a href="https://github.com/PaddlePaddle/PaddleOCR">PaddleOCR</a></p>
+<p>该项目代码参考 <a href="https://help.aliyun.com/zh/model-studio/user-guide/qwen-function-calling?spm=0.0.0.i4#8c41d25020ipz">Qwen官方Function Calling</a>。</p>
 ]]></content>
       <categories>
-        <category>OCR</category>
+        <category>LLM学习之路</category>
       </categories>
       <tags>
-        <tag>OCR</tag>
-        <tag>PDF</tag>
         <tag>AI</tag>
-        <tag>PaddleOCR</tag>
+        <tag>LLM</tag>
+        <tag>大模型</tag>
+        <tag>Qwen</tag>
+        <tag>Function Calling</tag>
+        <tag>Agent</tag>
+        <tag>Python</tag>
       </tags>
   </entry>
   <entry>
@@ -593,10 +716,89 @@
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
+        <tag>Knowledge Graph</tag>
+        <tag>Python</tag>
         <tag>GraphRAG</tag>
         <tag>RAG</tag>
-        <tag>Python</tag>
         <tag>Gephi</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Custom Search Integration for Hexo Chic</title>
+    <url>/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/</url>
+    <content><![CDATA[<h1 id="Hexo-Chic-主题实现搜索功能"><a href="#Hexo-Chic-主题实现搜索功能" class="headerlink" title="Hexo + Chic 主题实现搜索功能"></a>Hexo + Chic 主题实现搜索功能</h1><p>本文详细记录如何在 Hexo 中使用插件 <code>hexo-generator-searchdb</code> 实现基于 Chic 主题的实时搜索功能，包括搜索回复框、搜索结果卡、暗黑模式适配等细节。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="1-安装插件"><a href="#1-安装插件" class="headerlink" title="1. 安装插件"></a><strong>1. 安装插件</strong></h2><p>在 <code>Hexo</code> 根目录下打开终端，执行</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-generator-searchdb --save</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="2-打开根目录的-config-yml-文件，添加（或修改）如下配置："><a href="#2-打开根目录的-config-yml-文件，添加（或修改）如下配置：" class="headerlink" title="2. 打开根目录的 _config.yml 文件，添加（或修改）如下配置："></a><strong>2. 打开根目录的 <code>_config.yml</code> 文件，添加（或修改）如下配置：</strong></h2><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">search:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">search.xml</span></span><br><span class="line">  <span class="attr">field:</span> <span class="string">post</span></span><br><span class="line">  <span class="attr">format:</span> <span class="string">html</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="3-新建-search-css"><a href="#3-新建-search-css" class="headerlink" title="3. 新建 search.css"></a><strong>3. 新建 search.css</strong></h2><p><strong>建议路径</strong>: <code>themes/hexo-theme-Chic/source/css/search.css</code></p>
+<p>包含搜索框&#x2F;结果卡&#x2F;暗黑模式样式，具体代码可带文章开头项目地址中获取：</p>
+<figure class="highlight css"><table><tr><td class="code"><pre><span class="line"><span class="selector-class">.search-container</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-result</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.search-card</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.search-card-snippet</span> &#123; ... &#125;</span><br><span class="line"><span class="keyword">@media</span> (<span class="attribute">max-width</span>: <span class="number">768px</span>) &#123; ... &#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="4-修改主题配置"><a href="#4-修改主题配置" class="headerlink" title="4. 修改主题配置"></a><strong>4. 修改主题配置</strong></h2><p>打开<code>theme/hexo-theme-Chic/_config.yml</code> ，在 <code>stylesheets </code>下增加一行 <code>search.css</code> 确保加载样式文件：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">stylesheets:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/style.css</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/search.css</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="5-修改-header-ejs"><a href="#5-修改-header-ejs" class="headerlink" title="5. 修改 header.ejs"></a><strong>5. 修改 <code>header.ejs</code></strong></h2><p>对 <code>theme/hexo-theme-Chic/layout/_partial/header.ejs</code> 做了如下关键修改，具体代码可带文章开头项目地址中获取：</p>
+<h3 id="HTML-结构改动"><a href="#HTML-结构改动" class="headerlink" title="HTML 结构改动"></a>HTML 结构改动</h3><ol>
+<li>在 <code>&lt;div class=&quot;menu navbar-right&quot;&gt;</code> 中插入：</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;div class=&quot;search-container&quot;&gt;</span><br><span class="line">  &lt;a href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍&lt;/a&gt;</span><br><span class="line">  &lt;input type=&quot;text&quot; id=&quot;nav-search-input&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">  &lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>在移动端导航 <code>&lt;div id=&quot;mobile-menu&quot;&gt;</code> 中插入：</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;a class=&quot;menu-item&quot; href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍 Search&lt;/a&gt;</span><br><span class="line">&lt;input type=&quot;text&quot; id=&quot;nav-search-input-mobile&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">&lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>保留并未更动主题切换按钮：</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;input id=&quot;switch_default&quot; type=&quot;checkbox&quot; class=&quot;switch_default&quot;&gt;</span><br><span class="line">&lt;label for=&quot;switch_default&quot; class=&quot;toggleBtn&quot;&gt;&lt;/label&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="JS-功能改动"><a href="#JS-功能改动" class="headerlink" title="JS 功能改动"></a>JS 功能改动</h3><ol>
+<li>新增 <code>toggleSearchInput()</code> 方法，实现点击图标展开或隐藏搜索框。</li>
+<li></li>
+</ol>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">toggleSearchInput</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> inputs = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-input&#x27;</span>);</span><br><span class="line">  <span class="keyword">const</span> results = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-result&#x27;</span>);</span><br><span class="line">  inputs.<span class="title function_">forEach</span>(<span class="function"><span class="params">input</span> =&gt;</span> &#123;</span><br><span class="line">    input.<span class="property">classList</span>.<span class="title function_">toggle</span>(<span class="string">&#x27;active&#x27;</span>);</span><br><span class="line">    <span class="keyword">if</span> (input.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;active&#x27;</span>)) input.<span class="title function_">focus</span>();</span><br><span class="line">  &#125;);</span><br><span class="line">  results.<span class="title function_">forEach</span>(<span class="function"><span class="params">r</span> =&gt;</span> r.<span class="property">style</span>.<span class="property">display</span> = <span class="string">&#x27;none&#x27;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>新增 <code>navSearch()</code> 方法，实现从 <code>search.xml</code> 加载数据并匹配关键词。</li>
+<li>新增空白点击关闭逻辑：点击 <code>.search-container</code> 外部区域后自动隐藏搜索框并清空内容。</li>
+</ol>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">if</span> (searchData.<span class="property">length</span> === <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="title function_">fetch</span>(<span class="string">&#x27;&lt;%- config.root %&gt;search.xml&#x27;</span>)</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">res</span> =&gt;</span> res.<span class="title function_">text</span>())</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">xmlText</span> =&gt;</span> &#123;</span><br><span class="line">        <span class="keyword">const</span> parser = <span class="keyword">new</span> <span class="title class_">DOMParser</span>();</span><br><span class="line">        <span class="keyword">const</span> xml = parser.<span class="title function_">parseFromString</span>(xmlText, <span class="string">&#x27;text/xml&#x27;</span>);</span><br><span class="line">        <span class="keyword">const</span> entries = xml.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;entry&#x27;</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">let</span> entry <span class="keyword">of</span> entries) &#123;</span><br><span class="line">          searchData.<span class="title function_">push</span>(&#123;</span><br><span class="line">            <span class="attr">title</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;title&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">content</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;content&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">url</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;url&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span></span><br><span class="line">          &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="6-实现效果"><a href="#6-实现效果" class="headerlink" title="6. 实现效果"></a><strong>6. 实现效果</strong></h2><ul>
+<li>点击图标展示搜索框</li>
+<li>实时匹配文章标题&#x2F;内容</li>
+<li>结果以卡片形式展示</li>
+<li>黑色模式样式自动选择</li>
+<li>点击空白地方隐藏结果 + 清空文本</li>
+<li>移动端页面适配<br><img src="https://github.com/user-attachments/assets/430d306f-1836-4ca7-b1c6-c249835622bd" alt="image"></li>
+</ul>
+<hr>
+<h2 id="7-新生成并运行-Hexo"><a href="#7-新生成并运行-Hexo" class="headerlink" title="7. 新生成并运行 Hexo"></a><strong>7. 新生成并运行 Hexo</strong></h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
+
+<p>然后访问 <code>http://localhost:4000</code>，查看任意一段代码块，右上角应出现复制图标按钮。</p>
+<hr>
+<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> , <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 和 <a href="https://github.com/next-theme/hexo-generator-searchdb.git">hexo-generator-searchdb</a>。</p>
+]]></content>
+      <categories>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>Blog</tag>
+        <tag>前端</tag>
       </tags>
   </entry>
   <entry>
@@ -702,89 +904,11 @@
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
+        <tag>Agent</tag>
         <tag>RAG</tag>
         <tag>后端</tag>
-        <tag>Agent</tag>
         <tag>Ngrok</tag>
         <tag>flask</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Custom Search Integration for Hexo Chic</title>
-    <url>/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/</url>
-    <content><![CDATA[<h1 id="Hexo-Chic-主题实现搜索功能"><a href="#Hexo-Chic-主题实现搜索功能" class="headerlink" title="Hexo + Chic 主题实现搜索功能"></a>Hexo + Chic 主题实现搜索功能</h1><p>本文详细记录如何在 Hexo 中使用插件 <code>hexo-generator-searchdb</code> 实现基于 Chic 主题的实时搜索功能，包括搜索回复框、搜索结果卡、暗黑模式适配等细节。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
-<hr>
-<h2 id="1-安装插件"><a href="#1-安装插件" class="headerlink" title="1. 安装插件"></a><strong>1. 安装插件</strong></h2><p>在 <code>Hexo</code> 根目录下打开终端，执行</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-generator-searchdb --save</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="2-打开根目录的-config-yml-文件，添加（或修改）如下配置："><a href="#2-打开根目录的-config-yml-文件，添加（或修改）如下配置：" class="headerlink" title="2. 打开根目录的 _config.yml 文件，添加（或修改）如下配置："></a><strong>2. 打开根目录的 <code>_config.yml</code> 文件，添加（或修改）如下配置：</strong></h2><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">search:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">search.xml</span></span><br><span class="line">  <span class="attr">field:</span> <span class="string">post</span></span><br><span class="line">  <span class="attr">format:</span> <span class="string">html</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="3-新建-search-css"><a href="#3-新建-search-css" class="headerlink" title="3. 新建 search.css"></a><strong>3. 新建 search.css</strong></h2><p><strong>建议路径</strong>: <code>themes/hexo-theme-Chic/source/css/search.css</code></p>
-<p>包含搜索框&#x2F;结果卡&#x2F;暗黑模式样式，具体代码可带文章开头项目地址中获取：</p>
-<figure class="highlight css"><table><tr><td class="code"><pre><span class="line"><span class="selector-class">.search-container</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-result</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.search-card</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.search-card-snippet</span> &#123; ... &#125;</span><br><span class="line"><span class="keyword">@media</span> (<span class="attribute">max-width</span>: <span class="number">768px</span>) &#123; ... &#125;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="4-修改主题配置"><a href="#4-修改主题配置" class="headerlink" title="4. 修改主题配置"></a><strong>4. 修改主题配置</strong></h2><p>打开<code>theme/hexo-theme-Chic/_config.yml</code> ，在 <code>stylesheets </code>下增加一行 <code>search.css</code> 确保加载样式文件：</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">stylesheets:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/style.css</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/search.css</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="5-修改-header-ejs"><a href="#5-修改-header-ejs" class="headerlink" title="5. 修改 header.ejs"></a><strong>5. 修改 <code>header.ejs</code></strong></h2><p>对 <code>theme/hexo-theme-Chic/layout/_partial/header.ejs</code> 做了如下关键修改，具体代码可带文章开头项目地址中获取：</p>
-<h3 id="HTML-结构改动"><a href="#HTML-结构改动" class="headerlink" title="HTML 结构改动"></a>HTML 结构改动</h3><ol>
-<li>在 <code>&lt;div class=&quot;menu navbar-right&quot;&gt;</code> 中插入：</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;div class=&quot;search-container&quot;&gt;</span><br><span class="line">  &lt;a href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍&lt;/a&gt;</span><br><span class="line">  &lt;input type=&quot;text&quot; id=&quot;nav-search-input&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">  &lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li>在移动端导航 <code>&lt;div id=&quot;mobile-menu&quot;&gt;</code> 中插入：</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;a class=&quot;menu-item&quot; href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍 Search&lt;/a&gt;</span><br><span class="line">&lt;input type=&quot;text&quot; id=&quot;nav-search-input-mobile&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">&lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-
-<ol start="3">
-<li>保留并未更动主题切换按钮：</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;input id=&quot;switch_default&quot; type=&quot;checkbox&quot; class=&quot;switch_default&quot;&gt;</span><br><span class="line">&lt;label for=&quot;switch_default&quot; class=&quot;toggleBtn&quot;&gt;&lt;/label&gt;</span><br></pre></td></tr></table></figure>
-
-<h3 id="JS-功能改动"><a href="#JS-功能改动" class="headerlink" title="JS 功能改动"></a>JS 功能改动</h3><ol>
-<li>新增 <code>toggleSearchInput()</code> 方法，实现点击图标展开或隐藏搜索框。</li>
-<li></li>
-</ol>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">toggleSearchInput</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> inputs = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-input&#x27;</span>);</span><br><span class="line">  <span class="keyword">const</span> results = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-result&#x27;</span>);</span><br><span class="line">  inputs.<span class="title function_">forEach</span>(<span class="function"><span class="params">input</span> =&gt;</span> &#123;</span><br><span class="line">    input.<span class="property">classList</span>.<span class="title function_">toggle</span>(<span class="string">&#x27;active&#x27;</span>);</span><br><span class="line">    <span class="keyword">if</span> (input.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;active&#x27;</span>)) input.<span class="title function_">focus</span>();</span><br><span class="line">  &#125;);</span><br><span class="line">  results.<span class="title function_">forEach</span>(<span class="function"><span class="params">r</span> =&gt;</span> r.<span class="property">style</span>.<span class="property">display</span> = <span class="string">&#x27;none&#x27;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<ol start="2">
-<li>新增 <code>navSearch()</code> 方法，实现从 <code>search.xml</code> 加载数据并匹配关键词。</li>
-<li>新增空白点击关闭逻辑：点击 <code>.search-container</code> 外部区域后自动隐藏搜索框并清空内容。</li>
-</ol>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">if</span> (searchData.<span class="property">length</span> === <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="title function_">fetch</span>(<span class="string">&#x27;&lt;%- config.root %&gt;search.xml&#x27;</span>)</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">res</span> =&gt;</span> res.<span class="title function_">text</span>())</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">xmlText</span> =&gt;</span> &#123;</span><br><span class="line">        <span class="keyword">const</span> parser = <span class="keyword">new</span> <span class="title class_">DOMParser</span>();</span><br><span class="line">        <span class="keyword">const</span> xml = parser.<span class="title function_">parseFromString</span>(xmlText, <span class="string">&#x27;text/xml&#x27;</span>);</span><br><span class="line">        <span class="keyword">const</span> entries = xml.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;entry&#x27;</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">let</span> entry <span class="keyword">of</span> entries) &#123;</span><br><span class="line">          searchData.<span class="title function_">push</span>(&#123;</span><br><span class="line">            <span class="attr">title</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;title&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">content</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;content&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">url</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;url&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span></span><br><span class="line">          &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="6-实现效果"><a href="#6-实现效果" class="headerlink" title="6. 实现效果"></a><strong>6. 实现效果</strong></h2><ul>
-<li>点击图标展示搜索框</li>
-<li>实时匹配文章标题&#x2F;内容</li>
-<li>结果以卡片形式展示</li>
-<li>黑色模式样式自动选择</li>
-<li>点击空白地方隐藏结果 + 清空文本</li>
-<li>移动端页面适配<br><img src="https://github.com/user-attachments/assets/430d306f-1836-4ca7-b1c6-c249835622bd" alt="image"></li>
-</ul>
-<hr>
-<h2 id="7-新生成并运行-Hexo"><a href="#7-新生成并运行-Hexo" class="headerlink" title="7. 新生成并运行 Hexo"></a><strong>7. 新生成并运行 Hexo</strong></h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
-
-<p>然后访问 <code>http://localhost:4000</code>，查看任意一段代码块，右上角应出现复制图标按钮。</p>
-<hr>
-<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> , <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 和 <a href="https://github.com/next-theme/hexo-generator-searchdb.git">hexo-generator-searchdb</a>。</p>
-]]></content>
-      <categories>
-        <category>Hexo</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-        <tag>博客</tag>
-        <tag>Blog</tag>
-        <tag>前端</tag>
       </tags>
   </entry>
   <entry>
@@ -951,213 +1075,14 @@
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
+        <tag>Knowledge Graph</tag>
+        <tag>Python</tag>
         <tag>GraphRAG</tag>
         <tag>RAG</tag>
-        <tag>Python</tag>
         <tag>flask</tag>
         <tag>图数据库</tag>
         <tag>LangChain</tag>
         <tag>NebulaGraph</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Function Calling</title>
-    <url>/2025/03/21/Function-Calling/</url>
-    <content><![CDATA[<h1 id="Qwen-Function-Calling-详细解析"><a href="#Qwen-Function-Calling-详细解析" class="headerlink" title="Qwen Function Calling 详细解析"></a>Qwen Function Calling 详细解析</h1><hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
-<hr>
-<h2 id="1-Function-Calling-简介"><a href="#1-Function-Calling-简介" class="headerlink" title="1. Function Calling 简介"></a><strong>1. Function Calling 简介</strong></h2><p>Function Calling 允许 LLM（大语言模型）在回答问题时调用外部工具，如 Python 函数、API 或数据库查询。</p>
-<p><strong>核心流程：</strong></p>
-<ol>
-<li><strong>用户输入问题</strong></li>
-<li><strong>AI 判断是否需要调用工具</strong></li>
-<li><strong>如果需要，AI 返回 <code>tool_calls</code>，请求调用特定函数</strong></li>
-<li><strong>开发者执行对应的 Python 函数，并返回执行结果</strong></li>
-<li><strong>AI 读取工具返回值，继续推理并生成最终回答</strong></li>
-</ol>
-<h2 id="2-代码拆解：Function-Calling-功能实现"><a href="#2-代码拆解：Function-Calling-功能实现" class="headerlink" title="2. 代码拆解：Function Calling 功能实现"></a><strong>2. 代码拆解：Function Calling 功能实现</strong></h2><p>本文定义了一个read_markdown函数，用于通过提问让大模型自主调用函数阅读markdown文本内容，回答问题。</p>
-<h3 id="（1）初始化-Qwen-客户端"><a href="#（1）初始化-Qwen-客户端" class="headerlink" title="（1）初始化 Qwen 客户端"></a><strong>（1）初始化 Qwen 客户端</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">client = OpenAI(</span><br><span class="line">    api_key=<span class="string">&quot;your_api_key&quot;</span>,</span><br><span class="line">    base_url=<span class="string">&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>连接 Qwen API 进行请求。</li>
-<li><code>api_key</code> 必须正确，否则请求会失败。</li>
-</ul>
-<hr>
-<h3 id="（2）定义工具（Function-Calling）"><a href="#（2）定义工具（Function-Calling）" class="headerlink" title="（2）定义工具（Function Calling）"></a><strong>（2）定义工具（Function Calling）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>告诉 Qwen 可调用的工具。</li>
-<li><code>name</code> 必须与 Python 函数名一致，否则无法正确调用。</li>
-<li><code>description</code> 用于让 AI 知道工具的用途。</li>
-<li>在 Qwen 的 Function Calling 中，工具的<code>parameters</code> 的 <code>type</code> 必须是 <code>object</code>。</li>
-<li><code>parameters</code> 为空 <code>&#123;&#125;</code>，表示此工具不需要参数。</li>
-<li><code>parameters</code> <strong>如果不为空</strong>，表示此工具需要<strong>传递参数</strong>。<ul>
-<li><code>properties</code> 定义了每个参数的名称、类型和描述。</li>
-<li><code>required</code> 指定了哪些参数是必填项。</li>
-</ul>
-</li>
-</ul>
-<p>如果代码中涉及到了多个工具的调用，可按照以下的格式进行多个工具的定义：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;fetch_weather&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;获取指定城市的天气信息。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                    <span class="string">&quot;city&quot;</span>: &#123;</span><br><span class="line">                        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;description&quot;</span>: <span class="string">&quot;要查询天气的城市名称&quot;</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;city&quot;</span>]</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
-<p><strong>示例解释：</strong></p>
-<ul>
-<li><code>read_markdown</code> <strong>不需要参数</strong>，所以 <code>properties</code> 为空。</li>
-<li><code>fetch_weather</code> <strong>需要参数</strong>，它的 <code>parameters</code> 里包含 <code>city</code> 这个字符串参数。</li>
-<li>AI 在调用 <code>fetch_weather</code> 时，会传递 JSON 结构的 <code>arguments</code>，如：<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;city&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Shanghai&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure></li>
-</ul>
-<hr>
-<h3 id="（3）读取-Markdown-文件"><a href="#（3）读取-Markdown-文件" class="headerlink" title="（3）读取 Markdown 文件"></a><strong>（3）读取 Markdown 文件</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">read_markdown</span>():</span><br><span class="line">    doc_path = <span class="string">&quot;documents&quot;</span></span><br><span class="line">    md_file = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> file <span class="keyword">in</span> os.listdir(doc_path):</span><br><span class="line">        <span class="keyword">if</span> file.endswith(<span class="string">&quot;.md&quot;</span>):</span><br><span class="line">            md_file = os.path.join(doc_path, file)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> md_file:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;No markdown file found in the &#x27;documents&#x27; folder.&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(md_file, <span class="string">&quot;r&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        content = f.read()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> content[:<span class="number">5000</span>]</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>读取 <code>documents/</code> 目录下后缀为 <code>.md</code> 文件。</li>
-<li>限制 5000 字符，防止超出 Token 限制。</li>
-<li>将<code>markdown</code>文本的前5000个字符传递给AI。</li>
-</ul>
-<hr>
-<h3 id="（4）获取天气信息（示例工具）"><a href="#（4）获取天气信息（示例工具）" class="headerlink" title="（4）获取天气信息（示例工具）"></a><strong>（4）获取天气信息（示例工具）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">fetch_weather</span>(<span class="params">city</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取指定城市的天气信息。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;当前 <span class="subst">&#123;city&#125;</span> 的天气：晴，25°C&quot;</span></span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>模拟获取天气信息，<strong>参数 <code>city</code> 必须传递</strong>。</li>
-<li>Qwen 在调用 <code>fetch_weather</code> 时，会自动提供 <code>city</code> 的值。</li>
-</ul>
-<h3 id="（5）主逻辑：工具调用的完整流程"><a href="#（5）主逻辑：工具调用的完整流程" class="headerlink" title="（5）主逻辑：工具调用的完整流程"></a><strong>（5）主逻辑：工具调用的完整流程</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    user_question = <span class="built_in">input</span>(<span class="string">&quot;请输入问题：&quot;</span>).strip()</span><br><span class="line">    messages = [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: user_question&#125;]</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>让用户输入问题，并存入 <code>messages</code> 作为对话历史。</li>
-</ul>
-<hr>
-<h3 id="（6）第一次请求：看看-AI-是否调用工具"><a href="#（6）第一次请求：看看-AI-是否调用工具" class="headerlink" title="（6）第一次请求：看看 AI 是否调用工具"></a><strong>（6）第一次请求：看看 AI 是否调用工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">completion = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>调用 Qwen，让其决定是否需要调用工具。</li>
-</ul>
-<hr>
-<h3 id="（7）检查-Qwen-是否调用了工具"><a href="#（7）检查-Qwen-是否调用了工具" class="headerlink" title="（7）检查 Qwen 是否调用了工具"></a><strong>（7）检查 Qwen 是否调用了工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> tool_calls:</span><br><span class="line">    tool_results = []</span><br><span class="line">    <span class="keyword">for</span> tool_call <span class="keyword">in</span> tool_calls:</span><br><span class="line">        tool_name = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;name&quot;</span>]</span><br><span class="line">        tool_id = tool_call[<span class="string">&quot;id&quot;</span>]</span><br><span class="line">        tool_args = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;arguments&quot;</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> tool_name == <span class="string">&quot;read_markdown&quot;</span>:</span><br><span class="line">            result_content = read_markdown()</span><br><span class="line">        <span class="keyword">elif</span> tool_name == <span class="string">&quot;fetch_weather&quot;</span>:</span><br><span class="line">            city = tool_args.get(<span class="string">&quot;city&quot;</span>, <span class="string">&quot;未知城市&quot;</span>)</span><br><span class="line">            result_content = fetch_weather(city)</span><br><span class="line">        </span><br><span class="line">        tool_results.append(&#123;</span><br><span class="line">            <span class="string">&quot;role&quot;</span>: <span class="string">&quot;tool&quot;</span>,</span><br><span class="line">            <span class="string">&quot;tool_call_id&quot;</span>: tool_id,</span><br><span class="line">            <span class="string">&quot;content&quot;</span>: result_content</span><br><span class="line">        &#125;)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>解析 Qwen 返回的 <code>tool_calls</code>。</li>
-<li><strong>调用不同的工具</strong>，如 <code>read_markdown()</code> 或 <code>fetch_weather(city)</code> ，并存入 <code>tool</code> 消息。</li>
-<li><strong>如果工具需要参数</strong>，就从 <code>tool_args</code> 里提取。</li>
-<li>若 <code>tool_calls</code> 为空，说明 AI <strong>不需要调用工具</strong>。</li>
-</ul>
-<hr>
-<h3 id="（8）让-Qwen-继续推理"><a href="#（8）让-Qwen-继续推理" class="headerlink" title="（8）让 Qwen 继续推理"></a><strong>（8）让 Qwen 继续推理</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tool_calls&quot;</span>: tool_calls</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)</span><br><span class="line"></span><br><span class="line">completion2 = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>让 Qwen <strong>读取工具返回值，并继续回答</strong>。</li>
-</ul>
-<hr>
-<p>效果测试：</p>
-<p align="center">
-  <img width="1198" alt="function_calling" src="https://github.com/user-attachments/assets/6da63b40-55b2-4eb0-b13c-b5f30225ff33" />
-</p>
-
-<hr>
-<h2 id="3-以下是我在测试的时候一些工具调用失败的原因"><a href="#3-以下是我在测试的时候一些工具调用失败的原因" class="headerlink" title="3. 以下是我在测试的时候一些工具调用失败的原因"></a><strong>3. 以下是我在测试的时候一些工具调用失败的原因</strong></h2><ol>
-<li><code>name</code> 和 Python 函数不匹配，导致 AI 无法正确调用工具。</li>
-<li><code>role=&quot;tool&quot;</code> 消息未紧跟 <code>assistant</code>，导致 AI 解析错误。</li>
-</ol>
-<ul>
-<li>解决方法是在调用完工具之后，向 messages 中手动插入一条 role&#x3D;”assistant” 的空消息，附带 tool_calls 字段，然后紧接着添加 role&#x3D;”tool” 的返回结果，这样就保证了正确的调用链路。<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    &quot;role&quot;: &quot;assistant&quot;,</span><br><span class="line">    &quot;content&quot;: &quot;&quot;,  # 一定为空</span><br><span class="line">    &quot;tool_calls&quot;: tool_calls  # 将 AI 最初返回的 tool_calls 原样放回</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)  # 马上接上 tool 返回值</span><br></pre></td></tr></table></figure></li>
-<li>因为 Qwen 模型的调用链规则如下：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">用户消息（role=&quot;user&quot;）</span><br><span class="line">→ AI 返回 tool_calls（role=&quot;assistant&quot;，tool_calls）</span><br><span class="line">→ 工具执行，返回结果（role=&quot;tool&quot;，tool_call_id）</span><br><span class="line">→ AI 接收到结果，继续推理</span><br></pre></td></tr></table></figure></li>
-<li>如果 role&#x3D;”tool” 的消息不紧跟在带有 tool_calls 的 assistant 消息后面，模型就无法对上“这个工具调用返回了这个值”，于是会报错或输出异常。</li>
-</ul>
-<ol start="3">
-<li><code>parameters</code> 设置错误，导致 AI 传递了错误的参数。</li>
-<li><code>messages</code> 结构错误，导致 AI 不能正确读取历史对话。</li>
-</ol>
-<hr>
-<p>该项目代码参考 <a href="https://help.aliyun.com/zh/model-studio/user-guide/qwen-function-calling?spm=0.0.0.i4#8c41d25020ipz">Qwen官方Function Calling</a>。</p>
-]]></content>
-      <categories>
-        <category>LLM学习之路</category>
-      </categories>
-      <tags>
-        <tag>AI</tag>
-        <tag>LLM</tag>
-        <tag>大模型</tag>
-        <tag>Qwen</tag>
-        <tag>Python</tag>
-        <tag>Agent</tag>
-        <tag>Function Calling</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Sync Code Block Theme with Dark Mode in Hexo Chic</title>
-    <url>/2025/03/25/Sync-Code-Block-Theme-with-Dark-Mode-in-Hexo-Chic/</url>
-    <content><![CDATA[<h1 id="Hexo-Chic-主题为代码块实现明暗主题切换效果"><a href="#Hexo-Chic-主题为代码块实现明暗主题切换效果" class="headerlink" title="Hexo + Chic 主题为代码块实现明暗主题切换效果"></a>Hexo + Chic 主题为代码块实现明暗主题切换效果</h1><p>这份文档记录如何在 Hexo 博客（使用 Chic 主题），完成代码块 (highlight.js) 样式随明&#x2F;暗主题切换。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
-<hr>
-<h2 id="背景知识"><a href="#背景知识" class="headerlink" title="背景知识"></a>背景知识</h2><ul>
-<li><strong>代码块</strong> 是你写文章时用 &#96;&#96;&#96; 包起来的那些 Python&#x2F;JavaScript 代码部分。</li>
-<li><strong>highlight.js</strong> 是用来给代码块加颜色的工具，它有“亮色”和“暗色”两套样式。</li>
-</ul>
-<p>希望解决的问题是：</p>
-<blockquote>
-<p>当我切换网站到暗色模式时，代码块还是白底，看起来很突兀。</p>
-</blockquote>
-<p>我们要做的就是：让代码块也能“跟着变黑”。</p>
-<hr>
-<h2 id="1-确认-Hexo-正在使用-highlight-js"><a href="#1-确认-Hexo-正在使用-highlight-js" class="headerlink" title="1. 确认 Hexo 正在使用 highlight.js"></a><strong>1. 确认 Hexo 正在使用 highlight.js</strong></h2><p>打开你博客根目录下的 <code>_config.yml</code> 文件，找到下面的内容并确保设置一致：</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">syntax_highlighter:</span> <span class="string">highlight.js</span></span><br><span class="line"><span class="attr">highlight:</span></span><br><span class="line">  <span class="attr">line_number:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">auto_detect:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">tab_replace:</span> <span class="string">&#x27;&#x27;</span></span><br><span class="line">  <span class="attr">wrap:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">hljs:</span> <span class="literal">false</span></span><br></pre></td></tr></table></figure>
-
-<p>这段配置的意思是告诉 Hexo：我要用 highlight.js 来做代码高亮。</p>
-<hr>
-<h2 id="2-修改-head-ejs，引入代码高亮样式"><a href="#2-修改-head-ejs，引入代码高亮样式" class="headerlink" title="2.修改 head.ejs，引入代码高亮样式"></a><strong>2.修改 head.ejs，引入代码高亮样式</strong></h2><p>打开文件：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/head.ejs</span><br></pre></td></tr></table></figure>
-
-<p>在里面添加这几行（插入到已有的 <code>&lt;link&gt;</code> 标签之后即可）：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!-- highlight.js 样式（默认亮色） --&gt;</span><br><span class="line">&lt;link id=&quot;hljs-theme&quot; rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;&gt;</span><br><span class="line">&lt;!-- highlight.js 自动上色功能 --&gt;</span><br><span class="line">&lt;script src=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/highlight.min.js&quot;&gt;&lt;/script&gt;</span><br><span class="line">&lt;script&gt;hljs.highlightAll();&lt;/script&gt;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>第一行是默认代码样式（亮色）。</li>
-<li>第二三行是让代码自动加颜色。</li>
-</ul>
-<hr>
-<h2 id="3-修改-script-js，切换暗色样式时动态修改链接"><a href="#3-修改-script-js，切换暗色样式时动态修改链接" class="headerlink" title="3. 修改 script.js，切换暗色样式时动态修改链接"></a><strong>3. 修改 script.js，切换暗色样式时动态修改链接</strong></h2><p>打开文件：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/source/js/script.js</span><br></pre></td></tr></table></figure>
-
-<p>找到我们添加主题切换的地方，添加以下 JavaScript 代码：</p>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> hljsTheme = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;hljs-theme&#x27;</span>);</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">updateCodeHighlightStyle</span>(<span class="params">isDarkMode</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!hljsTheme) <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">const</span> newHref = isDarkMode</span><br><span class="line">        ? <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github-dark.css&quot;</span></span><br><span class="line">        : <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;</span>;</span><br><span class="line">    hljsTheme.<span class="title function_">setAttribute</span>(<span class="string">&#x27;href&#x27;</span>, newHref);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>然后就可以在主题切换按钮事件里调用：</p>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="title function_">updateCodeHighlightStyle</span>(<span class="literal">true</span>); <span class="comment">// 或 false，根据你当前模式</span></span><br></pre></td></tr></table></figure>
-
-<p>每次切换主题时都调用它，就能切换代码样式。</p>
-<hr>
-<h2 id="4-创建一个-CSS-文件，解决代码块“白边”问题"><a href="#4-创建一个-CSS-文件，解决代码块“白边”问题" class="headerlink" title="4. 创建一个 CSS 文件，解决代码块“白边”问题"></a><strong>4. 创建一个 CSS 文件，解决代码块“白边”问题</strong></h2><p>这个步骤很关键，否则在暗色样式时代码块周围可能会留下一圈白色边框，如下方图片所示：<br><img src="https://github.com/user-attachments/assets/6baef8c8-887d-448f-a5c9-5f0501ab4ee2" alt="image"></p>
-<h3 id="第一步：创建文件夹和文件"><a href="#第一步：创建文件夹和文件" class="headerlink" title="第一步：创建文件夹和文件"></a>第一步：创建文件夹和文件</h3><p>在终端中运行：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd themes/hexo-theme-Chic/source/css</span><br><span class="line">mkdir custom</span><br><span class="line">cd custom</span><br><span class="line">nano custom.css</span><br></pre></td></tr></table></figure>
-<p>或者手动：在 <code>themes/hexo-theme-Chic/source/css/</code> 下创建文件夹 <code>custom</code>，然后在里面新建文件 <code>custom.css</code></p>
-<h3 id="第二步：填入以下内容："><a href="#第二步：填入以下内容：" class="headerlink" title="第二步：填入以下内容："></a>第二步：填入以下内容：</h3><figure class="highlight css"><table><tr><td class="code"><pre><span class="line">pre,</span><br><span class="line"><span class="selector-tag">code</span>,</span><br><span class="line">pre <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">color</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 暗色背景 */</span></span><br><span class="line">    <span class="attribute">color</span>: <span class="number">#c9d1d9</span> <span class="meta">!important</span>;       <span class="comment">/* 暗色文字 */</span></span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre::-webkit-scrollbar-track,</span><br><span class="line">body.dark-theme code::-webkit-scrollbar-track &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 修复滚动条白边 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="5-在-head-ejs-中引入自定义-CSS-文件"><a href="#5-在-head-ejs-中引入自定义-CSS-文件" class="headerlink" title="5. 在 head.ejs 中引入自定义 CSS 文件"></a><strong>5. 在 head.ejs 中引入自定义 CSS 文件</strong></h2><p>在 <code>head.ejs</code> 中再加一行：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;link rel=&quot;stylesheet&quot; href=&quot;&lt;%- url_for(&#x27;/css/custom/custom.css&#x27;) %&gt;&quot;&gt;</span><br></pre></td></tr></table></figure>
-
-<p>放在其他 <code>&lt;link&gt;</code> 标签的下面。</p>
-<hr>
-<h2 id="6-重新生成并运行-Hexo"><a href="#6-重新生成并运行-Hexo" class="headerlink" title="6. 重新生成并运行 Hexo"></a><strong>6. 重新生成并运行 Hexo</strong></h2><p>运行以下命令，重新生成并启动本地预览：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
-
-<p>然后访问你的本地博客文章页面 <code>http://localhost:4000</code>，尝试切换主题，看代码块是否也会随之变色。</p>
-<p>在两种不同主题下的效果展示：</p>
-<p><img src="https://github.com/user-attachments/assets/db87a928-293d-4c00-8299-6619722c92f8" alt="image"></p>
-<p><img src="https://github.com/user-attachments/assets/550ba759-3113-41b6-9737-887242fcfa14" alt="image"></p>
-<hr>
-<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
-]]></content>
-      <categories>
-        <category>Hexo</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-        <tag>博客</tag>
-        <tag>Blog</tag>
-        <tag>前端</tag>
       </tags>
   </entry>
   <entry>
@@ -1238,128 +1163,87 @@
         <tag>LLM</tag>
         <tag>大模型</tag>
         <tag>Qwen</tag>
-        <tag>Python</tag>
         <tag>Agent</tag>
+        <tag>Python</tag>
         <tag>视觉</tag>
       </tags>
   </entry>
   <entry>
-    <title>「LeetCode」 Palindrome Number</title>
-    <url>/2025/04/10/%E3%80%8CLeetCode%E3%80%8D-Palindrome-Number/</url>
-    <content><![CDATA[<h1 id="回文数"><a href="#回文数" class="headerlink" title="回文数"></a>回文数</h1><hr>
-<h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>给你一个整数 <code>x</code> ，如果 <code>x</code> 是一个回文整数，返回 <code>true</code> ；否则，返回 <code>false</code> 。</p>
-<p><strong>回文数</strong> 是指正序（从左向右）和倒序（从右向左）读都是一样的整数。</p>
+    <title>Sync Code Block Theme with Dark Mode in Hexo Chic</title>
+    <url>/2025/03/25/Sync-Code-Block-Theme-with-Dark-Mode-in-Hexo-Chic/</url>
+    <content><![CDATA[<h1 id="Hexo-Chic-主题为代码块实现明暗主题切换效果"><a href="#Hexo-Chic-主题为代码块实现明暗主题切换效果" class="headerlink" title="Hexo + Chic 主题为代码块实现明暗主题切换效果"></a>Hexo + Chic 主题为代码块实现明暗主题切换效果</h1><p>这份文档记录如何在 Hexo 博客（使用 Chic 主题），完成代码块 (highlight.js) 样式随明&#x2F;暗主题切换。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="背景知识"><a href="#背景知识" class="headerlink" title="背景知识"></a>背景知识</h2><ul>
+<li><strong>代码块</strong> 是你写文章时用 &#96;&#96;&#96; 包起来的那些 Python&#x2F;JavaScript 代码部分。</li>
+<li><strong>highlight.js</strong> 是用来给代码块加颜色的工具，它有“亮色”和“暗色”两套样式。</li>
+</ul>
+<p>希望解决的问题是：</p>
+<blockquote>
+<p>当我切换网站到暗色模式时，代码块还是白底，看起来很突兀。</p>
+</blockquote>
+<p>我们要做的就是：让代码块也能“跟着变黑”。</p>
+<hr>
+<h2 id="1-确认-Hexo-正在使用-highlight-js"><a href="#1-确认-Hexo-正在使用-highlight-js" class="headerlink" title="1. 确认 Hexo 正在使用 highlight.js"></a><strong>1. 确认 Hexo 正在使用 highlight.js</strong></h2><p>打开你博客根目录下的 <code>_config.yml</code> 文件，找到下面的内容并确保设置一致：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">syntax_highlighter:</span> <span class="string">highlight.js</span></span><br><span class="line"><span class="attr">highlight:</span></span><br><span class="line">  <span class="attr">line_number:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">auto_detect:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">tab_replace:</span> <span class="string">&#x27;&#x27;</span></span><br><span class="line">  <span class="attr">wrap:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">hljs:</span> <span class="literal">false</span></span><br></pre></td></tr></table></figure>
+
+<p>这段配置的意思是告诉 Hexo：我要用 highlight.js 来做代码高亮。</p>
+<hr>
+<h2 id="2-修改-head-ejs，引入代码高亮样式"><a href="#2-修改-head-ejs，引入代码高亮样式" class="headerlink" title="2.修改 head.ejs，引入代码高亮样式"></a><strong>2.修改 head.ejs，引入代码高亮样式</strong></h2><p>打开文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/head.ejs</span><br></pre></td></tr></table></figure>
+
+<p>在里面添加这几行（插入到已有的 <code>&lt;link&gt;</code> 标签之后即可）：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!-- highlight.js 样式（默认亮色） --&gt;</span><br><span class="line">&lt;link id=&quot;hljs-theme&quot; rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;&gt;</span><br><span class="line">&lt;!-- highlight.js 自动上色功能 --&gt;</span><br><span class="line">&lt;script src=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/highlight.min.js&quot;&gt;&lt;/script&gt;</span><br><span class="line">&lt;script&gt;hljs.highlightAll();&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+
 <ul>
-<li>例如，<strong>121</strong> 是回文，而 <strong>123</strong> 不是。</li>
+<li>第一行是默认代码样式（亮色）。</li>
+<li>第二三行是让代码自动加颜色。</li>
 </ul>
 <hr>
-<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">输入：121 → 输出：true</span><br><span class="line">输入：-121 → 输出：false</span><br><span class="line">输入：10 → 输出：false</span><br></pre></td></tr></table></figure>
+<h2 id="3-修改-script-js，切换暗色样式时动态修改链接"><a href="#3-修改-script-js，切换暗色样式时动态修改链接" class="headerlink" title="3. 修改 script.js，切换暗色样式时动态修改链接"></a><strong>3. 修改 script.js，切换暗色样式时动态修改链接</strong></h2><p>打开文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/source/js/script.js</span><br></pre></td></tr></table></figure>
+
+<p>找到我们添加主题切换的地方，添加以下 JavaScript 代码：</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> hljsTheme = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;hljs-theme&#x27;</span>);</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">updateCodeHighlightStyle</span>(<span class="params">isDarkMode</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!hljsTheme) <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">const</span> newHref = isDarkMode</span><br><span class="line">        ? <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github-dark.css&quot;</span></span><br><span class="line">        : <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;</span>;</span><br><span class="line">    hljsTheme.<span class="title function_">setAttribute</span>(<span class="string">&#x27;href&#x27;</span>, newHref);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后就可以在主题切换按钮事件里调用：</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="title function_">updateCodeHighlightStyle</span>(<span class="literal">true</span>); <span class="comment">// 或 false，根据你当前模式</span></span><br></pre></td></tr></table></figure>
+
+<p>每次切换主题时都调用它，就能切换代码样式。</p>
+<hr>
+<h2 id="4-创建一个-CSS-文件，解决代码块“白边”问题"><a href="#4-创建一个-CSS-文件，解决代码块“白边”问题" class="headerlink" title="4. 创建一个 CSS 文件，解决代码块“白边”问题"></a><strong>4. 创建一个 CSS 文件，解决代码块“白边”问题</strong></h2><p>这个步骤很关键，否则在暗色样式时代码块周围可能会留下一圈白色边框，如下方图片所示：<br><img src="https://github.com/user-attachments/assets/6baef8c8-887d-448f-a5c9-5f0501ab4ee2" alt="image"></p>
+<h3 id="第一步：创建文件夹和文件"><a href="#第一步：创建文件夹和文件" class="headerlink" title="第一步：创建文件夹和文件"></a>第一步：创建文件夹和文件</h3><p>在终端中运行：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd themes/hexo-theme-Chic/source/css</span><br><span class="line">mkdir custom</span><br><span class="line">cd custom</span><br><span class="line">nano custom.css</span><br></pre></td></tr></table></figure>
+<p>或者手动：在 <code>themes/hexo-theme-Chic/source/css/</code> 下创建文件夹 <code>custom</code>，然后在里面新建文件 <code>custom.css</code></p>
+<h3 id="第二步：填入以下内容："><a href="#第二步：填入以下内容：" class="headerlink" title="第二步：填入以下内容："></a>第二步：填入以下内容：</h3><figure class="highlight css"><table><tr><td class="code"><pre><span class="line">pre,</span><br><span class="line"><span class="selector-tag">code</span>,</span><br><span class="line">pre <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">color</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 暗色背景 */</span></span><br><span class="line">    <span class="attribute">color</span>: <span class="number">#c9d1d9</span> <span class="meta">!important</span>;       <span class="comment">/* 暗色文字 */</span></span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre::-webkit-scrollbar-track,</span><br><span class="line">body.dark-theme code::-webkit-scrollbar-track &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 修复滚动条白边 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <hr>
-<h2 id="方法-1：字符串切片"><a href="#方法-1：字符串切片" class="headerlink" title="方法 1：字符串切片"></a>方法 1：字符串切片</h2><h3 id="实现步骤"><a href="#实现步骤" class="headerlink" title="实现步骤"></a>实现步骤</h3><p>要判断一个整数是否是回文数，可以通过以下步骤实现：</p>
-<ul>
-<li>负数处理 ：如果输入的整数 x 是负数，则它不可能是回文数，因为负号会让正序和倒序不同。</li>
-<li>反转数字比较 ：将整数反转后与原整数进行比较。如果两者相等，则说明它是回文数。</li>
-</ul>
+<h2 id="5-在-head-ejs-中引入自定义-CSS-文件"><a href="#5-在-head-ejs-中引入自定义-CSS-文件" class="headerlink" title="5. 在 head.ejs 中引入自定义 CSS 文件"></a><strong>5. 在 head.ejs 中引入自定义 CSS 文件</strong></h2><p>在 <code>head.ejs</code> 中再加一行：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;link rel=&quot;stylesheet&quot; href=&quot;&lt;%- url_for(&#x27;/css/custom/custom.css&#x27;) %&gt;&quot;&gt;</span><br></pre></td></tr></table></figure>
+
+<p>放在其他 <code>&lt;link&gt;</code> 标签的下面。</p>
 <hr>
-<h3 id="Python-实现"><a href="#Python-实现" class="headerlink" title="Python 实现"></a>Python 实现</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">class Solution(object):</span><br><span class="line">    def isPalindrome(self, x):</span><br><span class="line">        &quot;&quot;&quot;</span><br><span class="line">        :type x: int</span><br><span class="line">        :rtype: bool</span><br><span class="line">        &quot;&quot;&quot;</span><br><span class="line">        # 如果 x 是负数，直接返回 False</span><br><span class="line">        if x &lt; 0:</span><br><span class="line">            return False</span><br><span class="line">        </span><br><span class="line">        # 将整数转换为字符串</span><br><span class="line">        str_x = str(x)</span><br><span class="line">        </span><br><span class="line">        # 判断字符串是否等于其反转后的结果</span><br><span class="line">        return str_x == str_x[::-1]</span><br></pre></td></tr></table></figure>
+<h2 id="6-重新生成并运行-Hexo"><a href="#6-重新生成并运行-Hexo" class="headerlink" title="6. 重新生成并运行 Hexo"></a><strong>6. 重新生成并运行 Hexo</strong></h2><p>运行以下命令，重新生成并启动本地预览：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
 
+<p>然后访问你的本地博客文章页面 <code>http://localhost:4000</code>，尝试切换主题，看代码块是否也会随之变色。</p>
+<p>在两种不同主题下的效果展示：</p>
+<p><img src="https://github.com/user-attachments/assets/db87a928-293d-4c00-8299-6619722c92f8" alt="image"></p>
+<p><img src="https://github.com/user-attachments/assets/550ba759-3113-41b6-9737-887242fcfa14" alt="image"></p>
 <hr>
-<h3 id="逐行代码解析"><a href="#逐行代码解析" class="headerlink" title="逐行代码解析"></a>逐行代码解析</h3><h4 id="1-负数处理"><a href="#1-负数处理" class="headerlink" title="1. 负数处理"></a>1. 负数处理</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if x &lt; 0:</span><br><span class="line">    return False</span><br></pre></td></tr></table></figure>
-
-<p>如果输入的整数 <code>x</code> 是负数，直接返回 <code>False</code>。</p>
+<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
 <hr>
-<h4 id="2-整数转字符串"><a href="#2-整数转字符串" class="headerlink" title="2. 整数转字符串"></a>2. 整数转字符串</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">str_x = str(x)</span><br></pre></td></tr></table></figure>
-
-<p>为什么要转换为字符串？</p>
-<ul>
-<li>字符串支持切片操作（如 <code>[::-1]</code>），可以方便地获取字符串的反转结果。</li>
-<li>直接操作整数无法实现类似的反转操作。</li>
-</ul>
-<hr>
-<h4 id="3-判断回文数"><a href="#3-判断回文数" class="headerlink" title="3. 判断回文数"></a>3. 判断回文数</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">return str_x == str_x[::-1]</span><br></pre></td></tr></table></figure>
-
-<p>判断字符串 <code>str_x</code> 是否等于它的反转字符串 <code>str_x[::-1]</code>。</p>
-<p>如果相等，则返回 <code>True</code>，表示 <code>x</code> 是回文数；否则返回 <code>False</code>。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">str_x[::-1]是 Python 的切片操作，用于反转字符串。</span><br><span class="line"></span><br><span class="line">切片语法 [start:end:step]：</span><br><span class="line">start：起始索引（默认为第一个字符）。</span><br><span class="line">end：结束索引（默认为最后一个字符之后）。</span><br><span class="line">step：步长（正值表示正向取值，负值表示反向取值）。</span><br><span class="line">[::-1] 表示从字符串的末尾开始，以步长 -1 反向取值，从而实现字符串的反转。</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="方法-2：不使用字符串（仅用数学运算）"><a href="#方法-2：不使用字符串（仅用数学运算）" class="headerlink" title="方法 2：不使用字符串（仅用数学运算）"></a>方法 2：不使用字符串（仅用数学运算）</h2><h3 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h3><p>我们不能用 <code>str(x)</code> 把整数转成字符串。因此，需要用数学方式构造 “整数的倒序表示”，并且仅构造一半就能进行对比：</p>
-<ul>
-<li>如果数是回文，则前半部分和后半部分是一样的，我们可以转计后半部数字，和剩下的 x 进行比较即可。</li>
-</ul>
-<hr>
-<h3 id="实现步骤-1"><a href="#实现步骤-1" class="headerlink" title="实现步骤"></a>实现步骤</h3><ol>
-<li>如果 x &lt; 0，是负数，不可能是回文</li>
-<li>如果 x 最后一位是 0，但 x 不是 0，也不是回文</li>
-<li>通过每次抽出 x 的最后一位，加到 reversed_half 的尾部，并把 x 去掉最后一位</li>
-<li>当 reversed_half 大于或等于 x 时，表示已处理到中间，开始比较</li>
-</ol>
-<hr>
-<h3 id="示意图：1221-如何处理"><a href="#示意图：1221-如何处理" class="headerlink" title="示意图：1221 如何处理"></a>示意图：1221 如何处理</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">x = 1221</span><br><span class="line">reversed_half = 0</span><br><span class="line"></span><br><span class="line">步骤：</span><br><span class="line">取 1： reversed_half = 1， x = 122</span><br><span class="line">取 2： reversed_half = 12， x = 12</span><br><span class="line"></span><br><span class="line">比较: x == reversed_half → 是，返回 true</span><br></pre></td></tr></table></figure>
-
-<h3 id="如果不是回文：示例-x-1234"><a href="#如果不是回文：示例-x-1234" class="headerlink" title="如果不是回文：示例 x &#x3D; 1234"></a>如果不是回文：示例 x &#x3D; 1234</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">x = 1234</span><br><span class="line">reversed_half = 0</span><br><span class="line"></span><br><span class="line">取 4 → reversed_half = 4， x = 123</span><br><span class="line">取 3 → reversed_half = 43， x = 12</span><br><span class="line"></span><br><span class="line">比较: x = 12, reversed_half = 43 → 不等</span><br><span class="line">返回 false</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="Python-实现-1"><a href="#Python-实现-1" class="headerlink" title="Python 实现"></a>Python 实现</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span>(<span class="title class_ inherited__">object</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">isPalindrome</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="keyword">if</span> x &lt; <span class="number">0</span> <span class="keyword">or</span> (x % <span class="number">10</span> == <span class="number">0</span> <span class="keyword">and</span> x != <span class="number">0</span>):</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">False</span></span><br><span class="line"></span><br><span class="line">        reversed_half = <span class="number">0</span></span><br><span class="line">        <span class="keyword">while</span> x &gt; reversed_half:</span><br><span class="line">            reversed_half = reversed_half * <span class="number">10</span> + x % <span class="number">10</span></span><br><span class="line">            x //= <span class="number">10</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> x == reversed_half <span class="keyword">or</span> x == reversed_half // <span class="number">10</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="逐行代码解析-1"><a href="#逐行代码解析-1" class="headerlink" title="逐行代码解析"></a>逐行代码解析</h3><h4 id="1-提前处理-明显不是回文数-的情况"><a href="#1-提前处理-明显不是回文数-的情况" class="headerlink" title="1. 提前处理 明显不是回文数 的情况"></a>1. 提前处理 明显不是回文数 的情况</h4><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> x &lt; <span class="number">0</span> <span class="keyword">or</span> (x % <span class="number">10</span> == <span class="number">0</span> <span class="keyword">and</span> x != <span class="number">0</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">False</span></span><br></pre></td></tr></table></figure>
-<ul>
-<li>负数和以 0 结尾的非 0 整数不能是回文</li>
-</ul>
-<hr>
-<h4 id="2-创建一个变量用来保存-从后往前取出来的一半数字（反转的一半）"><a href="#2-创建一个变量用来保存-从后往前取出来的一半数字（反转的一半）" class="headerlink" title="2. 创建一个变量用来保存 从后往前取出来的一半数字（反转的一半）"></a>2. 创建一个变量用来保存 从后往前取出来的一半数字（反转的一半）</h4><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">reversed_half = <span class="number">0</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="3-控制什么时候“反转了一半”"><a href="#3-控制什么时候“反转了一半”" class="headerlink" title="3. 控制什么时候“反转了一半”"></a>3. 控制什么时候“反转了一半”</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">while x &gt; reversed_half:</span><br></pre></td></tr></table></figure>
-<p>举例：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">x = 1221</span><br><span class="line">reversed_half = 0</span><br><span class="line"></span><br><span class="line"># 第一次：拿出 1 → reversed_half = 1，x = 122</span><br><span class="line"># 第二次：拿出 2 → reversed_half = 12，x = 12</span><br><span class="line"></span><br><span class="line">此时：</span><br><span class="line">x == reversed_half → 循环结束</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h4 id="4-反转核心逻辑"><a href="#4-反转核心逻辑" class="headerlink" title="4. 反转核心逻辑"></a>4. 反转核心逻辑</h4><p>我们要把整数 x 的最后一位一位“提取出来”，然后像搭积木一样把这些数字反转组合起来。 </p>
-<p>比如，我们有一个数 x &#x3D; 1234，我们想把它从后往前反转得到：4321</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">reversed_half = reversed_half * <span class="number">10</span> + x % <span class="number">10</span></span><br><span class="line">x //= <span class="number">10</span></span><br></pre></td></tr></table></figure>
-
-<p><strong>举例</strong>：</p>
-<p>初始状态</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">x = 1234</span><br><span class="line">reversed_half = 0</span><br></pre></td></tr></table></figure>
-
-<p>第一步循环</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">reversed_half = 0 * 10 + 1234 % 10 = 0 + 4 = 4</span><br><span class="line">x = 1234 // 10 = 123</span><br></pre></td></tr></table></figure>
-<p>第二步循环</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">reversed_half = 4 * 10 + 123 % 10 = 40 + 3 = 43</span><br><span class="line">x = 123 // 10 = 12</span><br></pre></td></tr></table></figure>
-<p>第三步循环</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">reversed_half = 43 * 10 + 12 % 10 = 430 + 2 = 432</span><br><span class="line">x = 12 // 10 = 1</span><br></pre></td></tr></table></figure>
-<p>第四步循环</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">reversed_half = 432 * 10 + 1 % 10 = 4320 + 1 = 4321</span><br><span class="line">x = 1 // 10 = 0</span><br></pre></td></tr></table></figure>
-
-<p><code>x % 10</code>: 作用是取出数字的最后一位，例如 <code>123 % 10 = 3</code></p>
-<p><code>x //= 10</code>: 整除 10，相当于<code>x = x // 10</code></p>
-<ul>
-<li>作用是把数字“去掉最后一位,例如 <code>123 // 10 = 12</code></li>
-</ul>
-<p><code>reversed_half * 10</code>: 作用是把上一轮的最后一位往前推进一格</p>
-<h4 id="5-判断是不是回文"><a href="#5-判断是不是回文" class="headerlink" title="5. 判断是不是回文"></a>5. 判断是不是回文</h4><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">return</span> x == reversed_half <span class="keyword">or</span> x == reversed_half // <span class="number">10</span></span><br></pre></td></tr></table></figure>
-
-<p>如果是偶数位数字，例如 1221：</p>
-<ul>
-<li>比较 <code>x == reversed_half</code>，就是 12 &#x3D;&#x3D; 12</li>
-</ul>
-<p>如果是奇数位数字，例如 12321：</p>
-<ul>
-<li>反转时 <code>reversed_half</code> 会多出一个中间数（比如 123）</li>
-<li>需要去掉中间数再比较：<code>reversed_half // 10</code> 就是去掉最后一位（3 → 去掉 3）</li>
-</ul>
-<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
 ]]></content>
       <categories>
-        <category>代码学习</category>
+        <category>Hexo</category>
       </categories>
       <tags>
-        <tag>Python</tag>
-        <tag>算法</tag>
-        <tag>LeetCode</tag>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>Blog</tag>
+        <tag>前端</tag>
       </tags>
   </entry>
   <entry>
@@ -1544,38 +1428,123 @@
       </tags>
   </entry>
   <entry>
-    <title>About Me</title>
-    <url>/about/index.html</url>
-    <content><![CDATA[<h2 id="👋-你好，我是-Evan-Zhong！"><a href="#👋-你好，我是-Evan-Zhong！" class="headerlink" title="👋 你好，我是 Evan Zhong！"></a>👋 你好，我是 Evan Zhong！</h2><ul>
-<li>目前是东南大学研究生在读</li>
-<li>研究方向是多模态大模型 &#x2F; Graph RAG</li>
+    <title>「LeetCode」 Palindrome Number</title>
+    <url>/2025/04/10/%E3%80%8CLeetCode%E3%80%8D-Palindrome-Number/</url>
+    <content><![CDATA[<h1 id="回文数"><a href="#回文数" class="headerlink" title="回文数"></a>回文数</h1><hr>
+<h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>给你一个整数 <code>x</code> ，如果 <code>x</code> 是一个回文整数，返回 <code>true</code> ；否则，返回 <code>false</code> 。</p>
+<p><strong>回文数</strong> 是指正序（从左向右）和倒序（从右向左）读都是一样的整数。</p>
+<ul>
+<li>例如，<strong>121</strong> 是回文，而 <strong>123</strong> 不是。</li>
 </ul>
-<h2 id="🔧-科研与项目经历"><a href="#🔧-科研与项目经历" class="headerlink" title="🔧 科研与项目经历"></a>🔧 科研与项目经历</h2><h3 id="补苗移栽机器人（2020-10-2020-12）"><a href="#补苗移栽机器人（2020-10-2020-12）" class="headerlink" title="补苗移栽机器人（2020&#x2F;10 - 2020&#x2F;12）"></a>补苗移栽机器人（2020&#x2F;10 - 2020&#x2F;12）</h3><ul>
-<li>设计机械臂结构</li>
-<li>主控 STM32 + 电机驱动电路设计</li>
-<li>行走程序编写（基于超声波传感器）</li>
+<hr>
+<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">输入：121 → 输出：true</span><br><span class="line">输入：-121 → 输出：false</span><br><span class="line">输入：10 → 输出：false</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="方法-1：字符串切片"><a href="#方法-1：字符串切片" class="headerlink" title="方法 1：字符串切片"></a>方法 1：字符串切片</h2><h3 id="实现步骤"><a href="#实现步骤" class="headerlink" title="实现步骤"></a>实现步骤</h3><p>要判断一个整数是否是回文数，可以通过以下步骤实现：</p>
+<ul>
+<li>负数处理 ：如果输入的整数 x 是负数，则它不可能是回文数，因为负号会让正序和倒序不同。</li>
+<li>反转数字比较 ：将整数反转后与原整数进行比较。如果两者相等，则说明它是回文数。</li>
 </ul>
-<h3 id="物流搬运机器人（2021-02-2021-04）"><a href="#物流搬运机器人（2021-02-2021-04）" class="headerlink" title="物流搬运机器人（2021&#x2F;02 - 2021&#x2F;04）"></a>物流搬运机器人（2021&#x2F;02 - 2021&#x2F;04）</h3><ul>
-<li>整体结构设计</li>
-<li>STM32 控制与驱动</li>
-<li>麦克纳姆轮 + 近红外灰度传感器程序开发</li>
+<hr>
+<h3 id="Python-实现"><a href="#Python-实现" class="headerlink" title="Python 实现"></a>Python 实现</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">class Solution(object):</span><br><span class="line">    def isPalindrome(self, x):</span><br><span class="line">        &quot;&quot;&quot;</span><br><span class="line">        :type x: int</span><br><span class="line">        :rtype: bool</span><br><span class="line">        &quot;&quot;&quot;</span><br><span class="line">        # 如果 x 是负数，直接返回 False</span><br><span class="line">        if x &lt; 0:</span><br><span class="line">            return False</span><br><span class="line">        </span><br><span class="line">        # 将整数转换为字符串</span><br><span class="line">        str_x = str(x)</span><br><span class="line">        </span><br><span class="line">        # 判断字符串是否等于其反转后的结果</span><br><span class="line">        return str_x == str_x[::-1]</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="逐行代码解析"><a href="#逐行代码解析" class="headerlink" title="逐行代码解析"></a>逐行代码解析</h3><h4 id="1-负数处理"><a href="#1-负数处理" class="headerlink" title="1. 负数处理"></a>1. 负数处理</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if x &lt; 0:</span><br><span class="line">    return False</span><br></pre></td></tr></table></figure>
+
+<p>如果输入的整数 <code>x</code> 是负数，直接返回 <code>False</code>。</p>
+<hr>
+<h4 id="2-整数转字符串"><a href="#2-整数转字符串" class="headerlink" title="2. 整数转字符串"></a>2. 整数转字符串</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">str_x = str(x)</span><br></pre></td></tr></table></figure>
+
+<p>为什么要转换为字符串？</p>
+<ul>
+<li>字符串支持切片操作（如 <code>[::-1]</code>），可以方便地获取字符串的反转结果。</li>
+<li>直接操作整数无法实现类似的反转操作。</li>
 </ul>
-<h3 id="三相-AC-DC-变换电路（2021-11）"><a href="#三相-AC-DC-变换电路（2021-11）" class="headerlink" title="三相 AC-DC 变换电路（2021&#x2F;11）"></a>三相 AC-DC 变换电路（2021&#x2F;11）</h3><ul>
-<li>三相 PWM 整流双闭环电路设计</li>
-<li>MATLAB 仿真建模与验证</li>
-<li>实物电路焊接调试</li>
+<hr>
+<h4 id="3-判断回文数"><a href="#3-判断回文数" class="headerlink" title="3. 判断回文数"></a>3. 判断回文数</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">return str_x == str_x[::-1]</span><br></pre></td></tr></table></figure>
+
+<p>判断字符串 <code>str_x</code> 是否等于它的反转字符串 <code>str_x[::-1]</code>。</p>
+<p>如果相等，则返回 <code>True</code>，表示 <code>x</code> 是回文数；否则返回 <code>False</code>。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">str_x[::-1]是 Python 的切片操作，用于反转字符串。</span><br><span class="line"></span><br><span class="line">切片语法 [start:end:step]：</span><br><span class="line">start：起始索引（默认为第一个字符）。</span><br><span class="line">end：结束索引（默认为最后一个字符之后）。</span><br><span class="line">step：步长（正值表示正向取值，负值表示反向取值）。</span><br><span class="line">[::-1] 表示从字符串的末尾开始，以步长 -1 反向取值，从而实现字符串的反转。</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="方法-2：不使用字符串（仅用数学运算）"><a href="#方法-2：不使用字符串（仅用数学运算）" class="headerlink" title="方法 2：不使用字符串（仅用数学运算）"></a>方法 2：不使用字符串（仅用数学运算）</h2><h3 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h3><p>我们不能用 <code>str(x)</code> 把整数转成字符串。因此，需要用数学方式构造 “整数的倒序表示”，并且仅构造一半就能进行对比：</p>
+<ul>
+<li>如果数是回文，则前半部分和后半部分是一样的，我们可以转计后半部数字，和剩下的 x 进行比较即可。</li>
 </ul>
+<hr>
+<h3 id="实现步骤-1"><a href="#实现步骤-1" class="headerlink" title="实现步骤"></a>实现步骤</h3><ol>
+<li>如果 x &lt; 0，是负数，不可能是回文</li>
+<li>如果 x 最后一位是 0，但 x 不是 0，也不是回文</li>
+<li>通过每次抽出 x 的最后一位，加到 reversed_half 的尾部，并把 x 去掉最后一位</li>
+<li>当 reversed_half 大于或等于 x 时，表示已处理到中间，开始比较</li>
+</ol>
+<hr>
+<h3 id="示意图：1221-如何处理"><a href="#示意图：1221-如何处理" class="headerlink" title="示意图：1221 如何处理"></a>示意图：1221 如何处理</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">x = 1221</span><br><span class="line">reversed_half = 0</span><br><span class="line"></span><br><span class="line">步骤：</span><br><span class="line">取 1： reversed_half = 1， x = 122</span><br><span class="line">取 2： reversed_half = 12， x = 12</span><br><span class="line"></span><br><span class="line">比较: x == reversed_half → 是，返回 true</span><br></pre></td></tr></table></figure>
+
+<h3 id="如果不是回文：示例-x-1234"><a href="#如果不是回文：示例-x-1234" class="headerlink" title="如果不是回文：示例 x &#x3D; 1234"></a>如果不是回文：示例 x &#x3D; 1234</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">x = 1234</span><br><span class="line">reversed_half = 0</span><br><span class="line"></span><br><span class="line">取 4 → reversed_half = 4， x = 123</span><br><span class="line">取 3 → reversed_half = 43， x = 12</span><br><span class="line"></span><br><span class="line">比较: x = 12, reversed_half = 43 → 不等</span><br><span class="line">返回 false</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="Python-实现-1"><a href="#Python-实现-1" class="headerlink" title="Python 实现"></a>Python 实现</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span>(<span class="title class_ inherited__">object</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">isPalindrome</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="keyword">if</span> x &lt; <span class="number">0</span> <span class="keyword">or</span> (x % <span class="number">10</span> == <span class="number">0</span> <span class="keyword">and</span> x != <span class="number">0</span>):</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">False</span></span><br><span class="line"></span><br><span class="line">        reversed_half = <span class="number">0</span></span><br><span class="line">        <span class="keyword">while</span> x &gt; reversed_half:</span><br><span class="line">            reversed_half = reversed_half * <span class="number">10</span> + x % <span class="number">10</span></span><br><span class="line">            x //= <span class="number">10</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> x == reversed_half <span class="keyword">or</span> x == reversed_half // <span class="number">10</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="逐行代码解析-1"><a href="#逐行代码解析-1" class="headerlink" title="逐行代码解析"></a>逐行代码解析</h3><h4 id="1-提前处理-明显不是回文数-的情况"><a href="#1-提前处理-明显不是回文数-的情况" class="headerlink" title="1. 提前处理 明显不是回文数 的情况"></a>1. 提前处理 明显不是回文数 的情况</h4><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> x &lt; <span class="number">0</span> <span class="keyword">or</span> (x % <span class="number">10</span> == <span class="number">0</span> <span class="keyword">and</span> x != <span class="number">0</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">False</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>负数和以 0 结尾的非 0 整数不能是回文</li>
+</ul>
+<hr>
+<h4 id="2-创建一个变量用来保存-从后往前取出来的一半数字（反转的一半）"><a href="#2-创建一个变量用来保存-从后往前取出来的一半数字（反转的一半）" class="headerlink" title="2. 创建一个变量用来保存 从后往前取出来的一半数字（反转的一半）"></a>2. 创建一个变量用来保存 从后往前取出来的一半数字（反转的一半）</h4><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">reversed_half = <span class="number">0</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h4 id="3-控制什么时候“反转了一半”"><a href="#3-控制什么时候“反转了一半”" class="headerlink" title="3. 控制什么时候“反转了一半”"></a>3. 控制什么时候“反转了一半”</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">while x &gt; reversed_half:</span><br></pre></td></tr></table></figure>
+<p>举例：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">x = 1221</span><br><span class="line">reversed_half = 0</span><br><span class="line"></span><br><span class="line"># 第一次：拿出 1 → reversed_half = 1，x = 122</span><br><span class="line"># 第二次：拿出 2 → reversed_half = 12，x = 12</span><br><span class="line"></span><br><span class="line">此时：</span><br><span class="line">x == reversed_half → 循环结束</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h4 id="4-反转核心逻辑"><a href="#4-反转核心逻辑" class="headerlink" title="4. 反转核心逻辑"></a>4. 反转核心逻辑</h4><p>我们要把整数 x 的最后一位一位“提取出来”，然后像搭积木一样把这些数字反转组合起来。 </p>
+<p>比如，我们有一个数 x &#x3D; 1234，我们想把它从后往前反转得到：4321</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">reversed_half = reversed_half * <span class="number">10</span> + x % <span class="number">10</span></span><br><span class="line">x //= <span class="number">10</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>举例</strong>：</p>
+<p>初始状态</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">x = 1234</span><br><span class="line">reversed_half = 0</span><br></pre></td></tr></table></figure>
+
+<p>第一步循环</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">reversed_half = 0 * 10 + 1234 % 10 = 0 + 4 = 4</span><br><span class="line">x = 1234 // 10 = 123</span><br></pre></td></tr></table></figure>
+<p>第二步循环</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">reversed_half = 4 * 10 + 123 % 10 = 40 + 3 = 43</span><br><span class="line">x = 123 // 10 = 12</span><br></pre></td></tr></table></figure>
+<p>第三步循环</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">reversed_half = 43 * 10 + 12 % 10 = 430 + 2 = 432</span><br><span class="line">x = 12 // 10 = 1</span><br></pre></td></tr></table></figure>
+<p>第四步循环</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">reversed_half = 432 * 10 + 1 % 10 = 4320 + 1 = 4321</span><br><span class="line">x = 1 // 10 = 0</span><br></pre></td></tr></table></figure>
+
+<p><code>x % 10</code>: 作用是取出数字的最后一位，例如 <code>123 % 10 = 3</code></p>
+<p><code>x //= 10</code>: 整除 10，相当于<code>x = x // 10</code></p>
+<ul>
+<li>作用是把数字“去掉最后一位,例如 <code>123 // 10 = 12</code></li>
+</ul>
+<p><code>reversed_half * 10</code>: 作用是把上一轮的最后一位往前推进一格</p>
+<h4 id="5-判断是不是回文"><a href="#5-判断是不是回文" class="headerlink" title="5. 判断是不是回文"></a>5. 判断是不是回文</h4><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">return</span> x == reversed_half <span class="keyword">or</span> x == reversed_half // <span class="number">10</span></span><br></pre></td></tr></table></figure>
+
+<p>如果是偶数位数字，例如 1221：</p>
+<ul>
+<li>比较 <code>x == reversed_half</code>，就是 12 &#x3D;&#x3D; 12</li>
+</ul>
+<p>如果是奇数位数字，例如 12321：</p>
+<ul>
+<li>反转时 <code>reversed_half</code> 会多出一个中间数（比如 123）</li>
+<li>需要去掉中间数再比较：<code>reversed_half // 10</code> 就是去掉最后一位（3 → 去掉 3）</li>
+</ul>
+<hr>
 ]]></content>
-  </entry>
-  <entry>
-    <title>tag</title>
-    <url>/tag/index.html</url>
-    <content><![CDATA[]]></content>
-  </entry>
-  <entry>
-    <title>category</title>
-    <url>/category/index.html</url>
-    <content><![CDATA[]]></content>
+      <categories>
+        <category>代码学习</category>
+      </categories>
+      <tags>
+        <tag>Python</tag>
+        <tag>算法</tag>
+        <tag>LeetCode</tag>
+      </tags>
   </entry>
   <entry>
     <title></title>
@@ -1639,5 +1608,39 @@
   });
 });
 ]]></content>
+  </entry>
+  <entry>
+    <title>About Me</title>
+    <url>/about/index.html</url>
+    <content><![CDATA[<h2 id="👋-你好，我是-Evan-Zhong！"><a href="#👋-你好，我是-Evan-Zhong！" class="headerlink" title="👋 你好，我是 Evan Zhong！"></a>👋 你好，我是 Evan Zhong！</h2><ul>
+<li>目前是东南大学研究生在读</li>
+<li>研究方向是多模态大模型 &#x2F; Graph RAG</li>
+</ul>
+<h2 id="🔧-科研与项目经历"><a href="#🔧-科研与项目经历" class="headerlink" title="🔧 科研与项目经历"></a>🔧 科研与项目经历</h2><h3 id="补苗移栽机器人（2020-10-2020-12）"><a href="#补苗移栽机器人（2020-10-2020-12）" class="headerlink" title="补苗移栽机器人（2020&#x2F;10 - 2020&#x2F;12）"></a>补苗移栽机器人（2020&#x2F;10 - 2020&#x2F;12）</h3><ul>
+<li>设计机械臂结构</li>
+<li>主控 STM32 + 电机驱动电路设计</li>
+<li>行走程序编写（基于超声波传感器）</li>
+</ul>
+<h3 id="物流搬运机器人（2021-02-2021-04）"><a href="#物流搬运机器人（2021-02-2021-04）" class="headerlink" title="物流搬运机器人（2021&#x2F;02 - 2021&#x2F;04）"></a>物流搬运机器人（2021&#x2F;02 - 2021&#x2F;04）</h3><ul>
+<li>整体结构设计</li>
+<li>STM32 控制与驱动</li>
+<li>麦克纳姆轮 + 近红外灰度传感器程序开发</li>
+</ul>
+<h3 id="三相-AC-DC-变换电路（2021-11）"><a href="#三相-AC-DC-变换电路（2021-11）" class="headerlink" title="三相 AC-DC 变换电路（2021&#x2F;11）"></a>三相 AC-DC 变换电路（2021&#x2F;11）</h3><ul>
+<li>三相 PWM 整流双闭环电路设计</li>
+<li>MATLAB 仿真建模与验证</li>
+<li>实物电路焊接调试</li>
+</ul>
+]]></content>
+  </entry>
+  <entry>
+    <title>tag</title>
+    <url>/tag/index.html</url>
+    <content><![CDATA[]]></content>
+  </entry>
+  <entry>
+    <title>category</title>
+    <url>/category/index.html</url>
+    <content><![CDATA[]]></content>
   </entry>
 </search>
