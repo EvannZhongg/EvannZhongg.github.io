@@ -480,6 +480,9 @@
 <li><strong>第二块</strong> 和 <strong>第三块</strong> 的修复结果只会保留数据行。</li>
 <li>最终将所有片段的结果拼接成一个完整的 Markdown 表格。</li>
 </ul>
+<h4 id="使用视觉模型修复表格示例效果展示"><a href="#使用视觉模型修复表格示例效果展示" class="headerlink" title="使用视觉模型修复表格示例效果展示"></a>使用视觉模型修复表格示例效果展示</h4><p><img src="https://github.com/user-attachments/assets/fe9488f9-6a5f-46a0-99b1-a170b1819d19" alt="image"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">| Part Number.Part Number   | Function.Function                       |   Output.Channel | Characteristics.V DD(opr) (V)   | Characteristics.Output Current   | Characteristics.T opr (°C)   | Package.Package   | Protection.Over Current   | Protection.Over Voltage   | Protection.Under Voltage   | Protection.Reverse Battery   | Diagnosis.Over Current   | Diagnosis.Over Voltage   | Diagnosis.Under Voltage   | AEC-Qxxx qualified.AEC-Qxxx qualified   |</span><br><span class="line">|:--------------------------|:----------------------------------------|-----------------:|:--------------------------------|:---------------------------------|:-----------------------------|:------------------|:--------------------------|:--------------------------|:---------------------------|:-----------------------------|:-------------------------|:-------------------------|:--------------------------|:----------------------------------------|</span><br><span class="line">| TPD7104AF                 | High-side N-ch MOSFET Gate driver       |                1 | 5 to 18                         | Depends on internal drive        | -40 to 125                   | PS-8              | Adjust- able              | -                         | -                          | ✓                            | ✓                        | - -                      |                           | AEC-Q100                                |</span><br><span class="line">| TPD7106F                  | High-side N-ch MOSFET Gate driver       |                1 | 4.5 to 27                       | OUT1:+/-10 mA OUT2:0. 4 A (Sink) | -40 to 150                   | SSOP-16           | -                         | -                         | -                          | ✓                            | -                        | -                        | -                         | AEC-Q100                                |</span><br><span class="line">| TPD7107F                  | High-side N-ch MOSFET Gate driver       |                1 | 5.75 to 26                      | Source:100 μA Sink:5 mAor 270 mA | -40 to 125                   | WSON10A           | ✓                         | ✓                         | ✓                          | ✓                            | ✓                        | ✓                        | ✓                         | AEC-Q100                                |</span><br><span class="line">| TPD7211F                  | Half-bridge MOSFET Gate driver          |                2 | 5 to 18                         | ±0.5 A max                       | -40 to 125                   | PS-8              | -                         | -                         | -                          | -                            | -                        | -                        | -                         | -                                       |</span><br><span class="line">| TPD7213FN*                | Half-bridge MOSFET Gate driver          |                2 | V DD 9 to 18 V DD48 12 to 54    | Source:2 A Sink:2 A              | -40 to 150                   | SSOP-16           | -                         | -                         | ✓                          | -                            | -                        | -                        | ✓                         | **                                      |</span><br><span class="line">| TPD7212F                  | 3 Phase Full- bridge MOSFET Gate driver |                6 | 4.5 to 18                       | Source:1 A Sink:1.5 A            | -40 to 150                   | WQFN32            | -                         | ✓                         | ✓                          | -                            | -                        | ✓                        | ✓                         | AEC-Q100                                |</span><br><span class="line">| TPD7212FN                 | 3 Phase Full- bridge MOSFET Gate driver |                6 | 4.5 to 18                       | Source:1 A Sink:1.5 A            | -40 to 150                   | SSOP30            | -                         | ✓                         | ✓                          | -                            | -                        | ✓                        | ✓                         | AEC-Q100                                |</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
 <hr>
 <h3 id="2-文本内容处理"><a href="#2-文本内容处理" class="headerlink" title="2. 文本内容处理"></a>2. 文本内容处理</h3><ul>
 <li>使用 OCR 与 Docling 检测文本段落。</li>
@@ -489,7 +492,11 @@
 <hr>
 <h3 id="3-图片内容理解"><a href="#3-图片内容理解" class="headerlink" title="3. 图片内容理解"></a>3. 图片内容理解</h3><ul>
 <li>对识别出的图像（非表格）调用视觉大模型进行内容描述，生成自然语言图像摘要，并写入 Markdown 与结构 JSON。</li>
+<li>摘要会插入在图片 <code>alt text</code> 中，例如：</li>
 </ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">![这是一个苹果](./1ca13ed90bf22bae348f93027fb876d5-picture-2.png)</span><br></pre></td></tr></table></figure>
+
+<hr>
 <h3 id="4-生成Markdown文档"><a href="#4-生成Markdown文档" class="headerlink" title="4. 生成Markdown文档"></a>4. <strong>生成Markdown文档</strong></h3><p>在完成表格和图片的提取、文本处理之后，最终将所有提取的信息转换为Markdown文档，并保存到本地。每个表格、图像、文本都会被格式化成相应的Markdown格式，并以图像和表格形式嵌入。</p>
 <ul>
 <li>Markdown 文档（结构化展示图像、表格、文本，便于人工核查与发布）</li>
@@ -535,8 +542,6 @@
                     
                         <a href="/tags/PDF/"># PDF</a>
                     
-                        <a href="/tags/Markdown/"># Markdown</a>
-                    
                         <a href="/tags/AI/"># AI</a>
                     
                         <a href="/tags/LLM/"># LLM</a>
@@ -544,6 +549,8 @@
                         <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"># 大模型</a>
                     
                         <a href="/tags/Qwen/"># Qwen</a>
+                    
+                        <a href="/tags/Markdown/"># Markdown</a>
                     
                         <a href="/tags/Docling/"># Docling</a>
                     
