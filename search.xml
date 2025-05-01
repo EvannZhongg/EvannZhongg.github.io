@@ -1,206 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Custom Search Integration for Hexo Chic</title>
-    <url>/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/</url>
-    <content><![CDATA[<h1 id="Hexo-Chic-主题实现搜索功能"><a href="#Hexo-Chic-主题实现搜索功能" class="headerlink" title="Hexo + Chic 主题实现搜索功能"></a>Hexo + Chic 主题实现搜索功能</h1><p>本文详细记录如何在 Hexo 中使用插件 <code>hexo-generator-searchdb</code> 实现基于 Chic 主题的实时搜索功能，包括搜索回复框、搜索结果卡、暗黑模式适配等细节。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
-<hr>
-<h2 id="1-安装插件"><a href="#1-安装插件" class="headerlink" title="1. 安装插件"></a><strong>1. 安装插件</strong></h2><p>在 <code>Hexo</code> 根目录下打开终端，执行</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-generator-searchdb --save</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="2-打开根目录的-config-yml-文件，添加（或修改）如下配置："><a href="#2-打开根目录的-config-yml-文件，添加（或修改）如下配置：" class="headerlink" title="2. 打开根目录的 _config.yml 文件，添加（或修改）如下配置："></a><strong>2. 打开根目录的 <code>_config.yml</code> 文件，添加（或修改）如下配置：</strong></h2><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">search:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">search.xml</span></span><br><span class="line">  <span class="attr">field:</span> <span class="string">post</span></span><br><span class="line">  <span class="attr">format:</span> <span class="string">html</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="3-新建-search-css"><a href="#3-新建-search-css" class="headerlink" title="3. 新建 search.css"></a><strong>3. 新建 search.css</strong></h2><p><strong>建议路径</strong>: <code>themes/hexo-theme-Chic/source/css/search.css</code></p>
-<p>包含搜索框&#x2F;结果卡&#x2F;暗黑模式样式，具体代码可带文章开头项目地址中获取：</p>
-<figure class="highlight css"><table><tr><td class="code"><pre><span class="line"><span class="selector-class">.search-container</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-result</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.search-card</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.search-card-snippet</span> &#123; ... &#125;</span><br><span class="line"><span class="keyword">@media</span> (<span class="attribute">max-width</span>: <span class="number">768px</span>) &#123; ... &#125;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="4-修改主题配置"><a href="#4-修改主题配置" class="headerlink" title="4. 修改主题配置"></a><strong>4. 修改主题配置</strong></h2><p>打开<code>theme/hexo-theme-Chic/_config.yml</code> ，在 <code>stylesheets </code>下增加一行 <code>search.css</code> 确保加载样式文件：</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">stylesheets:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/style.css</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/search.css</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="5-修改-header-ejs"><a href="#5-修改-header-ejs" class="headerlink" title="5. 修改 header.ejs"></a><strong>5. 修改 <code>header.ejs</code></strong></h2><p>对 <code>theme/hexo-theme-Chic/layout/_partial/header.ejs</code> 做了如下关键修改，具体代码可带文章开头项目地址中获取：</p>
-<h3 id="HTML-结构改动"><a href="#HTML-结构改动" class="headerlink" title="HTML 结构改动"></a>HTML 结构改动</h3><ol>
-<li>在 <code>&lt;div class=&quot;menu navbar-right&quot;&gt;</code> 中插入：</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;div class=&quot;search-container&quot;&gt;</span><br><span class="line">  &lt;a href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍&lt;/a&gt;</span><br><span class="line">  &lt;input type=&quot;text&quot; id=&quot;nav-search-input&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">  &lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li>在移动端导航 <code>&lt;div id=&quot;mobile-menu&quot;&gt;</code> 中插入：</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;a class=&quot;menu-item&quot; href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍 Search&lt;/a&gt;</span><br><span class="line">&lt;input type=&quot;text&quot; id=&quot;nav-search-input-mobile&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">&lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-
-<ol start="3">
-<li>保留并未更动主题切换按钮：</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;input id=&quot;switch_default&quot; type=&quot;checkbox&quot; class=&quot;switch_default&quot;&gt;</span><br><span class="line">&lt;label for=&quot;switch_default&quot; class=&quot;toggleBtn&quot;&gt;&lt;/label&gt;</span><br></pre></td></tr></table></figure>
-
-<h3 id="JS-功能改动"><a href="#JS-功能改动" class="headerlink" title="JS 功能改动"></a>JS 功能改动</h3><ol>
-<li>新增 <code>toggleSearchInput()</code> 方法，实现点击图标展开或隐藏搜索框。</li>
-<li></li>
-</ol>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">toggleSearchInput</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> inputs = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-input&#x27;</span>);</span><br><span class="line">  <span class="keyword">const</span> results = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-result&#x27;</span>);</span><br><span class="line">  inputs.<span class="title function_">forEach</span>(<span class="function"><span class="params">input</span> =&gt;</span> &#123;</span><br><span class="line">    input.<span class="property">classList</span>.<span class="title function_">toggle</span>(<span class="string">&#x27;active&#x27;</span>);</span><br><span class="line">    <span class="keyword">if</span> (input.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;active&#x27;</span>)) input.<span class="title function_">focus</span>();</span><br><span class="line">  &#125;);</span><br><span class="line">  results.<span class="title function_">forEach</span>(<span class="function"><span class="params">r</span> =&gt;</span> r.<span class="property">style</span>.<span class="property">display</span> = <span class="string">&#x27;none&#x27;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<ol start="2">
-<li>新增 <code>navSearch()</code> 方法，实现从 <code>search.xml</code> 加载数据并匹配关键词。</li>
-<li>新增空白点击关闭逻辑：点击 <code>.search-container</code> 外部区域后自动隐藏搜索框并清空内容。</li>
-</ol>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">if</span> (searchData.<span class="property">length</span> === <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="title function_">fetch</span>(<span class="string">&#x27;&lt;%- config.root %&gt;search.xml&#x27;</span>)</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">res</span> =&gt;</span> res.<span class="title function_">text</span>())</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">xmlText</span> =&gt;</span> &#123;</span><br><span class="line">        <span class="keyword">const</span> parser = <span class="keyword">new</span> <span class="title class_">DOMParser</span>();</span><br><span class="line">        <span class="keyword">const</span> xml = parser.<span class="title function_">parseFromString</span>(xmlText, <span class="string">&#x27;text/xml&#x27;</span>);</span><br><span class="line">        <span class="keyword">const</span> entries = xml.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;entry&#x27;</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">let</span> entry <span class="keyword">of</span> entries) &#123;</span><br><span class="line">          searchData.<span class="title function_">push</span>(&#123;</span><br><span class="line">            <span class="attr">title</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;title&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">content</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;content&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">url</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;url&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span></span><br><span class="line">          &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="6-实现效果"><a href="#6-实现效果" class="headerlink" title="6. 实现效果"></a><strong>6. 实现效果</strong></h2><ul>
-<li>点击图标展示搜索框</li>
-<li>实时匹配文章标题&#x2F;内容</li>
-<li>结果以卡片形式展示</li>
-<li>黑色模式样式自动选择</li>
-<li>点击空白地方隐藏结果 + 清空文本</li>
-<li>移动端页面适配<br><img src="https://github.com/user-attachments/assets/430d306f-1836-4ca7-b1c6-c249835622bd" alt="image"></li>
-</ul>
-<hr>
-<h2 id="7-新生成并运行-Hexo"><a href="#7-新生成并运行-Hexo" class="headerlink" title="7. 新生成并运行 Hexo"></a><strong>7. 新生成并运行 Hexo</strong></h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
-
-<p>然后访问 <code>http://localhost:4000</code>，查看任意一段代码块，右上角应出现复制图标按钮。</p>
-<hr>
-<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> , <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 和 <a href="https://github.com/next-theme/hexo-generator-searchdb.git">hexo-generator-searchdb</a>。</p>
-]]></content>
-      <categories>
-        <category>Hexo</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-        <tag>博客</tag>
-        <tag>Blog</tag>
-        <tag>前端</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Function Calling</title>
-    <url>/2025/03/21/Function-Calling/</url>
-    <content><![CDATA[<h1 id="Qwen-Function-Calling-详细解析"><a href="#Qwen-Function-Calling-详细解析" class="headerlink" title="Qwen Function Calling 详细解析"></a>Qwen Function Calling 详细解析</h1><hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
-<hr>
-<h2 id="1-Function-Calling-简介"><a href="#1-Function-Calling-简介" class="headerlink" title="1. Function Calling 简介"></a><strong>1. Function Calling 简介</strong></h2><p>Function Calling 允许 LLM（大语言模型）在回答问题时调用外部工具，如 Python 函数、API 或数据库查询。</p>
-<p><strong>核心流程：</strong></p>
-<ol>
-<li><strong>用户输入问题</strong></li>
-<li><strong>AI 判断是否需要调用工具</strong></li>
-<li><strong>如果需要，AI 返回 <code>tool_calls</code>，请求调用特定函数</strong></li>
-<li><strong>开发者执行对应的 Python 函数，并返回执行结果</strong></li>
-<li><strong>AI 读取工具返回值，继续推理并生成最终回答</strong></li>
-</ol>
-<h2 id="2-代码拆解：Function-Calling-功能实现"><a href="#2-代码拆解：Function-Calling-功能实现" class="headerlink" title="2. 代码拆解：Function Calling 功能实现"></a><strong>2. 代码拆解：Function Calling 功能实现</strong></h2><p>本文定义了一个read_markdown函数，用于通过提问让大模型自主调用函数阅读markdown文本内容，回答问题。</p>
-<h3 id="（1）初始化-Qwen-客户端"><a href="#（1）初始化-Qwen-客户端" class="headerlink" title="（1）初始化 Qwen 客户端"></a><strong>（1）初始化 Qwen 客户端</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">client = OpenAI(</span><br><span class="line">    api_key=<span class="string">&quot;your_api_key&quot;</span>,</span><br><span class="line">    base_url=<span class="string">&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>连接 Qwen API 进行请求。</li>
-<li><code>api_key</code> 必须正确，否则请求会失败。</li>
-</ul>
-<hr>
-<h3 id="（2）定义工具（Function-Calling）"><a href="#（2）定义工具（Function-Calling）" class="headerlink" title="（2）定义工具（Function Calling）"></a><strong>（2）定义工具（Function Calling）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>告诉 Qwen 可调用的工具。</li>
-<li><code>name</code> 必须与 Python 函数名一致，否则无法正确调用。</li>
-<li><code>description</code> 用于让 AI 知道工具的用途。</li>
-<li>在 Qwen 的 Function Calling 中，工具的<code>parameters</code> 的 <code>type</code> 必须是 <code>object</code>。</li>
-<li><code>parameters</code> 为空 <code>&#123;&#125;</code>，表示此工具不需要参数。</li>
-<li><code>parameters</code> <strong>如果不为空</strong>，表示此工具需要<strong>传递参数</strong>。<ul>
-<li><code>properties</code> 定义了每个参数的名称、类型和描述。</li>
-<li><code>required</code> 指定了哪些参数是必填项。</li>
-</ul>
-</li>
-</ul>
-<p>如果代码中涉及到了多个工具的调用，可按照以下的格式进行多个工具的定义：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;fetch_weather&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;获取指定城市的天气信息。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                    <span class="string">&quot;city&quot;</span>: &#123;</span><br><span class="line">                        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;description&quot;</span>: <span class="string">&quot;要查询天气的城市名称&quot;</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;city&quot;</span>]</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
-<p><strong>示例解释：</strong></p>
-<ul>
-<li><code>read_markdown</code> <strong>不需要参数</strong>，所以 <code>properties</code> 为空。</li>
-<li><code>fetch_weather</code> <strong>需要参数</strong>，它的 <code>parameters</code> 里包含 <code>city</code> 这个字符串参数。</li>
-<li>AI 在调用 <code>fetch_weather</code> 时，会传递 JSON 结构的 <code>arguments</code>，如：<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;city&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Shanghai&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure></li>
-</ul>
-<hr>
-<h3 id="（3）读取-Markdown-文件"><a href="#（3）读取-Markdown-文件" class="headerlink" title="（3）读取 Markdown 文件"></a><strong>（3）读取 Markdown 文件</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">read_markdown</span>():</span><br><span class="line">    doc_path = <span class="string">&quot;documents&quot;</span></span><br><span class="line">    md_file = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> file <span class="keyword">in</span> os.listdir(doc_path):</span><br><span class="line">        <span class="keyword">if</span> file.endswith(<span class="string">&quot;.md&quot;</span>):</span><br><span class="line">            md_file = os.path.join(doc_path, file)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> md_file:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;No markdown file found in the &#x27;documents&#x27; folder.&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(md_file, <span class="string">&quot;r&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        content = f.read()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> content[:<span class="number">5000</span>]</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>读取 <code>documents/</code> 目录下后缀为 <code>.md</code> 文件。</li>
-<li>限制 5000 字符，防止超出 Token 限制。</li>
-<li>将<code>markdown</code>文本的前5000个字符传递给AI。</li>
-</ul>
-<hr>
-<h3 id="（4）获取天气信息（示例工具）"><a href="#（4）获取天气信息（示例工具）" class="headerlink" title="（4）获取天气信息（示例工具）"></a><strong>（4）获取天气信息（示例工具）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">fetch_weather</span>(<span class="params">city</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取指定城市的天气信息。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;当前 <span class="subst">&#123;city&#125;</span> 的天气：晴，25°C&quot;</span></span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>模拟获取天气信息，<strong>参数 <code>city</code> 必须传递</strong>。</li>
-<li>Qwen 在调用 <code>fetch_weather</code> 时，会自动提供 <code>city</code> 的值。</li>
-</ul>
-<h3 id="（5）主逻辑：工具调用的完整流程"><a href="#（5）主逻辑：工具调用的完整流程" class="headerlink" title="（5）主逻辑：工具调用的完整流程"></a><strong>（5）主逻辑：工具调用的完整流程</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    user_question = <span class="built_in">input</span>(<span class="string">&quot;请输入问题：&quot;</span>).strip()</span><br><span class="line">    messages = [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: user_question&#125;]</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>让用户输入问题，并存入 <code>messages</code> 作为对话历史。</li>
-</ul>
-<hr>
-<h3 id="（6）第一次请求：看看-AI-是否调用工具"><a href="#（6）第一次请求：看看-AI-是否调用工具" class="headerlink" title="（6）第一次请求：看看 AI 是否调用工具"></a><strong>（6）第一次请求：看看 AI 是否调用工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">completion = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>调用 Qwen，让其决定是否需要调用工具。</li>
-</ul>
-<hr>
-<h3 id="（7）检查-Qwen-是否调用了工具"><a href="#（7）检查-Qwen-是否调用了工具" class="headerlink" title="（7）检查 Qwen 是否调用了工具"></a><strong>（7）检查 Qwen 是否调用了工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> tool_calls:</span><br><span class="line">    tool_results = []</span><br><span class="line">    <span class="keyword">for</span> tool_call <span class="keyword">in</span> tool_calls:</span><br><span class="line">        tool_name = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;name&quot;</span>]</span><br><span class="line">        tool_id = tool_call[<span class="string">&quot;id&quot;</span>]</span><br><span class="line">        tool_args = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;arguments&quot;</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> tool_name == <span class="string">&quot;read_markdown&quot;</span>:</span><br><span class="line">            result_content = read_markdown()</span><br><span class="line">        <span class="keyword">elif</span> tool_name == <span class="string">&quot;fetch_weather&quot;</span>:</span><br><span class="line">            city = tool_args.get(<span class="string">&quot;city&quot;</span>, <span class="string">&quot;未知城市&quot;</span>)</span><br><span class="line">            result_content = fetch_weather(city)</span><br><span class="line">        </span><br><span class="line">        tool_results.append(&#123;</span><br><span class="line">            <span class="string">&quot;role&quot;</span>: <span class="string">&quot;tool&quot;</span>,</span><br><span class="line">            <span class="string">&quot;tool_call_id&quot;</span>: tool_id,</span><br><span class="line">            <span class="string">&quot;content&quot;</span>: result_content</span><br><span class="line">        &#125;)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>解析 Qwen 返回的 <code>tool_calls</code>。</li>
-<li><strong>调用不同的工具</strong>，如 <code>read_markdown()</code> 或 <code>fetch_weather(city)</code> ，并存入 <code>tool</code> 消息。</li>
-<li><strong>如果工具需要参数</strong>，就从 <code>tool_args</code> 里提取。</li>
-<li>若 <code>tool_calls</code> 为空，说明 AI <strong>不需要调用工具</strong>。</li>
-</ul>
-<hr>
-<h3 id="（8）让-Qwen-继续推理"><a href="#（8）让-Qwen-继续推理" class="headerlink" title="（8）让 Qwen 继续推理"></a><strong>（8）让 Qwen 继续推理</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tool_calls&quot;</span>: tool_calls</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)</span><br><span class="line"></span><br><span class="line">completion2 = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>让 Qwen <strong>读取工具返回值，并继续回答</strong>。</li>
-</ul>
-<hr>
-<p>效果测试：</p>
-<p align="center">
-  <img width="1198" alt="function_calling" src="https://github.com/user-attachments/assets/6da63b40-55b2-4eb0-b13c-b5f30225ff33" />
-</p>
-
-<hr>
-<h2 id="3-以下是我在测试的时候一些工具调用失败的原因"><a href="#3-以下是我在测试的时候一些工具调用失败的原因" class="headerlink" title="3. 以下是我在测试的时候一些工具调用失败的原因"></a><strong>3. 以下是我在测试的时候一些工具调用失败的原因</strong></h2><ol>
-<li><code>name</code> 和 Python 函数不匹配，导致 AI 无法正确调用工具。</li>
-<li><code>role=&quot;tool&quot;</code> 消息未紧跟 <code>assistant</code>，导致 AI 解析错误。</li>
-</ol>
-<ul>
-<li>解决方法是在调用完工具之后，向 messages 中手动插入一条 role&#x3D;”assistant” 的空消息，附带 tool_calls 字段，然后紧接着添加 role&#x3D;”tool” 的返回结果，这样就保证了正确的调用链路。<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    &quot;role&quot;: &quot;assistant&quot;,</span><br><span class="line">    &quot;content&quot;: &quot;&quot;,  # 一定为空</span><br><span class="line">    &quot;tool_calls&quot;: tool_calls  # 将 AI 最初返回的 tool_calls 原样放回</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)  # 马上接上 tool 返回值</span><br></pre></td></tr></table></figure></li>
-<li>因为 Qwen 模型的调用链规则如下：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">用户消息（role=&quot;user&quot;）</span><br><span class="line">→ AI 返回 tool_calls（role=&quot;assistant&quot;，tool_calls）</span><br><span class="line">→ 工具执行，返回结果（role=&quot;tool&quot;，tool_call_id）</span><br><span class="line">→ AI 接收到结果，继续推理</span><br></pre></td></tr></table></figure></li>
-<li>如果 role&#x3D;”tool” 的消息不紧跟在带有 tool_calls 的 assistant 消息后面，模型就无法对上“这个工具调用返回了这个值”，于是会报错或输出异常。</li>
-</ul>
-<ol start="3">
-<li><code>parameters</code> 设置错误，导致 AI 传递了错误的参数。</li>
-<li><code>messages</code> 结构错误，导致 AI 不能正确读取历史对话。</li>
-</ol>
-<hr>
-<p>该项目代码参考 <a href="https://help.aliyun.com/zh/model-studio/user-guide/qwen-function-calling?spm=0.0.0.i4#8c41d25020ipz">Qwen官方Function Calling</a>。</p>
-]]></content>
-      <categories>
-        <category>LLM学习之路</category>
-      </categories>
-      <tags>
-        <tag>LLM</tag>
-        <tag>大模型</tag>
-        <tag>Function Calling</tag>
-        <tag>Agent</tag>
-        <tag>Qwen</tag>
-        <tag>AI</tag>
-        <tag>Python</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Add Copy Button to Code Blocks in Hexo</title>
     <url>/2025/03/26/Add-Copy-Button-to-Code-Blocks-in-Hexo/</url>
     <content><![CDATA[<h1 id="Hexo-为代码块添加复制功能按钮"><a href="#Hexo-为代码块添加复制功能按钮" class="headerlink" title="Hexo 为代码块添加复制功能按钮"></a>Hexo 为代码块添加复制功能按钮</h1><p>本文详细记录如何在 Hexo 中为代码块添加一个 “复制” 按钮，实现一键复制代码功能。</p>
@@ -342,81 +142,79 @@
         <category>OCR</category>
       </categories>
       <tags>
-        <tag>AI</tag>
         <tag>OCR</tag>
         <tag>PaddleOCR</tag>
         <tag>PDF</tag>
+        <tag>AI</tag>
       </tags>
   </entry>
   <entry>
-    <title>Hexo and Chic themes add Giscus comment system</title>
-    <url>/2025/03/24/Hexo-and-Chic-themes-add-Giscus-comment-system/</url>
-    <content><![CDATA[<h1 id="Hexo-Chic-主题集成-Giscus-评论系统详细教程"><a href="#Hexo-Chic-主题集成-Giscus-评论系统详细教程" class="headerlink" title="Hexo + Chic 主题集成 Giscus 评论系统详细教程"></a>Hexo + Chic 主题集成 Giscus 评论系统详细教程</h1><p>本教程将教你如何在 Hexo 博客（使用 Chic 主题）中添加 Giscus 评论系统，让你的博客拥有简洁现代的评论功能，并且支持明暗模式自动切换。</p>
+    <title>Custom Search Integration for Hexo Chic</title>
+    <url>/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/</url>
+    <content><![CDATA[<h1 id="Hexo-Chic-主题实现搜索功能"><a href="#Hexo-Chic-主题实现搜索功能" class="headerlink" title="Hexo + Chic 主题实现搜索功能"></a>Hexo + Chic 主题实现搜索功能</h1><p>本文详细记录如何在 Hexo 中使用插件 <code>hexo-generator-searchdb</code> 实现基于 Chic 主题的实时搜索功能，包括搜索回复框、搜索结果卡、暗黑模式适配等细节。</p>
 <hr>
 <p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
 <hr>
-<h2 id="一、准备工作"><a href="#一、准备工作" class="headerlink" title="一、准备工作"></a>一、准备工作</h2><h3 id="1-确保你已完成以下条件："><a href="#1-确保你已完成以下条件：" class="headerlink" title="1. 确保你已完成以下条件："></a>1. 确保你已完成以下条件：</h3><ul>
-<li>博客已搭建并使用 Hexo 框架</li>
-<li>正在使用 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 主题</li>
-<li>博客托管在 GitHub</li>
-</ul>
-<h3 id="2-启用-GitHub-Discussions-功能"><a href="#2-启用-GitHub-Discussions-功能" class="headerlink" title="2. 启用 GitHub Discussions 功能"></a>2. 启用 GitHub Discussions 功能</h3><ol>
-<li>打开你的博客仓库页面</li>
-<li>点击顶部的 <strong>Settings</strong></li>
-<li>在 <strong>General</strong> 中 <strong>Features</strong> 区域点击 <strong>Discussions</strong></li>
-<li>勾选 <strong>“Enable discussions for this repository”</strong></li>
+<h2 id="1-安装插件"><a href="#1-安装插件" class="headerlink" title="1. 安装插件"></a><strong>1. 安装插件</strong></h2><p>在 <code>Hexo</code> 根目录下打开终端，执行</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-generator-searchdb --save</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="2-打开根目录的-config-yml-文件，添加（或修改）如下配置："><a href="#2-打开根目录的-config-yml-文件，添加（或修改）如下配置：" class="headerlink" title="2. 打开根目录的 _config.yml 文件，添加（或修改）如下配置："></a><strong>2. 打开根目录的 <code>_config.yml</code> 文件，添加（或修改）如下配置：</strong></h2><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">search:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">search.xml</span></span><br><span class="line">  <span class="attr">field:</span> <span class="string">post</span></span><br><span class="line">  <span class="attr">format:</span> <span class="string">html</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="3-新建-search-css"><a href="#3-新建-search-css" class="headerlink" title="3. 新建 search.css"></a><strong>3. 新建 search.css</strong></h2><p><strong>建议路径</strong>: <code>themes/hexo-theme-Chic/source/css/search.css</code></p>
+<p>包含搜索框&#x2F;结果卡&#x2F;暗黑模式样式，具体代码可带文章开头项目地址中获取：</p>
+<figure class="highlight css"><table><tr><td class="code"><pre><span class="line"><span class="selector-class">.search-container</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-result</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.search-card</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.search-card-snippet</span> &#123; ... &#125;</span><br><span class="line"><span class="keyword">@media</span> (<span class="attribute">max-width</span>: <span class="number">768px</span>) &#123; ... &#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="4-修改主题配置"><a href="#4-修改主题配置" class="headerlink" title="4. 修改主题配置"></a><strong>4. 修改主题配置</strong></h2><p>打开<code>theme/hexo-theme-Chic/_config.yml</code> ，在 <code>stylesheets </code>下增加一行 <code>search.css</code> 确保加载样式文件：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">stylesheets:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/style.css</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/search.css</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="5-修改-header-ejs"><a href="#5-修改-header-ejs" class="headerlink" title="5. 修改 header.ejs"></a><strong>5. 修改 <code>header.ejs</code></strong></h2><p>对 <code>theme/hexo-theme-Chic/layout/_partial/header.ejs</code> 做了如下关键修改，具体代码可带文章开头项目地址中获取：</p>
+<h3 id="HTML-结构改动"><a href="#HTML-结构改动" class="headerlink" title="HTML 结构改动"></a>HTML 结构改动</h3><ol>
+<li>在 <code>&lt;div class=&quot;menu navbar-right&quot;&gt;</code> 中插入：</li>
 </ol>
-<p><img src="https://github.com/user-attachments/assets/6686f60e-f2d4-4a87-8b0d-d3425070c2cd" alt="setting_discussions"></p>
-<hr>
-<h2 id="二、使用-Giscus-app-获取评论配置代码"><a href="#二、使用-Giscus-app-获取评论配置代码" class="headerlink" title="二、使用 Giscus.app 获取评论配置代码"></a>二、使用 Giscus.app 获取评论配置代码</h2><ol>
-<li>打开 Giscus 官网：<a href="https://giscus.app/">https://giscus.app</a></li>
-<li>登录 GitHub 账号</li>
-<li>安装 <a href="https://github.com/apps/giscus">giscus</a> app  ，否则访客将无法评论和回应</li>
-<li>按照如下选择进行配置：<ul>
-<li>Repository: 选择你的博客仓库（注意填写格式为 <strong>用户名&#x2F;仓库名</strong>）</li>
-<li>Discussion Category: 建议选择 <strong>Announcements</strong>（防止读者随意发帖）</li>
-<li>Page ↔️ Discussion Mapping: 选择 <strong>pathname</strong></li>
-<li>Theme: 选择任意（我们后续会动态控制）</li>
-<li>Language: 选择 <code>zh-CN</code></li>
-</ul>
-</li>
-<li>点击页面底部的 <strong>“Copy code snippet”</strong>，复制生成的 <code>&lt;script&gt;</code> 标签代码</li>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;div class=&quot;search-container&quot;&gt;</span><br><span class="line">  &lt;a href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍&lt;/a&gt;</span><br><span class="line">  &lt;input type=&quot;text&quot; id=&quot;nav-search-input&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">  &lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>在移动端导航 <code>&lt;div id=&quot;mobile-menu&quot;&gt;</code> 中插入：</li>
 </ol>
-<hr>
-<h2 id="三、创建评论模块文件"><a href="#三、创建评论模块文件" class="headerlink" title="三、创建评论模块文件"></a>三、创建评论模块文件</h2><h3 id="1-打开博客主题目录"><a href="#1-打开博客主题目录" class="headerlink" title="1. 打开博客主题目录"></a>1. 打开博客主题目录</h3><p>路径：<code>themes/hexo-theme-Chic/layout/_partial/</code></p>
-<h3 id="2-创建或编辑-livers-ejs-文件"><a href="#2-创建或编辑-livers-ejs-文件" class="headerlink" title="2. 创建或编辑 livers.ejs 文件"></a>2. 创建或编辑 <code>livers.ejs</code> 文件</h3><p>将 Giscus 中生成的 <code>&lt;script&gt;</code> 标签代码填入文件（注意部分参数的区别），同时增加主题自动同步功能代码：</p>
-<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- Giscus 评论区挂载点 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">&quot;giscus-container&quot;</span> <span class="attr">style</span>=<span class="string">&quot;margin-top: 2.5rem;&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- Giscus 动态加载脚本：初始加载 + 明暗主题切换 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">createGiscus</span>(<span class="params">theme</span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> giscusContainer = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;giscus-container&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">if</span> (!giscusContainer) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 清除旧的评论 iframe</span></span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="property">innerHTML</span> = <span class="string">&#x27;&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> script = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(<span class="string">&#x27;script&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">src</span> = <span class="string">&#x27;https://giscus.app/client.js&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 替换为你的 GitHub 仓库信息（格式：username/repo）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo&#x27;</span>, <span class="string">&#x27;your-github-username/your-repo-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">   <span class="comment">// 替换为你的 repo-id 和 category-id（在 giscus.app 配置页面生成）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo-id&#x27;</span>, <span class="string">&#x27;your-repo-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category&#x27;</span>, <span class="string">&#x27;your-category-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category-id&#x27;</span>, <span class="string">&#x27;your-category-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 其他常规推荐设置</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-mapping&#x27;</span>, <span class="string">&#x27;pathname&#x27;</span>);           <span class="comment">// 用页面路径匹配评论帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-strict&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);                   <span class="comment">// 若无匹配帖则创建新帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-reactions-enabled&#x27;</span>, <span class="string">&#x27;1&#x27;</span>);        <span class="comment">// 启用表情反应</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-emit-metadata&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);            <span class="comment">// 不输出元数据</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-input-position&#x27;</span>, <span class="string">&#x27;top&#x27;</span>);         <span class="comment">// 输入框在评论上方</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-theme&#x27;</span>, theme);                </span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-lang&#x27;</span>, <span class="string">&#x27;zh-CN&#x27;</span>);                 <span class="comment">// 中文界面</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;crossorigin&#x27;</span>, <span class="string">&#x27;anonymous&#x27;</span>);           <span class="comment">// 跨域资源安全</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">async</span> = <span class="literal">true</span>;                                       </span></span><br><span class="line"><span class="language-javascript">     </span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="title function_">appendChild</span>(script);</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">getCurrentTheme</span>(<span class="params"></span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">return</span> <span class="variable language_">document</span>.<span class="property">body</span>.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;dark-theme&#x27;</span>) ? <span class="string">&#x27;dark&#x27;</span> : <span class="string">&#x27;light&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 页面首次加载，根据当前主题挂载评论</span></span></span><br><span class="line"><span class="language-javascript">    <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听按钮点击切换主题 → 重载评论区</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> buttons = [</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">querySelector</span>(<span class="string">&#x27;.toggleBtn&#x27;</span>),</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;mobile-toggle-theme&#x27;</span>)</span></span><br><span class="line"><span class="language-javascript">    ];</span></span><br><span class="line"><span class="language-javascript">    buttons.<span class="title function_">forEach</span>(<span class="function"><span class="params">btn</span> =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="keyword">if</span> (!btn) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript">      btn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="built_in">setTimeout</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">          <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">        &#125;, <span class="number">400</span>); <span class="comment">// 稍作延迟，确保 class 切换完毕</span></span></span><br><span class="line"><span class="language-javascript">      &#125;);</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听 body class 改变（保险方案）</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> observer = <span class="keyword">new</span> <span class="title class_">MutationObserver</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript">    observer.<span class="title function_">observe</span>(<span class="variable language_">document</span>.<span class="property">body</span>, &#123; <span class="attr">attributes</span>: <span class="literal">true</span>, <span class="attr">attributeFilter</span>: [<span class="string">&#x27;class&#x27;</span>] &#125;);</span></span><br><span class="line"><span class="language-javascript">  &#125;);</span></span><br><span class="line"><span class="language-javascript"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;a class=&quot;menu-item&quot; href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍 Search&lt;/a&gt;</span><br><span class="line">&lt;input type=&quot;text&quot; id=&quot;nav-search-input-mobile&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">&lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure>
 
-<blockquote>
-<p>⚠️ 请将 <code>data-repo-id</code> 和 <code>data-category-id</code> 替换为你从 giscus.app 获取的值。</p>
-</blockquote>
-<hr>
-<h2 id="四、引入评论模块到文章模板"><a href="#四、引入评论模块到文章模板" class="headerlink" title="四、引入评论模块到文章模板"></a>四、引入评论模块到文章模板</h2><p>打开文件：<code>themes/hexo-theme-Chic/layout/_page/post.ejs</code></p>
-<p>找到代码底部，在 <code>&lt;/article&gt;</code> 上方添加一行代码 <code>&lt;%- partial(&#39;_partial/livers&#39;) %&gt;</code> ：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">        &lt;section class=&quot;post-nav&quot;&gt;</span><br><span class="line">            &lt;% if(post.prev)&#123; %&gt;</span><br><span class="line">                &lt;a class=&quot;prev&quot; rel=&quot;prev&quot; href=&quot;&lt;%- url_for(post.prev.path)%&gt;&quot;&gt;&lt;%- post.prev.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">            &lt;% if(post.next)&#123; %&gt;</span><br><span class="line">            &lt;a class=&quot;next&quot; rel=&quot;next&quot; href=&quot;&lt;%- url_for(post.next.path)%&gt;&quot;&gt;&lt;%- post.next.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">        &lt;/section&gt;</span><br><span class="line"></span><br><span class="line">	&lt;%- partial(&#x27;_partial/livers&#x27;) %&gt;</span><br><span class="line"></span><br><span class="line">    &lt;/article&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li>保留并未更动主题切换按钮：</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;input id=&quot;switch_default&quot; type=&quot;checkbox&quot; class=&quot;switch_default&quot;&gt;</span><br><span class="line">&lt;label for=&quot;switch_default&quot; class=&quot;toggleBtn&quot;&gt;&lt;/label&gt;</span><br></pre></td></tr></table></figure>
 
-<p>这会让评论区出现在每篇文章的底部。</p>
-<hr>
-<h2 id="五、重新部署博客"><a href="#五、重新部署博客" class="headerlink" title="五、重新部署博客"></a>五、重新部署博客</h2><p>执行以下命令：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+<h3 id="JS-功能改动"><a href="#JS-功能改动" class="headerlink" title="JS 功能改动"></a>JS 功能改动</h3><ol>
+<li>新增 <code>toggleSearchInput()</code> 方法，实现点击图标展开或隐藏搜索框。</li>
+<li></li>
+</ol>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">toggleSearchInput</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> inputs = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-input&#x27;</span>);</span><br><span class="line">  <span class="keyword">const</span> results = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-result&#x27;</span>);</span><br><span class="line">  inputs.<span class="title function_">forEach</span>(<span class="function"><span class="params">input</span> =&gt;</span> &#123;</span><br><span class="line">    input.<span class="property">classList</span>.<span class="title function_">toggle</span>(<span class="string">&#x27;active&#x27;</span>);</span><br><span class="line">    <span class="keyword">if</span> (input.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;active&#x27;</span>)) input.<span class="title function_">focus</span>();</span><br><span class="line">  &#125;);</span><br><span class="line">  results.<span class="title function_">forEach</span>(<span class="function"><span class="params">r</span> =&gt;</span> r.<span class="property">style</span>.<span class="property">display</span> = <span class="string">&#x27;none&#x27;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>新增 <code>navSearch()</code> 方法，实现从 <code>search.xml</code> 加载数据并匹配关键词。</li>
+<li>新增空白点击关闭逻辑：点击 <code>.search-container</code> 外部区域后自动隐藏搜索框并清空内容。</li>
+</ol>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">if</span> (searchData.<span class="property">length</span> === <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="title function_">fetch</span>(<span class="string">&#x27;&lt;%- config.root %&gt;search.xml&#x27;</span>)</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">res</span> =&gt;</span> res.<span class="title function_">text</span>())</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">xmlText</span> =&gt;</span> &#123;</span><br><span class="line">        <span class="keyword">const</span> parser = <span class="keyword">new</span> <span class="title class_">DOMParser</span>();</span><br><span class="line">        <span class="keyword">const</span> xml = parser.<span class="title function_">parseFromString</span>(xmlText, <span class="string">&#x27;text/xml&#x27;</span>);</span><br><span class="line">        <span class="keyword">const</span> entries = xml.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;entry&#x27;</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">let</span> entry <span class="keyword">of</span> entries) &#123;</span><br><span class="line">          searchData.<span class="title function_">push</span>(&#123;</span><br><span class="line">            <span class="attr">title</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;title&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">content</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;content&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">url</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;url&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span></span><br><span class="line">          &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
 
-<p>然后访问你的博客文章页面，应该就能看到 Giscus 评论框</p>
 <hr>
-<h2 id="成功效果"><a href="#成功效果" class="headerlink" title="成功效果"></a>成功效果</h2><p><img src="https://github.com/user-attachments/assets/b75a7ffd-d99b-4d4a-9e95-cb43b06b36aa" alt="discussions"> </p>
-<ul>
-<li>支持 GitHub 登录评论</li>
-<li>评论存储在 Discussions 中，便于管理</li>
-<li>评论区支持明暗主题自动切换，与 Chic 博客风格一致</li>
+<h2 id="6-实现效果"><a href="#6-实现效果" class="headerlink" title="6. 实现效果"></a><strong>6. 实现效果</strong></h2><ul>
+<li>点击图标展示搜索框</li>
+<li>实时匹配文章标题&#x2F;内容</li>
+<li>结果以卡片形式展示</li>
+<li>黑色模式样式自动选择</li>
+<li>点击空白地方隐藏结果 + 清空文本</li>
+<li>移动端页面适配<br><img src="https://github.com/user-attachments/assets/430d306f-1836-4ca7-b1c6-c249835622bd" alt="image"></li>
 </ul>
 <hr>
-<p>如有问题，可以：</p>
-<ul>
-<li>检查浏览器控制台是否有加载错误</li>
-<li>确保 repo-id 和 category-id 正确</li>
-<li>确保启用了 Discussions 功能</li>
-</ul>
+<h2 id="7-新生成并运行-Hexo"><a href="#7-新生成并运行-Hexo" class="headerlink" title="7. 新生成并运行 Hexo"></a><strong>7. 新生成并运行 Hexo</strong></h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
+
+<p>然后访问 <code>http://localhost:4000</code>，查看任意一段代码块，右上角应出现复制图标按钮。</p>
 <hr>
-<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> , <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 和 <a href="https://github.com/next-theme/hexo-generator-searchdb.git">hexo-generator-searchdb</a>。</p>
 ]]></content>
       <categories>
         <category>Hexo</category>
@@ -426,6 +224,185 @@
         <tag>博客</tag>
         <tag>Blog</tag>
         <tag>前端</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Docling2md</title>
+    <url>/2025/05/01/Docling2md/</url>
+    <content><![CDATA[<h1 id="基于Docling的PDF转Markdown与表格图像修复"><a href="#基于Docling的PDF转Markdown与表格图像修复" class="headerlink" title="基于Docling的PDF转Markdown与表格图像修复"></a>基于Docling的PDF转Markdown与表格图像修复</h1><hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Docling2md.git">https://github.com/EvannZhongg/Docling2md.git</a></p>
+<hr>
+<h2 id="项目背景"><a href="#项目背景" class="headerlink" title="项目背景"></a>项目背景</h2><p>基于我当前使用 LLM 构建<strong>知识图谱</strong>的处理的是一系列复杂的PDF文档，这些PDF包含图像、表格、文本等混合信息，结构复杂、不规则，无法直接使用。因此，需要一个高效、可扩展的结构化预处理流程来为后续实体提取、图谱生成等任务提供清洗后的输入，同时流程需要兼具准确和部署的方便。</p>
+<p>例如 <code>MinerU</code> 和 <code>Textin</code> ，它们转换的效果都非常好；但 <code>MinerU</code> 部署不太方便集成到项目中显得笨重， <code>Textin</code> 是商用软件价格不美丽；于是近期发现了 <code>Docling</code> 的开源模型，同时python中也可以直接安装 <code>Docling</code> 的依赖包避免下载模型，于是尝试了一下感觉效果还不错符合我的预期。</p>
+<p>尤其是在对表格进行处理时，<code>Docling</code> 是将表格转化为管道表格结构，而 <code>MinerU</code> 和 <code>Textin</code> 都是将表格转换为 HTML 格式；相比 HTML 格式，管道表格在传递给大模型时能够节省更多的token，减轻了大模型的负担。</p>
+<p>本项目基于 Docling 框架，对 PDF 文件进行结构解析，结合多种大模型能力，实现了文档的多模态理解与 Markdown &#x2F; JSON 格式结构化输出，为知识图谱构建奠定基础。</p>
+<hr>
+<h2 id="实现的思想与目标"><a href="#实现的思想与目标" class="headerlink" title="实现的思想与目标"></a>实现的思想与目标</h2><p>项目的核心目标是提高PDF中信息保留的完整程度方便后续将纯文本信息输入给大模型构建知识图谱，并解决以下几个关键问题：</p>
+<ol>
+<li><strong>PDF转Markdown</strong>：通过Docling将PDF内容转化为Markdown，尤其是提取表格和图片，并在Markdown中保持其结构。</li>
+<li><strong>复杂表格图像的处理与修复</strong>：通过视觉大模型处理PDF中的表格图片，修复异常或模糊的表格结构。</li>
+<li><strong>异常文本分词的修复</strong>：直接使用 <code>Docling</code> 的OCR有时会出现文本识别异常，对于长文本中的异常无空格情况，通过大模型进行自动分词修复，保证文本可读性。</li>
+<li><strong>对图片的描述与理解</strong>: 对识别出的图像（非表格）调用视觉大模型进行内容描述，生成自然语言图像摘要，并写入 Markdown 与结构 JSON。</li>
+</ol>
+<p>流程示意：</p>
+<pre class="mermaid">graph TD
+    A[PDF Document] --> B[DocumentConverter]
+    B --> C[Structured Document]
+    C --> D[Element Iteration]
+
+    D --> E[Text Processing]
+    D --> F[Table Processing]
+    D --> G[Image Processing]
+
+    E --> H[LLM Classification]
+    F --> I[Table Structure Analysis]
+    G --> J[VLM Captioning]
+
+    H --> K[Markdown Output]
+    I --> K
+    J --> K
+
+    K --> L[Markdown File]
+    K --> M[JSON Metadata]
+    K --> N[Extracted Images]</pre>
+
+<hr>
+<h2 id="项目流程与技术细节"><a href="#项目流程与技术细节" class="headerlink" title="项目流程与技术细节"></a>项目流程与技术细节</h2><h3 id="1-表格结构识别与修复"><a href="#1-表格结构识别与修复" class="headerlink" title="1. 表格结构识别与修复"></a>1. 表格结构识别与修复</h3><ul>
+<li>使用 Docling 自动检测表格区域，导出 <code>DataFrame</code>。</li>
+<li>若存在列名重复或列数异常，启用视觉大模型模型对表格截图分块修复，生成标准 Markdown 管道表格（pipe table）。</li>
+<li>分块方式：按行高切图，并拼接小块确保高度。</li>
+<li>所有修复表格记录修复来源，存入 JSON 中以备审计与训练数据回溯。</li>
+</ul>
+<p>表格异常处理的流程结合了 <strong>按固定行高切块</strong> 和 <strong>基于最低高度与宽度的分块合并</strong> 两种方法。</p>
+<hr>
+<h4 id="按固定行高切块"><a href="#按固定行高切块" class="headerlink" title="按固定行高切块"></a>按固定行高切块</h4><p>在函数 <code>split_table_image_rows</code> 中，表格图像被按照固定的行高（默认为 400 像素）进行裁切。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">def split_table_image_rows(pil_img: Image.Image, row_height: int = 400) -&gt; list:</span><br><span class="line">    width, height = pil_img.size</span><br><span class="line">    slices = []</span><br><span class="line">    for top in range(0, height, row_height):</span><br><span class="line">        bottom = min(top + row_height, height)</span><br><span class="line">        crop = pil_img.crop((0, top, width, bottom))</span><br><span class="line">        slices.append(crop)</span><br><span class="line">    return slices</span><br></pre></td></tr></table></figure>
+<p>根据您上传的代码文件内容，表格异常处理的流程结合了<strong>按固定行高切块</strong>和<strong>基于最低高度与宽度的分块合并</strong>两种方法。以下是具体的实现细节和举例说明：</p>
+<ul>
+<li><strong>输入</strong>: 表格图像 <code>pil_img</code> 和一个可配置的 <code>row_height</code>（默认值为 400 像素）。</li>
+<li><strong>逻辑</strong>: <ul>
+<li>按照从上到下的顺序，每隔 <code>row_height</code> 像素裁切一次。</li>
+<li>如果剩余的高度不足 <code>row_height</code>，则取到最后的边界。</li>
+</ul>
+</li>
+<li><strong>输出</strong>: 返回一个包含多个裁切后图像片段的列表。</li>
+</ul>
+<p>这种方式确保了表格图像能够被分割成多个子图像，每个子图像的高度不超过 <code>row_height</code>。</p>
+<hr>
+<h4 id="基于最低高度与宽度的分块合并"><a href="#基于最低高度与宽度的分块合并" class="headerlink" title="基于最低高度与宽度的分块合并"></a>基于最低高度与宽度的分块合并</h4><p>在函数 <code>merge_small_chunks</code> 中，对裁切后的图像片段进一步处理，确保每个片段的高度和宽度满足最低要求（因为视觉大模型在上传图片时有最小像素要求，需要长宽大于 10 像素，为避免切块过小，这里默认高度为 300 像素，宽度为 20 像素）。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">merge_small_chunks</span>(<span class="params">chunks: <span class="built_in">list</span>, min_height: <span class="built_in">int</span> = <span class="number">300</span>, min_width: <span class="built_in">int</span> = <span class="number">20</span></span>) -&gt; <span class="built_in">list</span>:</span><br><span class="line">    merged_chunks = []</span><br><span class="line">    temp_chunk = <span class="literal">None</span></span><br><span class="line">    <span class="keyword">for</span> chunk <span class="keyword">in</span> chunks:</span><br><span class="line">        width, height = chunk.size</span><br><span class="line">        <span class="comment"># 如果当前块尺寸不足，则尝试拼接上下块</span></span><br><span class="line">        <span class="keyword">if</span> height &lt; min_height <span class="keyword">or</span> width &lt; min_width:</span><br><span class="line">            <span class="keyword">if</span> temp_chunk <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">                temp_chunk = chunk</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                <span class="comment"># 拼接上下块</span></span><br><span class="line">                new_chunk = Image.new(<span class="string">&quot;RGB&quot;</span>, (<span class="built_in">max</span>(temp_chunk.width, chunk.width), temp_chunk.height + chunk.height))</span><br><span class="line">                new_chunk.paste(temp_chunk, (<span class="number">0</span>, <span class="number">0</span>))</span><br><span class="line">                new_chunk.paste(chunk, (<span class="number">0</span>, temp_chunk.height))</span><br><span class="line">                temp_chunk = new_chunk</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="comment"># 如果有未处理的临时块，先保存</span></span><br><span class="line">            <span class="keyword">if</span> temp_chunk <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">                merged_chunks.append(temp_chunk)</span><br><span class="line">                temp_chunk = <span class="literal">None</span></span><br><span class="line">            merged_chunks.append(chunk)</span><br><span class="line">    <span class="comment"># 添加最后一个临时块（如果有）</span></span><br><span class="line">    <span class="keyword">if</span> temp_chunk <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="comment"># 如果整个表格图片的高度低于最小高度，则按最低高度计算</span></span><br><span class="line">        <span class="keyword">if</span> temp_chunk.height &lt; min_height:</span><br><span class="line">            new_chunk = Image.new(<span class="string">&quot;RGB&quot;</span>, (temp_chunk.width, <span class="built_in">max</span>(temp_chunk.height, <span class="number">20</span>)))</span><br><span class="line">            new_chunk.paste(temp_chunk, (<span class="number">0</span>, <span class="number">0</span>))</span><br><span class="line">            merged_chunks.append(new_chunk)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            merged_chunks.append(temp_chunk)</span><br><span class="line">    <span class="keyword">return</span> merged_chunks</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>输入</strong>: 裁切后的图像片段列表 <code>chunks</code>，以及最低高度 <code>min_height</code>（默认 300 像素）和最低宽度 <code>min_width</code>（默认 20 像素）。</li>
+<li><strong>逻辑</strong>:<ul>
+<li>遍历所有片段：<ul>
+<li>如果某个片段的高度或宽度小于最低要求，则将其与下一个片段拼接，直到满足最低尺寸要求。</li>
+<li>如果某个片段已经满足最低要求，则直接加入结果列表。</li>
+</ul>
+</li>
+<li>对于最后一个临时块，如果其高度仍低于最低要求，则创建一个新的图像块，填充到最低高度。</li>
+</ul>
+</li>
+<li><strong>输出</strong>: 返回一个经过合并后的图像片段列表。</li>
+</ul>
+<hr>
+<h4 id="3-综合处理流程"><a href="#3-综合处理流程" class="headerlink" title="3. 综合处理流程"></a>3. <strong>综合处理流程</strong></h4><p>在主流程中，表格异常的处理逻辑如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> <span class="keyword">not</span> table_df.columns.is_unique <span class="keyword">or</span> table_df.shape[<span class="number">1</span>] &lt; <span class="number">2</span>:</span><br><span class="line">    log.warning(<span class="string">f&quot;⚠️ 表格 <span class="subst">&#123;table_counter&#125;</span> 结构异常，使用 Qwen 多轮图像推理修复&quot;</span>)</span><br><span class="line">    <span class="comment"># 自动图像切块</span></span><br><span class="line">    sub_images = split_table_image_rows(pil_img)</span><br><span class="line">    <span class="comment"># 拼接不符合尺寸限制的切块</span></span><br><span class="line">    sub_images = merge_small_chunks(sub_images)</span><br><span class="line">    all_chunks = []</span><br><span class="line">    <span class="keyword">for</span> idx, chunk_img <span class="keyword">in</span> <span class="built_in">enumerate</span>(sub_images):</span><br><span class="line">        future = vlm_executor.submit(ask_table_from_image, chunk_img)</span><br><span class="line">        futures.append((future, idx, chunk_img))</span><br><span class="line">    <span class="comment"># 收集结果</span></span><br><span class="line">    full_md_lines = []</span><br><span class="line">    <span class="keyword">for</span> future, idx, chunk_img <span class="keyword">in</span> futures:</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            chunk_md = future.result()</span><br><span class="line">            lines = chunk_md.splitlines()</span><br><span class="line">            <span class="keyword">if</span> idx == <span class="number">0</span>:</span><br><span class="line">                full_md_lines.extend(lines)  <span class="comment"># 保留表头 + 分割线</span></span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                full_md_lines.extend(lines[<span class="number">2</span>:])  <span class="comment"># 仅添加数据行</span></span><br><span class="line">        <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">            log.warning(<span class="string">f&quot;表格分块处理失败: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">    markdown_lines.append(<span class="string">f&quot;&lt;!-- 表格 <span class="subst">&#123;table_counter&#125;</span> 使用 Qwen 修复 --&gt;&quot;</span>)</span><br><span class="line">    markdown_lines.append(<span class="string">&quot;\n&quot;</span>.join(full_md_lines))</span><br><span class="line">    markdown_lines.append(<span class="string">&quot;&quot;</span>)</span><br><span class="line">    json_data.append(&#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;table&quot;</span>,</span><br><span class="line">        <span class="string">&quot;level&quot;</span>: level,</span><br><span class="line">        <span class="string">&quot;image&quot;</span>: table_image_filename.name,</span><br><span class="line">        <span class="string">&quot;source&quot;</span>: <span class="string">&quot;reconstructed_by_qwen_chunked&quot;</span>,</span><br><span class="line">        <span class="string">&quot;markdown&quot;</span>: <span class="string">&quot;\n&quot;</span>.join(full_md_lines),</span><br><span class="line">        <span class="string">&quot;page_number&quot;</span>: element.prov[<span class="number">0</span>].page_no,</span><br><span class="line">        <span class="string">&quot;bbox&quot;</span>: bbox</span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="keyword">continue</span>  <span class="comment"># 跳过原始处理</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="流程说明："><a href="#流程说明：" class="headerlink" title="流程说明："></a>流程说明：</h4><ol>
+<li><strong>检测表格异常</strong>:<ul>
+<li>如果表格的列名不唯一 (<code>table_df.columns.is_unique</code>) 或者列数少于 2 (<code>table_df.shape[1] &lt; 2</code>)，认为表格结构异常，这些异常通常是 OCR 模型本身的不足导致的表格生成失败。</li>
+</ul>
+</li>
+<li><strong>按固定行高切块</strong>:<ul>
+<li>使用 <code>split_table_image_rows</code> 将表格图像按固定行高（默认 400 像素）切分为多个片段。</li>
+</ul>
+</li>
+<li><strong>合并小块</strong>:<ul>
+<li>使用 <code>merge_small_chunks</code> 合并高度或宽度不足的片段，确保每个片段的高度至少为 300 像素，宽度至少为 20 像素。</li>
+</ul>
+</li>
+<li><strong>并发调用大模型</strong>:<ul>
+<li>对每个合并后的片段并发调用 <code>ask_table_from_image</code> 函数，将图像转换为 Markdown 表格。</li>
+</ul>
+</li>
+<li><strong>拼接结果</strong>:<ul>
+<li>将所有片段的 Markdown 表格拼接起来：<ul>
+<li>第一个片段保留表头和分割线。</li>
+<li>其余片段仅保留数据行。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>保存结果</strong>:<ul>
+<li>将修复后的表格以 Markdown 格式保存，并记录相关信息到 JSON 文件中。</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h4 id="举例说明"><a href="#举例说明" class="headerlink" title="举例说明"></a>举例说明</h4><p>假设我们有一个PDF文件，其中包含一个异常的表格图像。该表格的高度为 <strong>1208 像素</strong>，宽度为 <strong>900 像素</strong>，代码会按照以下步骤处理该表格图像：</p>
+<p>在函数 <code>split_table_image_rows</code> 中，表格图像会被按固定行高（默认为 400 像素）进行裁切。</p>
+<ul>
+<li>表格高度为 <strong>1208 像素</strong>，固定行高为 <strong>400 像素</strong>。</li>
+<li>裁切的片段范围如下：<ul>
+<li>第一块：<code>top=0</code>, <code>bottom=400</code> → 高度为 400 像素。</li>
+<li>第二块：<code>top=400</code>, <code>bottom=800</code> → 高度为 400 像素。</li>
+<li>第三块：<code>top=800</code>, <code>bottom=1200</code> → 高度为 400 像素。</li>
+<li>第四块：<code>top=1200</code>, <code>bottom=1208</code> → 高度为 8 像素。</li>
+</ul>
+</li>
+</ul>
+<p>最终会生成 <strong>4 个片段</strong>，其中前 3 个片段的高度为 400 像素，最后一个片段的高度为 8 像素。</p>
+<p>在函数 <code>merge_small_chunks</code> 中，会对裁切后的片段进行检查，确保每个片段的高度和宽度满足最低要求（默认高度为 300 像素，宽度为 20 像素）。</p>
+<ul>
+<li><strong>第一块</strong>：高度为 400 像素，宽度为 900 像素 → 符合最低要求，直接保留。</li>
+<li><strong>第二块</strong>：高度为 400 像素，宽度为 900 像素 → 符合最低要求，直接保留。</li>
+<li><strong>第三块</strong>：高度为 400 像素，宽度为 900 像素 → 符合最低要求，直接保留。</li>
+<li><strong>第四块</strong>：高度为 8 像素，宽度为 900 像素 → 不符合最低高度要求（300 像素），需要与前面的块合并。</li>
+</ul>
+<p>最终结果：</p>
+<ul>
+<li><strong>第四块（8 像素）</strong> 会与 <strong>第三块（400 像素）</strong> 合并，生成一个新的片段，高度为 <strong>408 像素</strong>，宽度为 <strong>900 像素</strong>。</li>
+</ul>
+<p>因此，经过合并后，最终会有 <strong>3 个片段</strong>：</p>
+<ol>
+<li>第一块：高度为 400 像素，宽度为 900 像素。</li>
+<li>第二块：高度为 400 像素，宽度为 900 像素。</li>
+<li>第三块：高度为 408 像素，宽度为 900 像素。</li>
+</ol>
+<p>在主流程中，合并后的片段会并发调用视觉模型（<code>ask_table_from_image</code>）进行修复，在收集所有片段的修复结果后，代码会将这些片段拼接成完整的 Markdown 表格。</p>
+<ul>
+<li><strong>第一块</strong> 的修复结果会保留表头和分割线。</li>
+<li><strong>第二块</strong> 和 <strong>第三块</strong> 的修复结果只会保留数据行。</li>
+<li>最终将所有片段的结果拼接成一个完整的 Markdown 表格。</li>
+</ul>
+<hr>
+<h3 id="2-文本内容处理"><a href="#2-文本内容处理" class="headerlink" title="2. 文本内容处理"></a>2. 文本内容处理</h3><ul>
+<li>使用 OCR 与 Docling 检测文本段落。</li>
+<li>文本类型判断：使用 OpenAI 文本模型判断是“标题”还是“正文”。</li>
+<li>英文分词修复机制：检测长串无空格文本（如“PRODUCTISNEITHERINTENDED…”），调用大模型进行英文分词恢复，提高可读性与准确性。</li>
+</ul>
+<hr>
+<h3 id="3-图片内容理解"><a href="#3-图片内容理解" class="headerlink" title="3. 图片内容理解"></a>3. 图片内容理解</h3><ul>
+<li>对识别出的图像（非表格）调用视觉大模型进行内容描述，生成自然语言图像摘要，并写入 Markdown 与结构 JSON。</li>
+</ul>
+<h3 id="4-生成Markdown文档"><a href="#4-生成Markdown文档" class="headerlink" title="4. 生成Markdown文档"></a>4. <strong>生成Markdown文档</strong></h3><p>在完成表格和图片的提取、文本处理之后，最终将所有提取的信息转换为Markdown文档，并保存到本地。每个表格、图像、文本都会被格式化成相应的Markdown格式，并以图像和表格形式嵌入。</p>
+<ul>
+<li>Markdown 文档（结构化展示图像、表格、文本，便于人工核查与发布）</li>
+<li>JSON 文档（结构化、含坐标 bbox、页码、分块来源，适合下游知识图谱任务进行锚点的标记）</li>
+</ul>
+<hr>
+<p>该项目代码参考 <a href="https://github.com/openfe-docling/docling">Docling</a> 框架，对 PDF 文件进行结构解析，结合多种大模型能力（如 Qwen-VL、OpenAI 文本模型），实现了文档的多模态理解与 markdown&#x2F;json 格式结构化输出，为知识图谱构建奠定基础。</p>
+<hr>
+]]></content>
+      <categories>
+        <category>OCR</category>
+      </categories>
+      <tags>
+        <tag>OCR</tag>
+        <tag>PDF</tag>
+        <tag>AI</tag>
+        <tag>Markdown</tag>
       </tags>
   </entry>
   <entry>
@@ -677,13 +654,135 @@
         <category>Knowledge Graph</category>
       </categories>
       <tags>
+        <tag>AI</tag>
+        <tag>GraphRAG</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
-        <tag>AI</tag>
-        <tag>Python</tag>
-        <tag>GraphRAG</tag>
         <tag>RAG</tag>
+        <tag>Python</tag>
         <tag>Gephi</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Function Calling</title>
+    <url>/2025/03/21/Function-Calling/</url>
+    <content><![CDATA[<h1 id="Qwen-Function-Calling-详细解析"><a href="#Qwen-Function-Calling-详细解析" class="headerlink" title="Qwen Function Calling 详细解析"></a>Qwen Function Calling 详细解析</h1><hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="1-Function-Calling-简介"><a href="#1-Function-Calling-简介" class="headerlink" title="1. Function Calling 简介"></a><strong>1. Function Calling 简介</strong></h2><p>Function Calling 允许 LLM（大语言模型）在回答问题时调用外部工具，如 Python 函数、API 或数据库查询。</p>
+<p><strong>核心流程：</strong></p>
+<ol>
+<li><strong>用户输入问题</strong></li>
+<li><strong>AI 判断是否需要调用工具</strong></li>
+<li><strong>如果需要，AI 返回 <code>tool_calls</code>，请求调用特定函数</strong></li>
+<li><strong>开发者执行对应的 Python 函数，并返回执行结果</strong></li>
+<li><strong>AI 读取工具返回值，继续推理并生成最终回答</strong></li>
+</ol>
+<h2 id="2-代码拆解：Function-Calling-功能实现"><a href="#2-代码拆解：Function-Calling-功能实现" class="headerlink" title="2. 代码拆解：Function Calling 功能实现"></a><strong>2. 代码拆解：Function Calling 功能实现</strong></h2><p>本文定义了一个read_markdown函数，用于通过提问让大模型自主调用函数阅读markdown文本内容，回答问题。</p>
+<h3 id="（1）初始化-Qwen-客户端"><a href="#（1）初始化-Qwen-客户端" class="headerlink" title="（1）初始化 Qwen 客户端"></a><strong>（1）初始化 Qwen 客户端</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">client = OpenAI(</span><br><span class="line">    api_key=<span class="string">&quot;your_api_key&quot;</span>,</span><br><span class="line">    base_url=<span class="string">&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>连接 Qwen API 进行请求。</li>
+<li><code>api_key</code> 必须正确，否则请求会失败。</li>
+</ul>
+<hr>
+<h3 id="（2）定义工具（Function-Calling）"><a href="#（2）定义工具（Function-Calling）" class="headerlink" title="（2）定义工具（Function Calling）"></a><strong>（2）定义工具（Function Calling）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>告诉 Qwen 可调用的工具。</li>
+<li><code>name</code> 必须与 Python 函数名一致，否则无法正确调用。</li>
+<li><code>description</code> 用于让 AI 知道工具的用途。</li>
+<li>在 Qwen 的 Function Calling 中，工具的<code>parameters</code> 的 <code>type</code> 必须是 <code>object</code>。</li>
+<li><code>parameters</code> 为空 <code>&#123;&#125;</code>，表示此工具不需要参数。</li>
+<li><code>parameters</code> <strong>如果不为空</strong>，表示此工具需要<strong>传递参数</strong>。<ul>
+<li><code>properties</code> 定义了每个参数的名称、类型和描述。</li>
+<li><code>required</code> 指定了哪些参数是必填项。</li>
+</ul>
+</li>
+</ul>
+<p>如果代码中涉及到了多个工具的调用，可按照以下的格式进行多个工具的定义：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;fetch_weather&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;获取指定城市的天气信息。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                    <span class="string">&quot;city&quot;</span>: &#123;</span><br><span class="line">                        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;description&quot;</span>: <span class="string">&quot;要查询天气的城市名称&quot;</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;city&quot;</span>]</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>示例解释：</strong></p>
+<ul>
+<li><code>read_markdown</code> <strong>不需要参数</strong>，所以 <code>properties</code> 为空。</li>
+<li><code>fetch_weather</code> <strong>需要参数</strong>，它的 <code>parameters</code> 里包含 <code>city</code> 这个字符串参数。</li>
+<li>AI 在调用 <code>fetch_weather</code> 时，会传递 JSON 结构的 <code>arguments</code>，如：<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;city&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Shanghai&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<hr>
+<h3 id="（3）读取-Markdown-文件"><a href="#（3）读取-Markdown-文件" class="headerlink" title="（3）读取 Markdown 文件"></a><strong>（3）读取 Markdown 文件</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">read_markdown</span>():</span><br><span class="line">    doc_path = <span class="string">&quot;documents&quot;</span></span><br><span class="line">    md_file = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> file <span class="keyword">in</span> os.listdir(doc_path):</span><br><span class="line">        <span class="keyword">if</span> file.endswith(<span class="string">&quot;.md&quot;</span>):</span><br><span class="line">            md_file = os.path.join(doc_path, file)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> md_file:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;No markdown file found in the &#x27;documents&#x27; folder.&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(md_file, <span class="string">&quot;r&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        content = f.read()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> content[:<span class="number">5000</span>]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>读取 <code>documents/</code> 目录下后缀为 <code>.md</code> 文件。</li>
+<li>限制 5000 字符，防止超出 Token 限制。</li>
+<li>将<code>markdown</code>文本的前5000个字符传递给AI。</li>
+</ul>
+<hr>
+<h3 id="（4）获取天气信息（示例工具）"><a href="#（4）获取天气信息（示例工具）" class="headerlink" title="（4）获取天气信息（示例工具）"></a><strong>（4）获取天气信息（示例工具）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">fetch_weather</span>(<span class="params">city</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取指定城市的天气信息。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;当前 <span class="subst">&#123;city&#125;</span> 的天气：晴，25°C&quot;</span></span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>模拟获取天气信息，<strong>参数 <code>city</code> 必须传递</strong>。</li>
+<li>Qwen 在调用 <code>fetch_weather</code> 时，会自动提供 <code>city</code> 的值。</li>
+</ul>
+<h3 id="（5）主逻辑：工具调用的完整流程"><a href="#（5）主逻辑：工具调用的完整流程" class="headerlink" title="（5）主逻辑：工具调用的完整流程"></a><strong>（5）主逻辑：工具调用的完整流程</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    user_question = <span class="built_in">input</span>(<span class="string">&quot;请输入问题：&quot;</span>).strip()</span><br><span class="line">    messages = [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: user_question&#125;]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>让用户输入问题，并存入 <code>messages</code> 作为对话历史。</li>
+</ul>
+<hr>
+<h3 id="（6）第一次请求：看看-AI-是否调用工具"><a href="#（6）第一次请求：看看-AI-是否调用工具" class="headerlink" title="（6）第一次请求：看看 AI 是否调用工具"></a><strong>（6）第一次请求：看看 AI 是否调用工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">completion = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>调用 Qwen，让其决定是否需要调用工具。</li>
+</ul>
+<hr>
+<h3 id="（7）检查-Qwen-是否调用了工具"><a href="#（7）检查-Qwen-是否调用了工具" class="headerlink" title="（7）检查 Qwen 是否调用了工具"></a><strong>（7）检查 Qwen 是否调用了工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> tool_calls:</span><br><span class="line">    tool_results = []</span><br><span class="line">    <span class="keyword">for</span> tool_call <span class="keyword">in</span> tool_calls:</span><br><span class="line">        tool_name = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;name&quot;</span>]</span><br><span class="line">        tool_id = tool_call[<span class="string">&quot;id&quot;</span>]</span><br><span class="line">        tool_args = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;arguments&quot;</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> tool_name == <span class="string">&quot;read_markdown&quot;</span>:</span><br><span class="line">            result_content = read_markdown()</span><br><span class="line">        <span class="keyword">elif</span> tool_name == <span class="string">&quot;fetch_weather&quot;</span>:</span><br><span class="line">            city = tool_args.get(<span class="string">&quot;city&quot;</span>, <span class="string">&quot;未知城市&quot;</span>)</span><br><span class="line">            result_content = fetch_weather(city)</span><br><span class="line">        </span><br><span class="line">        tool_results.append(&#123;</span><br><span class="line">            <span class="string">&quot;role&quot;</span>: <span class="string">&quot;tool&quot;</span>,</span><br><span class="line">            <span class="string">&quot;tool_call_id&quot;</span>: tool_id,</span><br><span class="line">            <span class="string">&quot;content&quot;</span>: result_content</span><br><span class="line">        &#125;)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>解析 Qwen 返回的 <code>tool_calls</code>。</li>
+<li><strong>调用不同的工具</strong>，如 <code>read_markdown()</code> 或 <code>fetch_weather(city)</code> ，并存入 <code>tool</code> 消息。</li>
+<li><strong>如果工具需要参数</strong>，就从 <code>tool_args</code> 里提取。</li>
+<li>若 <code>tool_calls</code> 为空，说明 AI <strong>不需要调用工具</strong>。</li>
+</ul>
+<hr>
+<h3 id="（8）让-Qwen-继续推理"><a href="#（8）让-Qwen-继续推理" class="headerlink" title="（8）让 Qwen 继续推理"></a><strong>（8）让 Qwen 继续推理</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tool_calls&quot;</span>: tool_calls</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)</span><br><span class="line"></span><br><span class="line">completion2 = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>让 Qwen <strong>读取工具返回值，并继续回答</strong>。</li>
+</ul>
+<hr>
+<p>效果测试：</p>
+<p align="center">
+  <img width="1198" alt="function_calling" src="https://github.com/user-attachments/assets/6da63b40-55b2-4eb0-b13c-b5f30225ff33" />
+</p>
+
+<hr>
+<h2 id="3-以下是我在测试的时候一些工具调用失败的原因"><a href="#3-以下是我在测试的时候一些工具调用失败的原因" class="headerlink" title="3. 以下是我在测试的时候一些工具调用失败的原因"></a><strong>3. 以下是我在测试的时候一些工具调用失败的原因</strong></h2><ol>
+<li><code>name</code> 和 Python 函数不匹配，导致 AI 无法正确调用工具。</li>
+<li><code>role=&quot;tool&quot;</code> 消息未紧跟 <code>assistant</code>，导致 AI 解析错误。</li>
+</ol>
+<ul>
+<li>解决方法是在调用完工具之后，向 messages 中手动插入一条 role&#x3D;”assistant” 的空消息，附带 tool_calls 字段，然后紧接着添加 role&#x3D;”tool” 的返回结果，这样就保证了正确的调用链路。<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    &quot;role&quot;: &quot;assistant&quot;,</span><br><span class="line">    &quot;content&quot;: &quot;&quot;,  # 一定为空</span><br><span class="line">    &quot;tool_calls&quot;: tool_calls  # 将 AI 最初返回的 tool_calls 原样放回</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)  # 马上接上 tool 返回值</span><br></pre></td></tr></table></figure></li>
+<li>因为 Qwen 模型的调用链规则如下：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">用户消息（role=&quot;user&quot;）</span><br><span class="line">→ AI 返回 tool_calls（role=&quot;assistant&quot;，tool_calls）</span><br><span class="line">→ 工具执行，返回结果（role=&quot;tool&quot;，tool_call_id）</span><br><span class="line">→ AI 接收到结果，继续推理</span><br></pre></td></tr></table></figure></li>
+<li>如果 role&#x3D;”tool” 的消息不紧跟在带有 tool_calls 的 assistant 消息后面，模型就无法对上“这个工具调用返回了这个值”，于是会报错或输出异常。</li>
+</ul>
+<ol start="3">
+<li><code>parameters</code> 设置错误，导致 AI 传递了错误的参数。</li>
+<li><code>messages</code> 结构错误，导致 AI 不能正确读取历史对话。</li>
+</ol>
+<hr>
+<p>该项目代码参考 <a href="https://help.aliyun.com/zh/model-studio/user-guide/qwen-function-calling?spm=0.0.0.i4#8c41d25020ipz">Qwen官方Function Calling</a>。</p>
+]]></content>
+      <categories>
+        <category>LLM学习之路</category>
+      </categories>
+      <tags>
+        <tag>AI</tag>
+        <tag>LLM</tag>
+        <tag>大模型</tag>
+        <tag>Python</tag>
+        <tag>Function Calling</tag>
+        <tag>Agent</tag>
+        <tag>Qwen</tag>
       </tags>
   </entry>
   <entry>
@@ -786,11 +885,11 @@
         <tag>博客</tag>
         <tag>Blog</tag>
         <tag>前端</tag>
+        <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
-        <tag>Agent</tag>
-        <tag>AI</tag>
         <tag>RAG</tag>
+        <tag>Agent</tag>
         <tag>后端</tag>
         <tag>Ngrok</tag>
         <tag>flask</tag>
@@ -877,16 +976,96 @@
         <category>Knowledge Graph</category>
       </categories>
       <tags>
+        <tag>AI</tag>
+        <tag>GraphRAG</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
-        <tag>AI</tag>
-        <tag>Python</tag>
-        <tag>GraphRAG</tag>
         <tag>RAG</tag>
+        <tag>Python</tag>
         <tag>flask</tag>
         <tag>图数据库</tag>
         <tag>LangChain</tag>
         <tag>NebulaGraph</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hexo and Chic themes add Giscus comment system</title>
+    <url>/2025/03/24/Hexo-and-Chic-themes-add-Giscus-comment-system/</url>
+    <content><![CDATA[<h1 id="Hexo-Chic-主题集成-Giscus-评论系统详细教程"><a href="#Hexo-Chic-主题集成-Giscus-评论系统详细教程" class="headerlink" title="Hexo + Chic 主题集成 Giscus 评论系统详细教程"></a>Hexo + Chic 主题集成 Giscus 评论系统详细教程</h1><p>本教程将教你如何在 Hexo 博客（使用 Chic 主题）中添加 Giscus 评论系统，让你的博客拥有简洁现代的评论功能，并且支持明暗模式自动切换。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="一、准备工作"><a href="#一、准备工作" class="headerlink" title="一、准备工作"></a>一、准备工作</h2><h3 id="1-确保你已完成以下条件："><a href="#1-确保你已完成以下条件：" class="headerlink" title="1. 确保你已完成以下条件："></a>1. 确保你已完成以下条件：</h3><ul>
+<li>博客已搭建并使用 Hexo 框架</li>
+<li>正在使用 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 主题</li>
+<li>博客托管在 GitHub</li>
+</ul>
+<h3 id="2-启用-GitHub-Discussions-功能"><a href="#2-启用-GitHub-Discussions-功能" class="headerlink" title="2. 启用 GitHub Discussions 功能"></a>2. 启用 GitHub Discussions 功能</h3><ol>
+<li>打开你的博客仓库页面</li>
+<li>点击顶部的 <strong>Settings</strong></li>
+<li>在 <strong>General</strong> 中 <strong>Features</strong> 区域点击 <strong>Discussions</strong></li>
+<li>勾选 <strong>“Enable discussions for this repository”</strong></li>
+</ol>
+<p><img src="https://github.com/user-attachments/assets/6686f60e-f2d4-4a87-8b0d-d3425070c2cd" alt="setting_discussions"></p>
+<hr>
+<h2 id="二、使用-Giscus-app-获取评论配置代码"><a href="#二、使用-Giscus-app-获取评论配置代码" class="headerlink" title="二、使用 Giscus.app 获取评论配置代码"></a>二、使用 Giscus.app 获取评论配置代码</h2><ol>
+<li>打开 Giscus 官网：<a href="https://giscus.app/">https://giscus.app</a></li>
+<li>登录 GitHub 账号</li>
+<li>安装 <a href="https://github.com/apps/giscus">giscus</a> app  ，否则访客将无法评论和回应</li>
+<li>按照如下选择进行配置：<ul>
+<li>Repository: 选择你的博客仓库（注意填写格式为 <strong>用户名&#x2F;仓库名</strong>）</li>
+<li>Discussion Category: 建议选择 <strong>Announcements</strong>（防止读者随意发帖）</li>
+<li>Page ↔️ Discussion Mapping: 选择 <strong>pathname</strong></li>
+<li>Theme: 选择任意（我们后续会动态控制）</li>
+<li>Language: 选择 <code>zh-CN</code></li>
+</ul>
+</li>
+<li>点击页面底部的 <strong>“Copy code snippet”</strong>，复制生成的 <code>&lt;script&gt;</code> 标签代码</li>
+</ol>
+<hr>
+<h2 id="三、创建评论模块文件"><a href="#三、创建评论模块文件" class="headerlink" title="三、创建评论模块文件"></a>三、创建评论模块文件</h2><h3 id="1-打开博客主题目录"><a href="#1-打开博客主题目录" class="headerlink" title="1. 打开博客主题目录"></a>1. 打开博客主题目录</h3><p>路径：<code>themes/hexo-theme-Chic/layout/_partial/</code></p>
+<h3 id="2-创建或编辑-livers-ejs-文件"><a href="#2-创建或编辑-livers-ejs-文件" class="headerlink" title="2. 创建或编辑 livers.ejs 文件"></a>2. 创建或编辑 <code>livers.ejs</code> 文件</h3><p>将 Giscus 中生成的 <code>&lt;script&gt;</code> 标签代码填入文件（注意部分参数的区别），同时增加主题自动同步功能代码：</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- Giscus 评论区挂载点 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">&quot;giscus-container&quot;</span> <span class="attr">style</span>=<span class="string">&quot;margin-top: 2.5rem;&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- Giscus 动态加载脚本：初始加载 + 明暗主题切换 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">createGiscus</span>(<span class="params">theme</span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> giscusContainer = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;giscus-container&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">if</span> (!giscusContainer) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 清除旧的评论 iframe</span></span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="property">innerHTML</span> = <span class="string">&#x27;&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> script = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(<span class="string">&#x27;script&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">src</span> = <span class="string">&#x27;https://giscus.app/client.js&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 替换为你的 GitHub 仓库信息（格式：username/repo）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo&#x27;</span>, <span class="string">&#x27;your-github-username/your-repo-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">   <span class="comment">// 替换为你的 repo-id 和 category-id（在 giscus.app 配置页面生成）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo-id&#x27;</span>, <span class="string">&#x27;your-repo-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category&#x27;</span>, <span class="string">&#x27;your-category-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category-id&#x27;</span>, <span class="string">&#x27;your-category-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 其他常规推荐设置</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-mapping&#x27;</span>, <span class="string">&#x27;pathname&#x27;</span>);           <span class="comment">// 用页面路径匹配评论帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-strict&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);                   <span class="comment">// 若无匹配帖则创建新帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-reactions-enabled&#x27;</span>, <span class="string">&#x27;1&#x27;</span>);        <span class="comment">// 启用表情反应</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-emit-metadata&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);            <span class="comment">// 不输出元数据</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-input-position&#x27;</span>, <span class="string">&#x27;top&#x27;</span>);         <span class="comment">// 输入框在评论上方</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-theme&#x27;</span>, theme);                </span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-lang&#x27;</span>, <span class="string">&#x27;zh-CN&#x27;</span>);                 <span class="comment">// 中文界面</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;crossorigin&#x27;</span>, <span class="string">&#x27;anonymous&#x27;</span>);           <span class="comment">// 跨域资源安全</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">async</span> = <span class="literal">true</span>;                                       </span></span><br><span class="line"><span class="language-javascript">     </span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="title function_">appendChild</span>(script);</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">getCurrentTheme</span>(<span class="params"></span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">return</span> <span class="variable language_">document</span>.<span class="property">body</span>.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;dark-theme&#x27;</span>) ? <span class="string">&#x27;dark&#x27;</span> : <span class="string">&#x27;light&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 页面首次加载，根据当前主题挂载评论</span></span></span><br><span class="line"><span class="language-javascript">    <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听按钮点击切换主题 → 重载评论区</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> buttons = [</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">querySelector</span>(<span class="string">&#x27;.toggleBtn&#x27;</span>),</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;mobile-toggle-theme&#x27;</span>)</span></span><br><span class="line"><span class="language-javascript">    ];</span></span><br><span class="line"><span class="language-javascript">    buttons.<span class="title function_">forEach</span>(<span class="function"><span class="params">btn</span> =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="keyword">if</span> (!btn) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript">      btn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="built_in">setTimeout</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">          <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">        &#125;, <span class="number">400</span>); <span class="comment">// 稍作延迟，确保 class 切换完毕</span></span></span><br><span class="line"><span class="language-javascript">      &#125;);</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听 body class 改变（保险方案）</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> observer = <span class="keyword">new</span> <span class="title class_">MutationObserver</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript">    observer.<span class="title function_">observe</span>(<span class="variable language_">document</span>.<span class="property">body</span>, &#123; <span class="attr">attributes</span>: <span class="literal">true</span>, <span class="attr">attributeFilter</span>: [<span class="string">&#x27;class&#x27;</span>] &#125;);</span></span><br><span class="line"><span class="language-javascript">  &#125;);</span></span><br><span class="line"><span class="language-javascript"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>⚠️ 请将 <code>data-repo-id</code> 和 <code>data-category-id</code> 替换为你从 giscus.app 获取的值。</p>
+</blockquote>
+<hr>
+<h2 id="四、引入评论模块到文章模板"><a href="#四、引入评论模块到文章模板" class="headerlink" title="四、引入评论模块到文章模板"></a>四、引入评论模块到文章模板</h2><p>打开文件：<code>themes/hexo-theme-Chic/layout/_page/post.ejs</code></p>
+<p>找到代码底部，在 <code>&lt;/article&gt;</code> 上方添加一行代码 <code>&lt;%- partial(&#39;_partial/livers&#39;) %&gt;</code> ：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">        &lt;section class=&quot;post-nav&quot;&gt;</span><br><span class="line">            &lt;% if(post.prev)&#123; %&gt;</span><br><span class="line">                &lt;a class=&quot;prev&quot; rel=&quot;prev&quot; href=&quot;&lt;%- url_for(post.prev.path)%&gt;&quot;&gt;&lt;%- post.prev.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">            &lt;% if(post.next)&#123; %&gt;</span><br><span class="line">            &lt;a class=&quot;next&quot; rel=&quot;next&quot; href=&quot;&lt;%- url_for(post.next.path)%&gt;&quot;&gt;&lt;%- post.next.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">        &lt;/section&gt;</span><br><span class="line"></span><br><span class="line">	&lt;%- partial(&#x27;_partial/livers&#x27;) %&gt;</span><br><span class="line"></span><br><span class="line">    &lt;/article&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+
+<p>这会让评论区出现在每篇文章的底部。</p>
+<hr>
+<h2 id="五、重新部署博客"><a href="#五、重新部署博客" class="headerlink" title="五、重新部署博客"></a>五、重新部署博客</h2><p>执行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+
+<p>然后访问你的博客文章页面，应该就能看到 Giscus 评论框</p>
+<hr>
+<h2 id="成功效果"><a href="#成功效果" class="headerlink" title="成功效果"></a>成功效果</h2><p><img src="https://github.com/user-attachments/assets/b75a7ffd-d99b-4d4a-9e95-cb43b06b36aa" alt="discussions"> </p>
+<ul>
+<li>支持 GitHub 登录评论</li>
+<li>评论存储在 Discussions 中，便于管理</li>
+<li>评论区支持明暗主题自动切换，与 Chic 博客风格一致</li>
+</ul>
+<hr>
+<p>如有问题，可以：</p>
+<ul>
+<li>检查浏览器控制台是否有加载错误</li>
+<li>确保 repo-id 和 category-id 正确</li>
+<li>确保启用了 Discussions 功能</li>
+</ul>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+]]></content>
+      <categories>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>Blog</tag>
+        <tag>前端</tag>
       </tags>
   </entry>
   <entry>
@@ -965,6 +1144,89 @@
         <tag>博客</tag>
         <tag>Blog</tag>
         <tag>前端</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Uploading Local Images to Vision LLM</title>
+    <url>/2025/04/18/Uploading-Local-Images-to-Vision-LLM/</url>
+    <content><![CDATA[<h1 id="如何使用视觉大模型上传本地图像并生成回答"><a href="#如何使用视觉大模型上传本地图像并生成回答" class="headerlink" title="如何使用视觉大模型上传本地图像并生成回答"></a>如何使用视觉大模型上传本地图像并生成回答</h1><p>在本篇博客中，我将讲解如何将本地图片上传至视觉大模型，并让模型生成图像的描述，本文以 Qwen 的模型举例。</p>
+<h2 id="1-什么是视觉模型？"><a href="#1-什么是视觉模型？" class="headerlink" title="1. 什么是视觉模型？"></a>1. 什么是视觉模型？</h2><p>视觉模型是一个基于大规模视觉-语言模型的工具，能够将图片与自然语言结合。通过调用该模型，你可以将图像发送给它，并让它生成对图像内容的详细描述。例如，它可以描述图像中的物体、场景甚至情感。</p>
+<hr>
+<h2 id="2-Qwen官方的-API-调用方法"><a href="#2-Qwen官方的-API-调用方法" class="headerlink" title="2. Qwen官方的 API 调用方法"></a>2. Qwen官方的 API 调用方法</h2><p>Qwen 官方提供的视觉大模型调用方式是通过直接提供图像的 URL 来进行图像分析。代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import os</span><br><span class="line">from openai import OpenAI</span><br><span class="line"></span><br><span class="line">client = OpenAI(</span><br><span class="line">    # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key=&quot;sk-xxx&quot;,</span><br><span class="line">    api_key=os.getenv(&quot;DASHSCOPE_API_KEY&quot;),</span><br><span class="line">    base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">completion = client.chat.completions.create(</span><br><span class="line">    model=&quot;qwen-vl-plus&quot;,  # 此处以qwen-vl-plus为例，可按需更换模型名称。</span><br><span class="line">    messages=[&#123;</span><br><span class="line">        &quot;role&quot;: &quot;user&quot;,</span><br><span class="line">        &quot;content&quot;: [</span><br><span class="line">            &#123;&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: &quot;这是什么&quot;&#125;,</span><br><span class="line">            &#123;&quot;type&quot;: &quot;image_url&quot;, </span><br><span class="line">             &quot;image_url&quot;: &#123;&quot;url&quot;: &quot;https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg&quot;&#125;&#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;]</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">print(completion.model_dump_json())</span><br></pre></td></tr></table></figure>
+<p>这个方法需要将图像的 URL（指向图片存储的网络地址）作为消息发送给模型。</p>
+<p>但对于本地图片要上传至大模型处理，先转为 URL 显然有些繁琐。</p>
+<hr>
+<h2 id="3-如何将本地图片上传至大模型"><a href="#3-如何将本地图片上传至大模型" class="headerlink" title="3. 如何将本地图片上传至大模型"></a>3. 如何将本地图片上传至大模型</h2><p>这里我将介绍一个本地图片上传至 Qwen 视觉模型，并让模型根据prompt生成图像的描述的方法。</p>
+<p>以下是完整的代码模板：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">from PIL import Image</span><br><span class="line">import base64</span><br><span class="line">from io import BytesIO</span><br><span class="line">from openai import OpenAI</span><br><span class="line"></span><br><span class="line"># 初始化 API 客户端</span><br><span class="line">client = OpenAI(</span><br><span class="line">    api_key=&quot;你的百炼Key&quot;,</span><br><span class="line">    base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># === 准备图像（PIL）并转为 base64 ===</span><br><span class="line">def pil_image_to_base64(pil_img: Image.Image) -&gt; str:</span><br><span class="line">    buffered = BytesIO()</span><br><span class="line">    pil_img.save(buffered, format=&quot;JPEG&quot;)</span><br><span class="line">    return base64.b64encode(buffered.getvalue()).decode(&quot;utf-8&quot;)</span><br><span class="line"></span><br><span class="line"># === 构建调用内容并发送 ===</span><br><span class="line">def call_qwen_vl(pil_img: Image.Image, prompt_text: str = &quot;请描述图像内容&quot;) -&gt; str:</span><br><span class="line">    img_b64 = pil_image_to_base64(pil_img)</span><br><span class="line"></span><br><span class="line">    content = [</span><br><span class="line">        &#123;&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: prompt_text&#125;,</span><br><span class="line">        &#123;&quot;type&quot;: &quot;image_url&quot;, &quot;image_url&quot;: &#123;</span><br><span class="line">            &quot;url&quot;: f&quot;data:image/jpeg;base64,&#123;img_b64&#125;&quot;</span><br><span class="line">        &#125;&#125;</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    response = client.chat.completions.create(</span><br><span class="line">        model=&quot;qwen-vl-plus&quot;,</span><br><span class="line">        messages=[&#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: content&#125;]</span><br><span class="line">    )</span><br><span class="line">    return response.choices[0].message.content.strip()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>相比官方的 API 调用方法，这个方法通过将图像转换为 Base64 编码 字符串的方式传输图像，这样就可以将图像嵌入到请求中，直接将本地图片上传至视觉大模型进行理解</p>
+<hr>
+<h2 id="4-代码解析"><a href="#4-代码解析" class="headerlink" title="4. 代码解析"></a>4. 代码解析</h2><p>接下来，我们来看如何实现这个过程。整个代码的核心分为几个步骤：图像加载、图像转换为 base64 编码、构建 API 请求、获取并处理模型的响应。</p>
+<h3 id="4-1-导入必要的库"><a href="#4-1-导入必要的库" class="headerlink" title="4.1 导入必要的库"></a>4.1 导入必要的库</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"><span class="keyword">from</span> io <span class="keyword">import</span> BytesIO</span><br><span class="line"><span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>PIL</strong>：用于打开和处理图像文件。</li>
+<li><strong>base64</strong>：用于将图像数据转换为 base64 编码，使其适合通过 HTTP 请求传输。</li>
+<li><strong>BytesIO</strong>：将图像数据保存在内存中的缓冲区，而不是写入磁盘。</li>
+<li><strong>OpenAI</strong>：用于与 OpenAI API 进行交互，调用 Qwen-VL 模型。</li>
+</ul>
+<h3 id="4-2-初始化-API-客户端"><a href="#4-2-初始化-API-客户端" class="headerlink" title="4.2 初始化 API 客户端"></a>4.2 初始化 API 客户端</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">client = OpenAI(</span><br><span class="line">    api_key=<span class="string">&quot;你的百炼Key&quot;</span>,</span><br><span class="line">    base_url=<span class="string">&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>你需要提供一个 <strong>API 密钥</strong>（<code>api_key</code>）来进行身份验证。<code>base_url</code> 是 API 的地址，用来与 Qwen 模型通信。</p>
+<h3 id="4-3-图像转换为-Base64-编码"><a href="#4-3-图像转换为-Base64-编码" class="headerlink" title="4.3 图像转换为 Base64 编码"></a>4.3 图像转换为 Base64 编码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">pil_image_to_base64</span>(<span class="params">pil_img: Image.Image</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    buffered = BytesIO()</span><br><span class="line">    pil_img.save(buffered, <span class="built_in">format</span>=<span class="string">&quot;JPEG&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> base64.b64encode(buffered.getvalue()).decode(<span class="string">&quot;utf-8&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>这段代码的作用是将图像从 <strong>PIL 图像格式</strong> 转换为 <strong>base64 编码</strong>，并返回一个字符串。为什么要这么做呢？</p>
+<ul>
+<li>图像是二进制数据，而网络通信（特别是通过 HTTP 请求）更擅长处理文本数据。通过将图像转换为 base64 编码，我们可以轻松地将其嵌入到文本请求中发送给 API。</li>
+<li><code>BytesIO()</code> 是一个内存中的文件对象，用来暂存图像数据。</li>
+<li><code>pil_img.save(buffered, format=&quot;JPEG&quot;)</code> 将图像保存到内存中的缓冲区（<code>buffered</code>），并指定图像格式为 JPEG。</li>
+<li><code>base64.b64encode(buffered.getvalue())</code> 将内存中的图像数据进行 base64 编码。</li>
+<li><code>.decode(&quot;utf-8&quot;)</code> 将编码后的字节数据转换为可读的字符串。</li>
+</ul>
+<h3 id="4-4-构建-API-请求并发送"><a href="#4-4-构建-API-请求并发送" class="headerlink" title="4.4 构建 API 请求并发送"></a>4.4 构建 API 请求并发送</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">call_qwen_vl</span>(<span class="params">pil_img: Image.Image, prompt_text: <span class="built_in">str</span> = <span class="string">&quot;请描述图像内容&quot;</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    img_b64 = pil_image_to_base64(pil_img)</span><br><span class="line"></span><br><span class="line">    content = [</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>, <span class="string">&quot;text&quot;</span>: prompt_text&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;image_url&quot;</span>, <span class="string">&quot;image_url&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;url&quot;</span>: <span class="string">f&quot;data:image/jpeg;base64,<span class="subst">&#123;img_b64&#125;</span>&quot;</span></span><br><span class="line">        &#125;&#125;</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    response = client.chat.completions.create(</span><br><span class="line">        model=<span class="string">&quot;qwen-vl-plus&quot;</span>,</span><br><span class="line">        messages=[&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: content&#125;]</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> response.choices[<span class="number">0</span>].message.content.strip()</span><br></pre></td></tr></table></figure>
+
+<p>这一段是代码的核心，主要完成了以下工作：</p>
+<ol>
+<li><p><strong>将图像转换为 Base64</strong>：我们先调用前面写的 <code>pil_image_to_base64()</code> 函数将图像转换为 base64 编码。</p>
+</li>
+<li><p><strong>构建请求内容</strong>：这里我们准备了一个内容列表 <code>content</code>，包括了两个部分：</p>
+<ul>
+<li><strong>文本提示</strong>：<code>&#123;&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: prompt_text&#125;</code>，这是给模型的提示，告诉它需要描述图像的内容。默认的prompt文本是“请描述图像内容”。</li>
+<li><strong>图像数据</strong>：<code>&#123;&quot;type&quot;: &quot;image_url&quot;, &quot;image_url&quot;: &#123;&quot;url&quot;: f&quot;data:image/jpeg;base64,&#123;img_b64&#125;&quot;&#125;&#125;</code>。这里我们使用了一个 <code>data:image/jpeg;base64,...</code> 的 URL 格式来将图像数据嵌入请求中，这个过程避免了图像必须托管在网络上的限制。</li>
+</ul>
+</li>
+<li><p><strong>发送请求</strong>：<code>client.chat.completions.create(...)</code> 这行代码通过 OpenAI 客户端向 Qwen-VL 模型发送请求。这里指定了使用的模型 <code>qwen-vl-plus</code>（你可以自己跟换所需的视觉大模型），并将构建好的消息内容传递给模型。</p>
+</li>
+<li><p><strong>获取响应</strong>：模型处理完图像后，会返回一个响应。我们从 <code>response.choices[0].message.content</code> 中提取出模型生成的描述，并使用 <code>.strip()</code> 去除两端的空白字符。</p>
+</li>
+</ol>
+<h3 id="4-5-完整流程"><a href="#4-5-完整流程" class="headerlink" title="4.5 完整流程"></a>4.5 完整流程</h3><ol>
+<li><strong>加载图像</strong>：首先从本地加载图像，通常使用 <code>PIL.Image.open()</code> 来打开文件。</li>
+<li><strong>图像转换</strong>：然后我们将图像转换为 base64 编码，使其能够通过网络请求安全传输。</li>
+<li><strong>构建请求并发送给 Qwen-VL 模型</strong>：构建一个包含图像和文本提示的请求，发送给 Qwen-VL 模型。</li>
+<li><strong>接收并处理模型的响应</strong>：模型会分析图像并生成一段描述文本，我们从响应中提取并返回这段文本。</li>
+</ol>
+<h2 id="5-示例：如何使用该代码"><a href="#5-示例：如何使用该代码" class="headerlink" title="5. 示例：如何使用该代码"></a>5. 示例：如何使用该代码</h2><p>假设你有一个本地的图像文件 <code>example.jpg</code>，你想让视觉模型描述它的内容。以下是一个简单的代码示例：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"></span><br><span class="line"><span class="comment"># 打开本地图像文件</span></span><br><span class="line">image_path = <span class="string">&quot;example.jpg&quot;</span></span><br><span class="line">img = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用 Qwen-VL 模型获取图像描述</span></span><br><span class="line">description = call_qwen_vl(img)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;图像描述：&quot;</span>, description)</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-1-结果"><a href="#5-1-结果" class="headerlink" title="5.1 结果"></a>5.1 结果</h3><p>当你运行这段代码时，模型会分析图像并生成对该图像的描述。例如，它可能会返回类似这样的描述：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">图像描述：这是一张包含一个绿色苹果的照片，苹果放置在白色背景上，旁边还有一些小草。</span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>该项目代码参考 <a href="https://bailian.console.aliyun.com/?spm=5176.28197619.aillm.2.4d7a1ad8wlSXpQ&scm=20140722.S_%E5%AF%BC%E8%88%AA%E5%88%B0%E6%A8%A1%E5%9E%8B%E5%B9%BF%E5%9C%BA._.RL_%E5%AF%BC%E8%88%AA%E5%88%B0%E6%A8%A1%E5%9E%8B%E5%B9%BF%E5%9C%BA-LOC_aillm-OR_chat-V_3-RC_llm&accounttraceid=2fcac53a3ff94398a308227a35f9638fekhp&tab=api#/api/?type=model&url=https%3A%2F%2Fhelp.aliyun.com%2Fdocument_detail%2F2712576.html%23cde3eb109flda">Qwen官方的视觉模型图像输入使用方法</a>。</p>
+]]></content>
+      <categories>
+        <category>LLM学习之路</category>
+      </categories>
+      <tags>
+        <tag>AI</tag>
+        <tag>LLM</tag>
+        <tag>大模型</tag>
+        <tag>Python</tag>
+        <tag>Agent</tag>
+        <tag>Qwen</tag>
+        <tag>视觉</tag>
       </tags>
   </entry>
   <entry>
@@ -1084,89 +1346,6 @@
         <tag>Python</tag>
         <tag>算法</tag>
         <tag>LeetCode</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Uploading Local Images to Vision LLM</title>
-    <url>/2025/04/18/Uploading-Local-Images-to-Vision-LLM/</url>
-    <content><![CDATA[<h1 id="如何使用视觉大模型上传本地图像并生成回答"><a href="#如何使用视觉大模型上传本地图像并生成回答" class="headerlink" title="如何使用视觉大模型上传本地图像并生成回答"></a>如何使用视觉大模型上传本地图像并生成回答</h1><p>在本篇博客中，我将讲解如何将本地图片上传至视觉大模型，并让模型生成图像的描述，本文以 Qwen 的模型举例。</p>
-<h2 id="1-什么是视觉模型？"><a href="#1-什么是视觉模型？" class="headerlink" title="1. 什么是视觉模型？"></a>1. 什么是视觉模型？</h2><p>视觉模型是一个基于大规模视觉-语言模型的工具，能够将图片与自然语言结合。通过调用该模型，你可以将图像发送给它，并让它生成对图像内容的详细描述。例如，它可以描述图像中的物体、场景甚至情感。</p>
-<hr>
-<h2 id="2-Qwen官方的-API-调用方法"><a href="#2-Qwen官方的-API-调用方法" class="headerlink" title="2. Qwen官方的 API 调用方法"></a>2. Qwen官方的 API 调用方法</h2><p>Qwen 官方提供的视觉大模型调用方式是通过直接提供图像的 URL 来进行图像分析。代码如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import os</span><br><span class="line">from openai import OpenAI</span><br><span class="line"></span><br><span class="line">client = OpenAI(</span><br><span class="line">    # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key=&quot;sk-xxx&quot;,</span><br><span class="line">    api_key=os.getenv(&quot;DASHSCOPE_API_KEY&quot;),</span><br><span class="line">    base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">completion = client.chat.completions.create(</span><br><span class="line">    model=&quot;qwen-vl-plus&quot;,  # 此处以qwen-vl-plus为例，可按需更换模型名称。</span><br><span class="line">    messages=[&#123;</span><br><span class="line">        &quot;role&quot;: &quot;user&quot;,</span><br><span class="line">        &quot;content&quot;: [</span><br><span class="line">            &#123;&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: &quot;这是什么&quot;&#125;,</span><br><span class="line">            &#123;&quot;type&quot;: &quot;image_url&quot;, </span><br><span class="line">             &quot;image_url&quot;: &#123;&quot;url&quot;: &quot;https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg&quot;&#125;&#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;]</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">print(completion.model_dump_json())</span><br></pre></td></tr></table></figure>
-<p>这个方法需要将图像的 URL（指向图片存储的网络地址）作为消息发送给模型。</p>
-<p>但对于本地图片要上传至大模型处理，先转为 URL 显然有些繁琐。</p>
-<hr>
-<h2 id="3-如何将本地图片上传至大模型"><a href="#3-如何将本地图片上传至大模型" class="headerlink" title="3. 如何将本地图片上传至大模型"></a>3. 如何将本地图片上传至大模型</h2><p>这里我将介绍一个本地图片上传至 Qwen 视觉模型，并让模型根据prompt生成图像的描述的方法。</p>
-<p>以下是完整的代码模板：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">from PIL import Image</span><br><span class="line">import base64</span><br><span class="line">from io import BytesIO</span><br><span class="line">from openai import OpenAI</span><br><span class="line"></span><br><span class="line"># 初始化 API 客户端</span><br><span class="line">client = OpenAI(</span><br><span class="line">    api_key=&quot;你的百炼Key&quot;,</span><br><span class="line">    base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># === 准备图像（PIL）并转为 base64 ===</span><br><span class="line">def pil_image_to_base64(pil_img: Image.Image) -&gt; str:</span><br><span class="line">    buffered = BytesIO()</span><br><span class="line">    pil_img.save(buffered, format=&quot;JPEG&quot;)</span><br><span class="line">    return base64.b64encode(buffered.getvalue()).decode(&quot;utf-8&quot;)</span><br><span class="line"></span><br><span class="line"># === 构建调用内容并发送 ===</span><br><span class="line">def call_qwen_vl(pil_img: Image.Image, prompt_text: str = &quot;请描述图像内容&quot;) -&gt; str:</span><br><span class="line">    img_b64 = pil_image_to_base64(pil_img)</span><br><span class="line"></span><br><span class="line">    content = [</span><br><span class="line">        &#123;&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: prompt_text&#125;,</span><br><span class="line">        &#123;&quot;type&quot;: &quot;image_url&quot;, &quot;image_url&quot;: &#123;</span><br><span class="line">            &quot;url&quot;: f&quot;data:image/jpeg;base64,&#123;img_b64&#125;&quot;</span><br><span class="line">        &#125;&#125;</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    response = client.chat.completions.create(</span><br><span class="line">        model=&quot;qwen-vl-plus&quot;,</span><br><span class="line">        messages=[&#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: content&#125;]</span><br><span class="line">    )</span><br><span class="line">    return response.choices[0].message.content.strip()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>相比官方的 API 调用方法，这个方法通过将图像转换为 Base64 编码 字符串的方式传输图像，这样就可以将图像嵌入到请求中，直接将本地图片上传至视觉大模型进行理解</p>
-<hr>
-<h2 id="4-代码解析"><a href="#4-代码解析" class="headerlink" title="4. 代码解析"></a>4. 代码解析</h2><p>接下来，我们来看如何实现这个过程。整个代码的核心分为几个步骤：图像加载、图像转换为 base64 编码、构建 API 请求、获取并处理模型的响应。</p>
-<h3 id="4-1-导入必要的库"><a href="#4-1-导入必要的库" class="headerlink" title="4.1 导入必要的库"></a>4.1 导入必要的库</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"><span class="keyword">from</span> io <span class="keyword">import</span> BytesIO</span><br><span class="line"><span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>PIL</strong>：用于打开和处理图像文件。</li>
-<li><strong>base64</strong>：用于将图像数据转换为 base64 编码，使其适合通过 HTTP 请求传输。</li>
-<li><strong>BytesIO</strong>：将图像数据保存在内存中的缓冲区，而不是写入磁盘。</li>
-<li><strong>OpenAI</strong>：用于与 OpenAI API 进行交互，调用 Qwen-VL 模型。</li>
-</ul>
-<h3 id="4-2-初始化-API-客户端"><a href="#4-2-初始化-API-客户端" class="headerlink" title="4.2 初始化 API 客户端"></a>4.2 初始化 API 客户端</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">client = OpenAI(</span><br><span class="line">    api_key=<span class="string">&quot;你的百炼Key&quot;</span>,</span><br><span class="line">    base_url=<span class="string">&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-
-<p>你需要提供一个 <strong>API 密钥</strong>（<code>api_key</code>）来进行身份验证。<code>base_url</code> 是 API 的地址，用来与 Qwen 模型通信。</p>
-<h3 id="4-3-图像转换为-Base64-编码"><a href="#4-3-图像转换为-Base64-编码" class="headerlink" title="4.3 图像转换为 Base64 编码"></a>4.3 图像转换为 Base64 编码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">pil_image_to_base64</span>(<span class="params">pil_img: Image.Image</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    buffered = BytesIO()</span><br><span class="line">    pil_img.save(buffered, <span class="built_in">format</span>=<span class="string">&quot;JPEG&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> base64.b64encode(buffered.getvalue()).decode(<span class="string">&quot;utf-8&quot;</span>)</span><br></pre></td></tr></table></figure>
-
-<p>这段代码的作用是将图像从 <strong>PIL 图像格式</strong> 转换为 <strong>base64 编码</strong>，并返回一个字符串。为什么要这么做呢？</p>
-<ul>
-<li>图像是二进制数据，而网络通信（特别是通过 HTTP 请求）更擅长处理文本数据。通过将图像转换为 base64 编码，我们可以轻松地将其嵌入到文本请求中发送给 API。</li>
-<li><code>BytesIO()</code> 是一个内存中的文件对象，用来暂存图像数据。</li>
-<li><code>pil_img.save(buffered, format=&quot;JPEG&quot;)</code> 将图像保存到内存中的缓冲区（<code>buffered</code>），并指定图像格式为 JPEG。</li>
-<li><code>base64.b64encode(buffered.getvalue())</code> 将内存中的图像数据进行 base64 编码。</li>
-<li><code>.decode(&quot;utf-8&quot;)</code> 将编码后的字节数据转换为可读的字符串。</li>
-</ul>
-<h3 id="4-4-构建-API-请求并发送"><a href="#4-4-构建-API-请求并发送" class="headerlink" title="4.4 构建 API 请求并发送"></a>4.4 构建 API 请求并发送</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">call_qwen_vl</span>(<span class="params">pil_img: Image.Image, prompt_text: <span class="built_in">str</span> = <span class="string">&quot;请描述图像内容&quot;</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    img_b64 = pil_image_to_base64(pil_img)</span><br><span class="line"></span><br><span class="line">    content = [</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>, <span class="string">&quot;text&quot;</span>: prompt_text&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;image_url&quot;</span>, <span class="string">&quot;image_url&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;url&quot;</span>: <span class="string">f&quot;data:image/jpeg;base64,<span class="subst">&#123;img_b64&#125;</span>&quot;</span></span><br><span class="line">        &#125;&#125;</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    response = client.chat.completions.create(</span><br><span class="line">        model=<span class="string">&quot;qwen-vl-plus&quot;</span>,</span><br><span class="line">        messages=[&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: content&#125;]</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> response.choices[<span class="number">0</span>].message.content.strip()</span><br></pre></td></tr></table></figure>
-
-<p>这一段是代码的核心，主要完成了以下工作：</p>
-<ol>
-<li><p><strong>将图像转换为 Base64</strong>：我们先调用前面写的 <code>pil_image_to_base64()</code> 函数将图像转换为 base64 编码。</p>
-</li>
-<li><p><strong>构建请求内容</strong>：这里我们准备了一个内容列表 <code>content</code>，包括了两个部分：</p>
-<ul>
-<li><strong>文本提示</strong>：<code>&#123;&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: prompt_text&#125;</code>，这是给模型的提示，告诉它需要描述图像的内容。默认的prompt文本是“请描述图像内容”。</li>
-<li><strong>图像数据</strong>：<code>&#123;&quot;type&quot;: &quot;image_url&quot;, &quot;image_url&quot;: &#123;&quot;url&quot;: f&quot;data:image/jpeg;base64,&#123;img_b64&#125;&quot;&#125;&#125;</code>。这里我们使用了一个 <code>data:image/jpeg;base64,...</code> 的 URL 格式来将图像数据嵌入请求中，这个过程避免了图像必须托管在网络上的限制。</li>
-</ul>
-</li>
-<li><p><strong>发送请求</strong>：<code>client.chat.completions.create(...)</code> 这行代码通过 OpenAI 客户端向 Qwen-VL 模型发送请求。这里指定了使用的模型 <code>qwen-vl-plus</code>（你可以自己跟换所需的视觉大模型），并将构建好的消息内容传递给模型。</p>
-</li>
-<li><p><strong>获取响应</strong>：模型处理完图像后，会返回一个响应。我们从 <code>response.choices[0].message.content</code> 中提取出模型生成的描述，并使用 <code>.strip()</code> 去除两端的空白字符。</p>
-</li>
-</ol>
-<h3 id="4-5-完整流程"><a href="#4-5-完整流程" class="headerlink" title="4.5 完整流程"></a>4.5 完整流程</h3><ol>
-<li><strong>加载图像</strong>：首先从本地加载图像，通常使用 <code>PIL.Image.open()</code> 来打开文件。</li>
-<li><strong>图像转换</strong>：然后我们将图像转换为 base64 编码，使其能够通过网络请求安全传输。</li>
-<li><strong>构建请求并发送给 Qwen-VL 模型</strong>：构建一个包含图像和文本提示的请求，发送给 Qwen-VL 模型。</li>
-<li><strong>接收并处理模型的响应</strong>：模型会分析图像并生成一段描述文本，我们从响应中提取并返回这段文本。</li>
-</ol>
-<h2 id="5-示例：如何使用该代码"><a href="#5-示例：如何使用该代码" class="headerlink" title="5. 示例：如何使用该代码"></a>5. 示例：如何使用该代码</h2><p>假设你有一个本地的图像文件 <code>example.jpg</code>，你想让视觉模型描述它的内容。以下是一个简单的代码示例：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"></span><br><span class="line"><span class="comment"># 打开本地图像文件</span></span><br><span class="line">image_path = <span class="string">&quot;example.jpg&quot;</span></span><br><span class="line">img = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用 Qwen-VL 模型获取图像描述</span></span><br><span class="line">description = call_qwen_vl(img)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;图像描述：&quot;</span>, description)</span><br></pre></td></tr></table></figure>
-
-<h3 id="5-1-结果"><a href="#5-1-结果" class="headerlink" title="5.1 结果"></a>5.1 结果</h3><p>当你运行这段代码时，模型会分析图像并生成对该图像的描述。例如，它可能会返回类似这样的描述：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">图像描述：这是一张包含一个绿色苹果的照片，苹果放置在白色背景上，旁边还有一些小草。</span><br></pre></td></tr></table></figure>
-
-<hr>
-<p>该项目代码参考 <a href="https://bailian.console.aliyun.com/?spm=5176.28197619.aillm.2.4d7a1ad8wlSXpQ&scm=20140722.S_%E5%AF%BC%E8%88%AA%E5%88%B0%E6%A8%A1%E5%9E%8B%E5%B9%BF%E5%9C%BA._.RL_%E5%AF%BC%E8%88%AA%E5%88%B0%E6%A8%A1%E5%9E%8B%E5%B9%BF%E5%9C%BA-LOC_aillm-OR_chat-V_3-RC_llm&accounttraceid=2fcac53a3ff94398a308227a35f9638fekhp&tab=api#/api/?type=model&url=https%3A%2F%2Fhelp.aliyun.com%2Fdocument_detail%2F2712576.html%23cde3eb109flda">Qwen官方的视觉模型图像输入使用方法</a>。</p>
-]]></content>
-      <categories>
-        <category>LLM学习之路</category>
-      </categories>
-      <tags>
-        <tag>LLM</tag>
-        <tag>大模型</tag>
-        <tag>Agent</tag>
-        <tag>Qwen</tag>
-        <tag>AI</tag>
-        <tag>Python</tag>
-        <tag>视觉</tag>
       </tags>
   </entry>
   <entry>
@@ -1375,11 +1554,6 @@
 ]]></content>
   </entry>
   <entry>
-    <title>category</title>
-    <url>/category/index.html</url>
-    <content><![CDATA[]]></content>
-  </entry>
-  <entry>
     <title>tag</title>
     <url>/tag/index.html</url>
     <content><![CDATA[]]></content>
@@ -1446,5 +1620,10 @@
   });
 });
 ]]></content>
+  </entry>
+  <entry>
+    <title>category</title>
+    <url>/category/index.html</url>
+    <content><![CDATA[]]></content>
   </entry>
 </search>
