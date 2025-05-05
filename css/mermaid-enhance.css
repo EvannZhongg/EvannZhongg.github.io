@@ -6,6 +6,11 @@
   border: 1px solid #eee;
   background: #fff;
   overflow: hidden;
+  cursor: grab;            /* 整个容器显示抓取手势 */
+}
+
+.mermaid-interactive-container:active {
+  cursor: grabbing;
 }
 
 .mermaid-interactive-container.fullscreen {
