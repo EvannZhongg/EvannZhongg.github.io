@@ -8,7 +8,6 @@
   overflow: hidden;
 }
 
-/* 全屏態：覆盖视口 90%×90% */
 .mermaid-interactive-container.fullscreen {
   position: fixed !important;
   top: 5vh !important;
