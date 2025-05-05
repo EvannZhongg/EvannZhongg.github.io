@@ -1,11 +1,26 @@
 .mermaid-interactive-container {
   position: relative;
   width: 100%;
-  height: 600px;        /* 与 JS 中 CONTAINER_HEIGHT 保持一致 */
+  height: 600px;           /* 与 JS 中 CONTAINER_HEIGHT 保持一致 */
   margin: 30px auto;
   border: 1px solid #eee;
   background: #fff;
-  overflow: hidden;     /* 可改为 visible 允许拖出 */
+  overflow: hidden;
+}
+
+/* 全屏態：覆盖视口 90%×90% */
+.mermaid-interactive-container.fullscreen {
+  position: fixed !important;
+  top: 5vh !important;
+  left: 5vw !important;
+  width: 90vw !important;
+  height: 90vh !important;
+  margin: 0 !important;
+  padding: 0;
+  background: #fff;
+  border: 2px solid #333;
+  z-index: 10000;
+  overflow: auto;
 }
 
 .mermaid {
@@ -13,7 +28,8 @@
   transform-origin: top left;
 }
 
-.mermaid-controls button {
+.mermaid-controls button,
+.mermaid-fullscreen-btn {
   background: #f5f5f5;
   border: 1px solid #ddd;
   border-radius: 3px;
@@ -22,12 +38,13 @@
   font-size: 12px;
   transition: background 0.2s;
 }
-.mermaid-controls button:hover {
+.mermaid-controls button:hover,
+.mermaid-fullscreen-btn:hover {
   background: #e5e5e5;
 }
 
 .mermaid svg {
-  max-width: none; /* 让 width=offsetWidth 生效 */
+  max-width: none;
   height: auto;
   display: block;
 }

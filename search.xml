@@ -1,6 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Add Copy Button to Code Blocks in Hexo</title>
+    <url>/2025/03/26/Add-Copy-Button-to-Code-Blocks-in-Hexo/</url>
+    <content><![CDATA[<h1 id="Hexo-为代码块添加复制功能按钮"><a href="#Hexo-为代码块添加复制功能按钮" class="headerlink" title="Hexo 为代码块添加复制功能按钮"></a>Hexo 为代码块添加复制功能按钮</h1><p>本文详细记录如何在 Hexo 中为代码块添加一个 “复制” 按钮，实现一键复制代码功能。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="结构要求与适配说明"><a href="#结构要求与适配说明" class="headerlink" title="结构要求与适配说明"></a>结构要求与适配说明</h2><p>本复制功能脚本适用于以下结构的代码块：</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">figure</span> <span class="attr">class</span>=<span class="string">&quot;highlight&quot;</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">table</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">&quot;gutter&quot;</span>&gt;</span>...<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">&quot;code&quot;</span>&gt;</span><span class="tag">&lt;<span class="name">pre</span>&gt;</span><span class="tag">&lt;<span class="name">code</span>&gt;</span>...<span class="tag">&lt;/<span class="name">code</span>&gt;</span><span class="tag">&lt;/<span class="name">pre</span>&gt;</span><span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">table</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">figure</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>这是 Hexo 中多数主题（包括 Chic、NexT、Butterfly 等）默认的代码块渲染结构。</p>
+<h3 id="如何检查自己主题的结构是否符合？"><a href="#如何检查自己主题的结构是否符合？" class="headerlink" title="如何检查自己主题的结构是否符合？"></a>如何检查自己主题的结构是否符合？</h3><ol>
+<li>启动本地博客：<code>hexo s</code></li>
+<li>在浏览器中打开博客页面</li>
+<li>右键代码块 → 点击“检查”</li>
+<li>查看代码块的外层 HTML 标签是否为 <code>figure.highlight</code> </li>
+<li>或者直接在浏览器中点击 <code>F12</code> ，在 <code>Elements</code> 中直接搜索是否含有 <code>figure.highlight</code></li>
+</ol>
+<hr>
+<h2 id="1-创建-JavaScript-脚本文件"><a href="#1-创建-JavaScript-脚本文件" class="headerlink" title="1. 创建 JavaScript 脚本文件"></a><strong>1. 创建 JavaScript 脚本文件</strong></h2><p>在 Hexo 博客项目的根目录下创建 JS 脚本文件 <code>code-copy.js</code> ,如果没有js文件夹则自己创建：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">source/js/code-copy.js</span><br></pre></td></tr></table></figure>
+
+<p>并填入以下完整内容：</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span><br><span class="line">  <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;figure.highlight&#x27;</span>).<span class="title function_">forEach</span>(<span class="function">(<span class="params">figure</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (figure.<span class="title function_">querySelector</span>(<span class="string">&#x27;.copy-btn&#x27;</span>)) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> copyBtn = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(<span class="string">&#x27;button&#x27;</span>);</span><br><span class="line">    copyBtn.<span class="property">className</span> = <span class="string">&#x27;copy-btn&#x27;</span>;</span><br><span class="line">    copyBtn.<span class="property">title</span> = <span class="string">&#x27;复制&#x27;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 缩小后的复制图标（14*15）</span></span><br><span class="line">    <span class="keyword">const</span> copyIcon = <span class="string">`</span></span><br><span class="line"><span class="string">      &lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; height=&quot;14&quot; width=&quot;15&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;white&quot;&gt;</span></span><br><span class="line"><span class="string">        &lt;path d=&quot;M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 18H8V7h11v16z&quot;/&gt;</span></span><br><span class="line"><span class="string">      &lt;/svg&gt;</span></span><br><span class="line"><span class="string">    `</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 成功后显示的勾（14*15）</span></span><br><span class="line">    <span class="keyword">const</span> checkIcon = <span class="string">`</span></span><br><span class="line"><span class="string">      &lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; height=&quot;14&quot; width=&quot;15&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;#00cc66&quot;&gt;</span></span><br><span class="line"><span class="string">        &lt;path d=&quot;M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z&quot;/&gt;</span></span><br><span class="line"><span class="string">      &lt;/svg&gt;</span></span><br><span class="line"><span class="string">    `</span>;</span><br><span class="line"></span><br><span class="line">    copyBtn.<span class="property">innerHTML</span> = copyIcon;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 按钮样式（浅灰底、缩小）</span></span><br><span class="line">    <span class="title class_">Object</span>.<span class="title function_">assign</span>(copyBtn.<span class="property">style</span>, &#123;</span><br><span class="line">      <span class="attr">position</span>: <span class="string">&#x27;absolute&#x27;</span>,</span><br><span class="line">      <span class="attr">top</span>: <span class="string">&#x27;8px&#x27;</span>,</span><br><span class="line">      <span class="attr">right</span>: <span class="string">&#x27;8px&#x27;</span>,</span><br><span class="line">      <span class="attr">padding</span>: <span class="string">&#x27;4px&#x27;</span>,</span><br><span class="line">      <span class="attr">background</span>: <span class="string">&#x27;#aaa&#x27;</span>, </span><br><span class="line">      <span class="attr">border</span>: <span class="string">&#x27;none&#x27;</span>,</span><br><span class="line">      <span class="attr">borderRadius</span>: <span class="string">&#x27;4px&#x27;</span>,</span><br><span class="line">      <span class="attr">cursor</span>: <span class="string">&#x27;pointer&#x27;</span>,</span><br><span class="line">      <span class="attr">opacity</span>: <span class="string">&#x27;0.85&#x27;</span>,</span><br><span class="line">      <span class="attr">zIndex</span>: <span class="number">1000</span>,</span><br><span class="line">      <span class="attr">transition</span>: <span class="string">&#x27;opacity 0.2s ease&#x27;</span>,</span><br><span class="line">      <span class="attr">boxShadow</span>: <span class="string">&#x27;0 1px 3px rgba(0, 0, 0, 0.15)&#x27;</span></span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    copyBtn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;mouseover&#x27;</span>, <span class="function">() =&gt;</span> copyBtn.<span class="property">style</span>.<span class="property">opacity</span> = <span class="string">&#x27;1&#x27;</span>);</span><br><span class="line">    copyBtn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;mouseout&#x27;</span>, <span class="function">() =&gt;</span> copyBtn.<span class="property">style</span>.<span class="property">opacity</span> = <span class="string">&#x27;0.85&#x27;</span>);</span><br><span class="line"></span><br><span class="line">    copyBtn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">const</span> code = figure.<span class="title function_">querySelector</span>(<span class="string">&#x27;td.code&#x27;</span>);</span><br><span class="line">      <span class="keyword">const</span> text = code ? code.<span class="property">innerText</span> : <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">      navigator.<span class="property">clipboard</span>.<span class="title function_">writeText</span>(text).<span class="title function_">then</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">        copyBtn.<span class="property">innerHTML</span> = checkIcon;</span><br><span class="line">        <span class="built_in">setTimeout</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">          copyBtn.<span class="property">innerHTML</span> = copyIcon;</span><br><span class="line">        &#125;, <span class="number">1000</span>);</span><br><span class="line">      &#125;);</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    figure.<span class="property">style</span>.<span class="property">position</span> = <span class="string">&#x27;relative&#x27;</span>;</span><br><span class="line">    figure.<span class="title function_">appendChild</span>(copyBtn);</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="2-在页面底部引入-JS-文件"><a href="#2-在页面底部引入-JS-文件" class="headerlink" title="2. 在页面底部引入 JS 文件"></a><strong>2. 在页面底部引入 JS 文件</strong></h2><p>打开文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/footer.ejs</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>&lt;/footer&gt;</code> 标签之后添加以下代码：</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;/js/code-copy.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>这样可以确保复制按钮脚本在页面加载完毕后自动运行。</p>
+<hr>
+<h2 id="3-生成并本地预览效果"><a href="#3-生成并本地预览效果" class="headerlink" title="3. 生成并本地预览效果"></a><strong>3. 生成并本地预览效果</strong></h2><p>运行以下命令，重新生成并启动本地预览：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+
+<p>然后访问 <code>http://localhost:4000</code>，查看任意一段代码块，右上角应出现复制图标按钮。</p>
+<hr>
+<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+]]></content>
+      <categories>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>Blog</tag>
+        <tag>前端</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Convert PDF Tables to Readable Text</title>
     <url>/2025/03/28/Convert-PDF-Tables-to-Readable-Text/</url>
     <content><![CDATA[<h1 id="PDF-表格提取转为纯文本结构数据"><a href="#PDF-表格提取转为纯文本结构数据" class="headerlink" title="PDF 表格提取转为纯文本结构数据"></a>PDF 表格提取转为纯文本结构数据</h1><p>本文详细记录了如何使用读光的  Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。</p>
@@ -96,47 +149,72 @@
       </tags>
   </entry>
   <entry>
-    <title>Add Copy Button to Code Blocks in Hexo</title>
-    <url>/2025/03/26/Add-Copy-Button-to-Code-Blocks-in-Hexo/</url>
-    <content><![CDATA[<h1 id="Hexo-为代码块添加复制功能按钮"><a href="#Hexo-为代码块添加复制功能按钮" class="headerlink" title="Hexo 为代码块添加复制功能按钮"></a>Hexo 为代码块添加复制功能按钮</h1><p>本文详细记录如何在 Hexo 中为代码块添加一个 “复制” 按钮，实现一键复制代码功能。</p>
+    <title>Custom Search Integration for Hexo Chic</title>
+    <url>/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/</url>
+    <content><![CDATA[<h1 id="Hexo-Chic-主题实现搜索功能"><a href="#Hexo-Chic-主题实现搜索功能" class="headerlink" title="Hexo + Chic 主题实现搜索功能"></a>Hexo + Chic 主题实现搜索功能</h1><p>本文详细记录如何在 Hexo 中使用插件 <code>hexo-generator-searchdb</code> 实现基于 Chic 主题的实时搜索功能，包括搜索回复框、搜索结果卡、暗黑模式适配等细节。</p>
 <hr>
 <p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
 <hr>
-<h2 id="结构要求与适配说明"><a href="#结构要求与适配说明" class="headerlink" title="结构要求与适配说明"></a>结构要求与适配说明</h2><p>本复制功能脚本适用于以下结构的代码块：</p>
-<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">figure</span> <span class="attr">class</span>=<span class="string">&quot;highlight&quot;</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">table</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">tr</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">&quot;gutter&quot;</span>&gt;</span>...<span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">td</span> <span class="attr">class</span>=<span class="string">&quot;code&quot;</span>&gt;</span><span class="tag">&lt;<span class="name">pre</span>&gt;</span><span class="tag">&lt;<span class="name">code</span>&gt;</span>...<span class="tag">&lt;/<span class="name">code</span>&gt;</span><span class="tag">&lt;/<span class="name">pre</span>&gt;</span><span class="tag">&lt;/<span class="name">td</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tr</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">table</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">figure</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="1-安装插件"><a href="#1-安装插件" class="headerlink" title="1. 安装插件"></a><strong>1. 安装插件</strong></h2><p>在 <code>Hexo</code> 根目录下打开终端，执行</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-generator-searchdb --save</span><br></pre></td></tr></table></figure>
 
-<p>这是 Hexo 中多数主题（包括 Chic、NexT、Butterfly 等）默认的代码块渲染结构。</p>
-<h3 id="如何检查自己主题的结构是否符合？"><a href="#如何检查自己主题的结构是否符合？" class="headerlink" title="如何检查自己主题的结构是否符合？"></a>如何检查自己主题的结构是否符合？</h3><ol>
-<li>启动本地博客：<code>hexo s</code></li>
-<li>在浏览器中打开博客页面</li>
-<li>右键代码块 → 点击“检查”</li>
-<li>查看代码块的外层 HTML 标签是否为 <code>figure.highlight</code> </li>
-<li>或者直接在浏览器中点击 <code>F12</code> ，在 <code>Elements</code> 中直接搜索是否含有 <code>figure.highlight</code></li>
+<hr>
+<h2 id="2-打开根目录的-config-yml-文件，添加（或修改）如下配置："><a href="#2-打开根目录的-config-yml-文件，添加（或修改）如下配置：" class="headerlink" title="2. 打开根目录的 _config.yml 文件，添加（或修改）如下配置："></a><strong>2. 打开根目录的 <code>_config.yml</code> 文件，添加（或修改）如下配置：</strong></h2><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">search:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">search.xml</span></span><br><span class="line">  <span class="attr">field:</span> <span class="string">post</span></span><br><span class="line">  <span class="attr">format:</span> <span class="string">html</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="3-新建-search-css"><a href="#3-新建-search-css" class="headerlink" title="3. 新建 search.css"></a><strong>3. 新建 search.css</strong></h2><p><strong>建议路径</strong>: <code>themes/hexo-theme-Chic/source/css/search.css</code></p>
+<p>包含搜索框&#x2F;结果卡&#x2F;暗黑模式样式，具体代码可带文章开头项目地址中获取：</p>
+<figure class="highlight css"><table><tr><td class="code"><pre><span class="line"><span class="selector-class">.search-container</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-result</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.search-card</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.search-card-snippet</span> &#123; ... &#125;</span><br><span class="line"><span class="keyword">@media</span> (<span class="attribute">max-width</span>: <span class="number">768px</span>) &#123; ... &#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="4-修改主题配置"><a href="#4-修改主题配置" class="headerlink" title="4. 修改主题配置"></a><strong>4. 修改主题配置</strong></h2><p>打开<code>theme/hexo-theme-Chic/_config.yml</code> ，在 <code>stylesheets </code>下增加一行 <code>search.css</code> 确保加载样式文件：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">stylesheets:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/style.css</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/search.css</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="5-修改-header-ejs"><a href="#5-修改-header-ejs" class="headerlink" title="5. 修改 header.ejs"></a><strong>5. 修改 <code>header.ejs</code></strong></h2><p>对 <code>theme/hexo-theme-Chic/layout/_partial/header.ejs</code> 做了如下关键修改，具体代码可带文章开头项目地址中获取：</p>
+<h3 id="HTML-结构改动"><a href="#HTML-结构改动" class="headerlink" title="HTML 结构改动"></a>HTML 结构改动</h3><ol>
+<li>在 <code>&lt;div class=&quot;menu navbar-right&quot;&gt;</code> 中插入：</li>
 </ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;div class=&quot;search-container&quot;&gt;</span><br><span class="line">  &lt;a href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍&lt;/a&gt;</span><br><span class="line">  &lt;input type=&quot;text&quot; id=&quot;nav-search-input&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">  &lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>在移动端导航 <code>&lt;div id=&quot;mobile-menu&quot;&gt;</code> 中插入：</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;a class=&quot;menu-item&quot; href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍 Search&lt;/a&gt;</span><br><span class="line">&lt;input type=&quot;text&quot; id=&quot;nav-search-input-mobile&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">&lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>保留并未更动主题切换按钮：</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;input id=&quot;switch_default&quot; type=&quot;checkbox&quot; class=&quot;switch_default&quot;&gt;</span><br><span class="line">&lt;label for=&quot;switch_default&quot; class=&quot;toggleBtn&quot;&gt;&lt;/label&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="JS-功能改动"><a href="#JS-功能改动" class="headerlink" title="JS 功能改动"></a>JS 功能改动</h3><ol>
+<li>新增 <code>toggleSearchInput()</code> 方法，实现点击图标展开或隐藏搜索框。</li>
+<li></li>
+</ol>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">toggleSearchInput</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> inputs = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-input&#x27;</span>);</span><br><span class="line">  <span class="keyword">const</span> results = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-result&#x27;</span>);</span><br><span class="line">  inputs.<span class="title function_">forEach</span>(<span class="function"><span class="params">input</span> =&gt;</span> &#123;</span><br><span class="line">    input.<span class="property">classList</span>.<span class="title function_">toggle</span>(<span class="string">&#x27;active&#x27;</span>);</span><br><span class="line">    <span class="keyword">if</span> (input.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;active&#x27;</span>)) input.<span class="title function_">focus</span>();</span><br><span class="line">  &#125;);</span><br><span class="line">  results.<span class="title function_">forEach</span>(<span class="function"><span class="params">r</span> =&gt;</span> r.<span class="property">style</span>.<span class="property">display</span> = <span class="string">&#x27;none&#x27;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>新增 <code>navSearch()</code> 方法，实现从 <code>search.xml</code> 加载数据并匹配关键词。</li>
+<li>新增空白点击关闭逻辑：点击 <code>.search-container</code> 外部区域后自动隐藏搜索框并清空内容。</li>
+</ol>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">if</span> (searchData.<span class="property">length</span> === <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="title function_">fetch</span>(<span class="string">&#x27;&lt;%- config.root %&gt;search.xml&#x27;</span>)</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">res</span> =&gt;</span> res.<span class="title function_">text</span>())</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">xmlText</span> =&gt;</span> &#123;</span><br><span class="line">        <span class="keyword">const</span> parser = <span class="keyword">new</span> <span class="title class_">DOMParser</span>();</span><br><span class="line">        <span class="keyword">const</span> xml = parser.<span class="title function_">parseFromString</span>(xmlText, <span class="string">&#x27;text/xml&#x27;</span>);</span><br><span class="line">        <span class="keyword">const</span> entries = xml.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;entry&#x27;</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">let</span> entry <span class="keyword">of</span> entries) &#123;</span><br><span class="line">          searchData.<span class="title function_">push</span>(&#123;</span><br><span class="line">            <span class="attr">title</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;title&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">content</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;content&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">url</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;url&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span></span><br><span class="line">          &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
 <hr>
-<h2 id="1-创建-JavaScript-脚本文件"><a href="#1-创建-JavaScript-脚本文件" class="headerlink" title="1. 创建 JavaScript 脚本文件"></a><strong>1. 创建 JavaScript 脚本文件</strong></h2><p>在 Hexo 博客项目的根目录下创建 JS 脚本文件 <code>code-copy.js</code> ,如果没有js文件夹则自己创建：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">source/js/code-copy.js</span><br></pre></td></tr></table></figure>
-
-<p>并填入以下完整内容：</p>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span><br><span class="line">  <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;figure.highlight&#x27;</span>).<span class="title function_">forEach</span>(<span class="function">(<span class="params">figure</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (figure.<span class="title function_">querySelector</span>(<span class="string">&#x27;.copy-btn&#x27;</span>)) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> copyBtn = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(<span class="string">&#x27;button&#x27;</span>);</span><br><span class="line">    copyBtn.<span class="property">className</span> = <span class="string">&#x27;copy-btn&#x27;</span>;</span><br><span class="line">    copyBtn.<span class="property">title</span> = <span class="string">&#x27;复制&#x27;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 缩小后的复制图标（14*15）</span></span><br><span class="line">    <span class="keyword">const</span> copyIcon = <span class="string">`</span></span><br><span class="line"><span class="string">      &lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; height=&quot;14&quot; width=&quot;15&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;white&quot;&gt;</span></span><br><span class="line"><span class="string">        &lt;path d=&quot;M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 18H8V7h11v16z&quot;/&gt;</span></span><br><span class="line"><span class="string">      &lt;/svg&gt;</span></span><br><span class="line"><span class="string">    `</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 成功后显示的勾（14*15）</span></span><br><span class="line">    <span class="keyword">const</span> checkIcon = <span class="string">`</span></span><br><span class="line"><span class="string">      &lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; height=&quot;14&quot; width=&quot;15&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;#00cc66&quot;&gt;</span></span><br><span class="line"><span class="string">        &lt;path d=&quot;M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z&quot;/&gt;</span></span><br><span class="line"><span class="string">      &lt;/svg&gt;</span></span><br><span class="line"><span class="string">    `</span>;</span><br><span class="line"></span><br><span class="line">    copyBtn.<span class="property">innerHTML</span> = copyIcon;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 按钮样式（浅灰底、缩小）</span></span><br><span class="line">    <span class="title class_">Object</span>.<span class="title function_">assign</span>(copyBtn.<span class="property">style</span>, &#123;</span><br><span class="line">      <span class="attr">position</span>: <span class="string">&#x27;absolute&#x27;</span>,</span><br><span class="line">      <span class="attr">top</span>: <span class="string">&#x27;8px&#x27;</span>,</span><br><span class="line">      <span class="attr">right</span>: <span class="string">&#x27;8px&#x27;</span>,</span><br><span class="line">      <span class="attr">padding</span>: <span class="string">&#x27;4px&#x27;</span>,</span><br><span class="line">      <span class="attr">background</span>: <span class="string">&#x27;#aaa&#x27;</span>, </span><br><span class="line">      <span class="attr">border</span>: <span class="string">&#x27;none&#x27;</span>,</span><br><span class="line">      <span class="attr">borderRadius</span>: <span class="string">&#x27;4px&#x27;</span>,</span><br><span class="line">      <span class="attr">cursor</span>: <span class="string">&#x27;pointer&#x27;</span>,</span><br><span class="line">      <span class="attr">opacity</span>: <span class="string">&#x27;0.85&#x27;</span>,</span><br><span class="line">      <span class="attr">zIndex</span>: <span class="number">1000</span>,</span><br><span class="line">      <span class="attr">transition</span>: <span class="string">&#x27;opacity 0.2s ease&#x27;</span>,</span><br><span class="line">      <span class="attr">boxShadow</span>: <span class="string">&#x27;0 1px 3px rgba(0, 0, 0, 0.15)&#x27;</span></span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    copyBtn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;mouseover&#x27;</span>, <span class="function">() =&gt;</span> copyBtn.<span class="property">style</span>.<span class="property">opacity</span> = <span class="string">&#x27;1&#x27;</span>);</span><br><span class="line">    copyBtn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;mouseout&#x27;</span>, <span class="function">() =&gt;</span> copyBtn.<span class="property">style</span>.<span class="property">opacity</span> = <span class="string">&#x27;0.85&#x27;</span>);</span><br><span class="line"></span><br><span class="line">    copyBtn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">const</span> code = figure.<span class="title function_">querySelector</span>(<span class="string">&#x27;td.code&#x27;</span>);</span><br><span class="line">      <span class="keyword">const</span> text = code ? code.<span class="property">innerText</span> : <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">      navigator.<span class="property">clipboard</span>.<span class="title function_">writeText</span>(text).<span class="title function_">then</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">        copyBtn.<span class="property">innerHTML</span> = checkIcon;</span><br><span class="line">        <span class="built_in">setTimeout</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">          copyBtn.<span class="property">innerHTML</span> = copyIcon;</span><br><span class="line">        &#125;, <span class="number">1000</span>);</span><br><span class="line">      &#125;);</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    figure.<span class="property">style</span>.<span class="property">position</span> = <span class="string">&#x27;relative&#x27;</span>;</span><br><span class="line">    figure.<span class="title function_">appendChild</span>(copyBtn);</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-
+<h2 id="6-实现效果"><a href="#6-实现效果" class="headerlink" title="6. 实现效果"></a><strong>6. 实现效果</strong></h2><ul>
+<li>点击图标展示搜索框</li>
+<li>实时匹配文章标题&#x2F;内容</li>
+<li>结果以卡片形式展示</li>
+<li>黑色模式样式自动选择</li>
+<li>点击空白地方隐藏结果 + 清空文本</li>
+<li>移动端页面适配<br><img src="https://github.com/user-attachments/assets/430d306f-1836-4ca7-b1c6-c249835622bd" alt="image"></li>
+</ul>
 <hr>
-<h2 id="2-在页面底部引入-JS-文件"><a href="#2-在页面底部引入-JS-文件" class="headerlink" title="2. 在页面底部引入 JS 文件"></a><strong>2. 在页面底部引入 JS 文件</strong></h2><p>打开文件：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/footer.ejs</span><br></pre></td></tr></table></figure>
-
-<p>在 <code>&lt;/footer&gt;</code> 标签之后添加以下代码：</p>
-<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;/js/code-copy.js&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<p>这样可以确保复制按钮脚本在页面加载完毕后自动运行。</p>
-<hr>
-<h2 id="3-生成并本地预览效果"><a href="#3-生成并本地预览效果" class="headerlink" title="3. 生成并本地预览效果"></a><strong>3. 生成并本地预览效果</strong></h2><p>运行以下命令，重新生成并启动本地预览：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+<h2 id="7-新生成并运行-Hexo"><a href="#7-新生成并运行-Hexo" class="headerlink" title="7. 新生成并运行 Hexo"></a><strong>7. 新生成并运行 Hexo</strong></h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
 
 <p>然后访问 <code>http://localhost:4000</code>，查看任意一段代码块，右上角应出现复制图标按钮。</p>
 <hr>
 <p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
 <hr>
-<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> , <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 和 <a href="https://github.com/next-theme/hexo-generator-searchdb.git">hexo-generator-searchdb</a>。</p>
 ]]></content>
       <categories>
         <category>Hexo</category>
@@ -146,200 +224,6 @@
         <tag>博客</tag>
         <tag>Blog</tag>
         <tag>前端</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Docling2md</title>
-    <url>/2025/05/01/Docling2md/</url>
-    <content><![CDATA[<h1 id="基于Docling结合多模态大模型的的PDF转Markdown"><a href="#基于Docling结合多模态大模型的的PDF转Markdown" class="headerlink" title="基于Docling结合多模态大模型的的PDF转Markdown"></a>基于Docling结合多模态大模型的的PDF转Markdown</h1><hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Docling2md.git">https://github.com/EvannZhongg/Docling2md.git</a></p>
-<hr>
-<h2 id="项目背景"><a href="#项目背景" class="headerlink" title="项目背景"></a>项目背景</h2><p>基于我当前使用 LLM 构建<strong>知识图谱</strong>的处理的是一系列复杂的PDF文档，这些PDF包含图像、表格、文本等混合信息，结构复杂、不规则，无法直接使用。因此，需要一个高效、可扩展的结构化预处理流程来为后续实体提取、图谱生成等任务提供清洗后的输入，同时流程需要兼具准确和部署的方便。</p>
-<p>例如 <code>MinerU</code> 和 <code>Textin</code> ，它们转换的效果都非常好；但 <code>MinerU</code> 部署不太方便集成到项目中显得笨重， <code>Textin</code> 是商用软件价格不美丽；于是近期发现了 <code>Docling</code> 的开源模型，同时python中也可以直接安装 <code>Docling</code> 的依赖包避免下载模型，于是尝试了一下感觉效果还不错符合我的预期。</p>
-<p>尤其是在对表格进行处理时，<code>Docling</code> 是将表格转化为管道表格结构，而 <code>MinerU</code> 和 <code>Textin</code> 都是将表格转换为 HTML 格式；相比 HTML 格式，管道表格在传递给大模型时能够节省更多的token，减轻了大模型的负担。</p>
-<p>本项目基于 <code>Docling</code> 框架，对 PDF 文件进行结构解析，结合多种大模型能力，实现了文档的多模态理解与 Markdown &#x2F; JSON 格式结构化输出，为知识图谱构建奠定基础。</p>
-<hr>
-<h2 id="实现的思想与目标"><a href="#实现的思想与目标" class="headerlink" title="实现的思想与目标"></a>实现的思想与目标</h2><p>项目的核心目标是提高PDF中信息保留的完整程度方便后续将纯文本信息输入给大模型构建知识图谱，并解决以下几个关键问题：</p>
-<ol>
-<li><strong>PDF转Markdown</strong>：通过Docling将PDF内容转化为Markdown，尤其是提取表格和图片，并在Markdown中保持其结构。</li>
-<li><strong>复杂表格图像的处理与修复</strong>：通过视觉大模型处理PDF中的表格图片，修复异常或模糊的表格结构。</li>
-<li><strong>异常文本分词的修复</strong>：直接使用 <code>Docling</code> 的OCR有时会出现文本识别异常，对于长文本中的异常无空格情况，通过大模型进行自动分词修复，保证文本可读性。</li>
-<li><strong>对图片的描述与理解</strong>: 对识别出的图像（非表格）调用视觉大模型进行内容描述，生成自然语言图像摘要，并写入 Markdown 与结构 JSON。</li>
-</ol>
-<p>流程示意：</p>
-<pre class="mermaid">graph TD
-    A[PDF Document] --> B[DocumentConverter]
-    B --> C[Structured Document]
-    C --> D[Element Iteration]
-
-    D --> E[Text Processing]
-    D --> F[Table Processing]
-    D --> G[Image Processing]
-
-    E --> H[LLM Classification]
-    F --> I[Table Structure Analysis]
-    G --> J[VLM Captioning]
-
-    H --> K[Markdown Output]
-    I --> K
-    J --> K
-
-    K --> L[Markdown File]
-    K --> M[JSON Metadata]
-    K --> N[Extracted Images]</pre>
-
-<hr>
-<h2 id="项目流程与技术细节"><a href="#项目流程与技术细节" class="headerlink" title="项目流程与技术细节"></a>项目流程与技术细节</h2><h3 id="1-表格结构识别与修复"><a href="#1-表格结构识别与修复" class="headerlink" title="1. 表格结构识别与修复"></a>1. 表格结构识别与修复</h3><ul>
-<li>使用 Docling 自动检测表格区域，导出 <code>DataFrame</code>。</li>
-<li>若存在列名重复或列数异常，启用视觉大模型模型对表格截图分块修复，生成标准 Markdown 管道表格（pipe table）。</li>
-<li>分块方式：按行高切图，并拼接小块确保高度。</li>
-<li>所有修复表格记录修复来源，存入 JSON 中以备审计与训练数据回溯。</li>
-</ul>
-<p>表格异常处理的流程结合了 <strong>按固定行高切块</strong> 和 <strong>基于最低高度与宽度的分块合并</strong> 两种方法。</p>
-<hr>
-<h4 id="按固定行高切块"><a href="#按固定行高切块" class="headerlink" title="按固定行高切块"></a>按固定行高切块</h4><p>在函数 <code>split_table_image_rows</code> 中，表格图像被按照固定的行高（默认为 400 像素）进行裁切。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">def split_table_image_rows(pil_img: Image.Image, row_height: int = 400) -&gt; list:</span><br><span class="line">    width, height = pil_img.size</span><br><span class="line">    slices = []</span><br><span class="line">    for top in range(0, height, row_height):</span><br><span class="line">        bottom = min(top + row_height, height)</span><br><span class="line">        crop = pil_img.crop((0, top, width, bottom))</span><br><span class="line">        slices.append(crop)</span><br><span class="line">    return slices</span><br></pre></td></tr></table></figure>
-<p>根据您上传的代码文件内容，表格异常处理的流程结合了<strong>按固定行高切块</strong>和<strong>基于最低高度与宽度的分块合并</strong>两种方法。以下是具体的实现细节和举例说明：</p>
-<ul>
-<li><strong>输入</strong>: 表格图像 <code>pil_img</code> 和一个可配置的 <code>row_height</code>（默认值为 400 像素）。</li>
-<li><strong>逻辑</strong>: <ul>
-<li>按照从上到下的顺序，每隔 <code>row_height</code> 像素裁切一次。</li>
-<li>如果剩余的高度不足 <code>row_height</code>，则取到最后的边界。</li>
-</ul>
-</li>
-<li><strong>输出</strong>: 返回一个包含多个裁切后图像片段的列表。</li>
-</ul>
-<p>这种方式确保了表格图像能够被分割成多个子图像，每个子图像的高度不超过 <code>row_height</code>。</p>
-<hr>
-<h4 id="基于最低高度与宽度的分块合并"><a href="#基于最低高度与宽度的分块合并" class="headerlink" title="基于最低高度与宽度的分块合并"></a>基于最低高度与宽度的分块合并</h4><p>在函数 <code>merge_small_chunks</code> 中，对裁切后的图像片段进一步处理，确保每个片段的高度和宽度满足最低要求（因为视觉大模型在上传图片时有最小像素要求，需要长宽大于 10 像素，为避免切块过小，这里默认高度为 300 像素，宽度为 20 像素）。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">def merge_small_chunks(chunks: list, min_height: int = 300, min_width: int = 20) -&gt; list:</span><br><span class="line">    merged_chunks = []</span><br><span class="line">    temp_chunk = None</span><br><span class="line">    for chunk in chunks:</span><br><span class="line">        width, height = chunk.size</span><br><span class="line">        # 如果当前块尺寸不足，则尝试拼接上下块</span><br><span class="line">        if height &lt; min_height or width &lt; min_width:</span><br><span class="line">            if temp_chunk is None:</span><br><span class="line">                temp_chunk = chunk</span><br><span class="line">            else:</span><br><span class="line">                # 拼接上下块</span><br><span class="line">                new_chunk = Image.new(&quot;RGB&quot;, (max(temp_chunk.width, chunk.width), temp_chunk.height + chunk.height))</span><br><span class="line">                new_chunk.paste(temp_chunk, (0, 0))</span><br><span class="line">                new_chunk.paste(chunk, (0, temp_chunk.height))</span><br><span class="line">                temp_chunk = new_chunk</span><br><span class="line">        else:</span><br><span class="line">            # 如果有未处理的临时块，先保存</span><br><span class="line">            if temp_chunk is not None:</span><br><span class="line">                merged_chunks.append(temp_chunk)</span><br><span class="line">                temp_chunk = None</span><br><span class="line">            merged_chunks.append(chunk)</span><br><span class="line">    # 添加最后一个临时块（如果有）</span><br><span class="line">    if temp_chunk is not None:</span><br><span class="line">        # 如果整个表格图片的高度低于最小高度，则按最低高度计算</span><br><span class="line">        if temp_chunk.height &lt; min_height:</span><br><span class="line">            new_chunk = Image.new(&quot;RGB&quot;, (temp_chunk.width, max(temp_chunk.height, 20)))</span><br><span class="line">            new_chunk.paste(temp_chunk, (0, 0))</span><br><span class="line">            merged_chunks.append(new_chunk)</span><br><span class="line">        else:</span><br><span class="line">            merged_chunks.append(temp_chunk)</span><br><span class="line">    return merged_chunks</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>输入</strong>: 裁切后的图像片段列表 <code>chunks</code>，以及最低高度 <code>min_height</code>（默认 300 像素）和最低宽度 <code>min_width</code>（默认 20 像素）。</li>
-<li><strong>逻辑</strong>:<ul>
-<li>遍历所有片段：<ul>
-<li>如果某个片段的高度或宽度小于最低要求，则将其与下一个片段拼接，直到满足最低尺寸要求。</li>
-<li>如果某个片段已经满足最低要求，则直接加入结果列表。</li>
-</ul>
-</li>
-<li>对于最后一个临时块，如果其高度仍低于最低要求，则创建一个新的图像块，填充到最低高度。</li>
-</ul>
-</li>
-<li><strong>输出</strong>: 返回一个经过合并后的图像片段列表。</li>
-</ul>
-<hr>
-<h4 id="3-综合处理流程"><a href="#3-综合处理流程" class="headerlink" title="3. 综合处理流程"></a>3. <strong>综合处理流程</strong></h4><p>在主流程中，表格异常的处理逻辑如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if not table_df.columns.is_unique or table_df.shape[1] &lt; 2:</span><br><span class="line">    log.warning(f&quot;表格 &#123;table_counter&#125; 结构异常，使用多轮图像推理修复&quot;)</span><br><span class="line">    # 自动图像切块</span><br><span class="line">    sub_images = split_table_image_rows(pil_img)</span><br><span class="line">    # 拼接不符合尺寸限制的切块</span><br><span class="line">    sub_images = merge_small_chunks(sub_images)</span><br><span class="line"></span><br><span class="line">    # 使用局部变量管理该表格的修复任务</span><br><span class="line">    chunk_futures = []</span><br><span class="line">    for idx, chunk_img in enumerate(sub_images):</span><br><span class="line">        future = vlm_executor.submit(ask_table_from_image, chunk_img)</span><br><span class="line">        chunk_futures.append((future, idx, chunk_img))</span><br><span class="line"></span><br><span class="line">    # 收集结果</span><br><span class="line">    full_md_lines = []</span><br><span class="line">    for future, idx, chunk_img in chunk_futures:</span><br><span class="line">        try:</span><br><span class="line">            chunk_md = future.result()</span><br><span class="line">            lines = chunk_md.splitlines()</span><br><span class="line">            if idx == 0:</span><br><span class="line">                full_md_lines.extend(lines)  # 表头 + 分隔线</span><br><span class="line">            else:</span><br><span class="line">                full_md_lines.extend(lines[2:])  # 仅数据行</span><br><span class="line">        except Exception as e:</span><br><span class="line">            log.warning(f&quot;表格分块处理失败: &#123;e&#125;&quot;)</span><br><span class="line"></span><br><span class="line">    markdown_lines.append(f&quot;&lt;!-- 表格 &#123;table_counter&#125; 使用 Qwen 修复，已分块拼接 --&gt;&quot;)</span><br><span class="line">    markdown_lines.append(&quot;\n&quot;.join(full_md_lines))</span><br><span class="line">    markdown_lines.append(&quot;&quot;)</span><br><span class="line">    json_data.append(&#123;</span><br><span class="line">        &quot;type&quot;: &quot;table&quot;,</span><br><span class="line">        &quot;level&quot;: level,</span><br><span class="line">        &quot;image&quot;: table_image_filename.name,</span><br><span class="line">        &quot;source&quot;: &quot;reconstructed_by_qwen_chunked&quot;,</span><br><span class="line">        &quot;markdown&quot;: &quot;\n&quot;.join(full_md_lines),</span><br><span class="line">        &quot;page_number&quot;: element.prov[0].page_no,</span><br><span class="line">        &quot;bbox&quot;: bbox</span><br><span class="line">    &#125;)</span><br><span class="line">    continue </span><br></pre></td></tr></table></figure>
-
-<h4 id="流程说明："><a href="#流程说明：" class="headerlink" title="流程说明："></a>流程说明：</h4><ol>
-<li><strong>检测表格异常</strong>:<ul>
-<li>如果表格的列名不唯一 (<code>table_df.columns.is_unique</code>) 或者列数少于 2 (<code>table_df.shape[1] &lt; 2</code>)，认为表格结构异常，这些异常通常是 OCR 模型本身的不足导致的表格生成失败。</li>
-</ul>
-</li>
-<li><strong>按固定行高切块</strong>:<ul>
-<li>使用 <code>split_table_image_rows</code> 将表格图像按固定行高（默认 400 像素）切分为多个片段。</li>
-</ul>
-</li>
-<li><strong>合并小块</strong>:<ul>
-<li>使用 <code>merge_small_chunks</code> 合并高度或宽度不足的片段，确保每个片段的高度至少为 300 像素，宽度至少为 20 像素。</li>
-</ul>
-</li>
-<li><strong>并发调用大模型</strong>:<ul>
-<li>对每个合并后的片段并发调用 <code>ask_table_from_image</code> 函数，将图像转换为 Markdown 表格。</li>
-</ul>
-</li>
-<li><strong>拼接结果</strong>:<ul>
-<li>将所有片段的 Markdown 表格拼接起来：<ul>
-<li>第一个片段保留表头和分割线。</li>
-<li>其余片段仅保留数据行。</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><strong>保存结果</strong>:<ul>
-<li>将修复后的表格以 Markdown 格式保存，并记录相关信息到 JSON 文件中。</li>
-</ul>
-</li>
-</ol>
-<hr>
-<h4 id="举例说明"><a href="#举例说明" class="headerlink" title="举例说明"></a>举例说明</h4><p>假设我们有一个PDF文件，其中包含一个异常的表格图像。该表格的高度为 <strong>1208 像素</strong>，宽度为 <strong>900 像素</strong>，代码会按照以下步骤处理该表格图像：</p>
-<p>在函数 <code>split_table_image_rows</code> 中，表格图像会被按固定行高（默认为 400 像素）进行裁切。</p>
-<ul>
-<li>表格高度为 <strong>1208 像素</strong>，固定行高为 <strong>400 像素</strong>。</li>
-<li>裁切的片段范围如下：<ul>
-<li>第一块：<code>top=0</code>, <code>bottom=400</code> → 高度为 400 像素。</li>
-<li>第二块：<code>top=400</code>, <code>bottom=800</code> → 高度为 400 像素。</li>
-<li>第三块：<code>top=800</code>, <code>bottom=1200</code> → 高度为 400 像素。</li>
-<li>第四块：<code>top=1200</code>, <code>bottom=1208</code> → 高度为 8 像素。</li>
-</ul>
-</li>
-</ul>
-<p>最终会生成 <strong>4 个片段</strong>，其中前 3 个片段的高度为 400 像素，最后一个片段的高度为 8 像素。</p>
-<p>在函数 <code>merge_small_chunks</code> 中，会对裁切后的片段进行检查，确保每个片段的高度和宽度满足最低要求（默认高度为 300 像素，宽度为 20 像素）。</p>
-<ul>
-<li><strong>第一块</strong>：高度为 400 像素，宽度为 900 像素 → 符合最低要求，直接保留。</li>
-<li><strong>第二块</strong>：高度为 400 像素，宽度为 900 像素 → 符合最低要求，直接保留。</li>
-<li><strong>第三块</strong>：高度为 400 像素，宽度为 900 像素 → 符合最低要求，直接保留。</li>
-<li><strong>第四块</strong>：高度为 8 像素，宽度为 900 像素 → 不符合最低高度要求（300 像素），需要与前面的块合并。</li>
-</ul>
-<p>最终结果：</p>
-<ul>
-<li><strong>第四块（8 像素）</strong> 会与 <strong>第三块（400 像素）</strong> 合并，生成一个新的片段，高度为 <strong>408 像素</strong>，宽度为 <strong>900 像素</strong>。</li>
-</ul>
-<p>因此，经过合并后，最终会有 <strong>3 个片段</strong>：</p>
-<ol>
-<li>第一块：高度为 400 像素，宽度为 900 像素。</li>
-<li>第二块：高度为 400 像素，宽度为 900 像素。</li>
-<li>第三块：高度为 408 像素，宽度为 900 像素。</li>
-</ol>
-<p>在主流程中，合并后的片段会并发调用视觉模型（<code>ask_table_from_image</code>）进行修复，在收集所有片段的修复结果后，代码会将这些片段拼接成完整的 Markdown 表格。</p>
-<ul>
-<li><strong>第一块</strong> 的修复结果会保留表头和分割线。</li>
-<li><strong>第二块</strong> 和 <strong>第三块</strong> 的修复结果只会保留数据行。</li>
-<li>最终将所有片段的结果拼接成一个完整的 Markdown 表格。</li>
-</ul>
-<h4 id="使用视觉模型修复表格示例效果展示"><a href="#使用视觉模型修复表格示例效果展示" class="headerlink" title="使用视觉模型修复表格示例效果展示"></a>使用视觉模型修复表格示例效果展示</h4><p><img src="https://github.com/user-attachments/assets/ab583ea5-b8b2-4466-a6ed-ea8b43f21bd9" alt="709f27681f3bf94551b729283c54046a-table-17"></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">| tD(on)  | - | 20 | - | ns | V_DS=400V, V_GS=0 - 12V, I_D=3A, R_G=30Ω |</span><br><span class="line">| ------- | - | -- | - | -- | ---------------------------------------- |</span><br><span class="line">| tR      | - | 7  | - | ns | V_DS=400V, V_GS=0 - 12V, I_D=3A, R_G=30Ω |</span><br><span class="line">| tD(off) | - | 80 | - | ns | V_DS=400V, V_GS=0 - 12V, I_D=3A, R_G=30Ω |</span><br><span class="line">| tF      | - | 6  | - | ns | V_DS=400V, V_GS=0 - 12V, I_D=3A, R_G=30Ω |</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="2-文本内容处理"><a href="#2-文本内容处理" class="headerlink" title="2. 文本内容处理"></a>2. 文本内容处理</h3><ul>
-<li>使用 OCR 与 Docling 检测文本段落。</li>
-<li>文本类型判断：使用 OpenAI 文本模型判断是“标题”还是“正文”。</li>
-<li>英文分词修复机制：检测长串无空格文本，调用大模型进行英文分词恢复，提高可读性与准确性。</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">示例输入：</span><br><span class="line">THISISATESTSTRING</span><br><span class="line"></span><br><span class="line">示例输出：</span><br><span class="line">THIS IS A TEST STRING</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="3-图片内容理解"><a href="#3-图片内容理解" class="headerlink" title="3. 图片内容理解"></a>3. 图片内容理解</h3><ul>
-<li>对识别出的图像（非表格）调用视觉大模型进行内容描述，生成自然语言图像摘要，并写入 Markdown 与结构 JSON。</li>
-<li>摘要会插入在图片 <code>alt text</code> 中，例如：</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">![这是一个苹果](./1ca13ed90bf22bae348f93027fb876d5-picture-2.png)</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="4-生成Markdown文档"><a href="#4-生成Markdown文档" class="headerlink" title="4. 生成Markdown文档"></a>4. <strong>生成Markdown文档</strong></h3><p>在完成表格和图片的提取、文本处理之后，最终将所有提取的信息转换为Markdown文档，并保存到本地。每个表格、图像、文本都会被格式化成相应的Markdown格式，并以图像和表格形式嵌入。</p>
-<ul>
-<li>Markdown 文档（结构化展示图像、表格、文本，便于人工核查与发布）</li>
-<li>JSON 文档（结构化、含坐标 bbox、页码、分块来源，适合下游知识图谱任务进行锚点的标记）</li>
-</ul>
-<hr>
-<p>该项目代码参考 <a href="https://github.com/openfe-docling/docling">Docling</a> 框架，对 PDF 文件进行结构解析，结合多种大模型能力（如 Qwen-VL、OpenAI 文本模型），实现了文档的多模态理解与 markdown&#x2F;json 格式结构化输出，为知识图谱构建奠定基础。</p>
-<p>但该项目在处理复杂表格时仍存在不足，例如表格中存在字符是横着摆放时，或者是存在图像嵌入在表格中，则无法保证原有的结构。</p>
-<hr>
-]]></content>
-      <categories>
-        <category>OCR</category>
-      </categories>
-      <tags>
-        <tag>OCR</tag>
-        <tag>PDF</tag>
-        <tag>AI</tag>
-        <tag>Markdown</tag>
-        <tag>LLM</tag>
-        <tag>大模型</tag>
-        <tag>Qwen</tag>
-        <tag>Docling</tag>
-        <tag>Knowledge Graph</tag>
       </tags>
   </entry>
   <entry>
@@ -458,88 +342,10 @@
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
-        <tag>Qwen</tag>
         <tag>Function Calling</tag>
         <tag>Agent</tag>
+        <tag>Qwen</tag>
         <tag>Python</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Custom Search Integration for Hexo Chic</title>
-    <url>/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/</url>
-    <content><![CDATA[<h1 id="Hexo-Chic-主题实现搜索功能"><a href="#Hexo-Chic-主题实现搜索功能" class="headerlink" title="Hexo + Chic 主题实现搜索功能"></a>Hexo + Chic 主题实现搜索功能</h1><p>本文详细记录如何在 Hexo 中使用插件 <code>hexo-generator-searchdb</code> 实现基于 Chic 主题的实时搜索功能，包括搜索回复框、搜索结果卡、暗黑模式适配等细节。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
-<hr>
-<h2 id="1-安装插件"><a href="#1-安装插件" class="headerlink" title="1. 安装插件"></a><strong>1. 安装插件</strong></h2><p>在 <code>Hexo</code> 根目录下打开终端，执行</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-generator-searchdb --save</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="2-打开根目录的-config-yml-文件，添加（或修改）如下配置："><a href="#2-打开根目录的-config-yml-文件，添加（或修改）如下配置：" class="headerlink" title="2. 打开根目录的 _config.yml 文件，添加（或修改）如下配置："></a><strong>2. 打开根目录的 <code>_config.yml</code> 文件，添加（或修改）如下配置：</strong></h2><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">search:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">search.xml</span></span><br><span class="line">  <span class="attr">field:</span> <span class="string">post</span></span><br><span class="line">  <span class="attr">format:</span> <span class="string">html</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="3-新建-search-css"><a href="#3-新建-search-css" class="headerlink" title="3. 新建 search.css"></a><strong>3. 新建 search.css</strong></h2><p><strong>建议路径</strong>: <code>themes/hexo-theme-Chic/source/css/search.css</code></p>
-<p>包含搜索框&#x2F;结果卡&#x2F;暗黑模式样式，具体代码可带文章开头项目地址中获取：</p>
-<figure class="highlight css"><table><tr><td class="code"><pre><span class="line"><span class="selector-class">.search-container</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-result</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.search-card</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.search-card-snippet</span> &#123; ... &#125;</span><br><span class="line"><span class="keyword">@media</span> (<span class="attribute">max-width</span>: <span class="number">768px</span>) &#123; ... &#125;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="4-修改主题配置"><a href="#4-修改主题配置" class="headerlink" title="4. 修改主题配置"></a><strong>4. 修改主题配置</strong></h2><p>打开<code>theme/hexo-theme-Chic/_config.yml</code> ，在 <code>stylesheets </code>下增加一行 <code>search.css</code> 确保加载样式文件：</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">stylesheets:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/style.css</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/search.css</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="5-修改-header-ejs"><a href="#5-修改-header-ejs" class="headerlink" title="5. 修改 header.ejs"></a><strong>5. 修改 <code>header.ejs</code></strong></h2><p>对 <code>theme/hexo-theme-Chic/layout/_partial/header.ejs</code> 做了如下关键修改，具体代码可带文章开头项目地址中获取：</p>
-<h3 id="HTML-结构改动"><a href="#HTML-结构改动" class="headerlink" title="HTML 结构改动"></a>HTML 结构改动</h3><ol>
-<li>在 <code>&lt;div class=&quot;menu navbar-right&quot;&gt;</code> 中插入：</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;div class=&quot;search-container&quot;&gt;</span><br><span class="line">  &lt;a href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍&lt;/a&gt;</span><br><span class="line">  &lt;input type=&quot;text&quot; id=&quot;nav-search-input&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">  &lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li>在移动端导航 <code>&lt;div id=&quot;mobile-menu&quot;&gt;</code> 中插入：</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;a class=&quot;menu-item&quot; href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍 Search&lt;/a&gt;</span><br><span class="line">&lt;input type=&quot;text&quot; id=&quot;nav-search-input-mobile&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">&lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-
-<ol start="3">
-<li>保留并未更动主题切换按钮：</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;input id=&quot;switch_default&quot; type=&quot;checkbox&quot; class=&quot;switch_default&quot;&gt;</span><br><span class="line">&lt;label for=&quot;switch_default&quot; class=&quot;toggleBtn&quot;&gt;&lt;/label&gt;</span><br></pre></td></tr></table></figure>
-
-<h3 id="JS-功能改动"><a href="#JS-功能改动" class="headerlink" title="JS 功能改动"></a>JS 功能改动</h3><ol>
-<li>新增 <code>toggleSearchInput()</code> 方法，实现点击图标展开或隐藏搜索框。</li>
-<li></li>
-</ol>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">toggleSearchInput</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> inputs = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-input&#x27;</span>);</span><br><span class="line">  <span class="keyword">const</span> results = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-result&#x27;</span>);</span><br><span class="line">  inputs.<span class="title function_">forEach</span>(<span class="function"><span class="params">input</span> =&gt;</span> &#123;</span><br><span class="line">    input.<span class="property">classList</span>.<span class="title function_">toggle</span>(<span class="string">&#x27;active&#x27;</span>);</span><br><span class="line">    <span class="keyword">if</span> (input.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;active&#x27;</span>)) input.<span class="title function_">focus</span>();</span><br><span class="line">  &#125;);</span><br><span class="line">  results.<span class="title function_">forEach</span>(<span class="function"><span class="params">r</span> =&gt;</span> r.<span class="property">style</span>.<span class="property">display</span> = <span class="string">&#x27;none&#x27;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<ol start="2">
-<li>新增 <code>navSearch()</code> 方法，实现从 <code>search.xml</code> 加载数据并匹配关键词。</li>
-<li>新增空白点击关闭逻辑：点击 <code>.search-container</code> 外部区域后自动隐藏搜索框并清空内容。</li>
-</ol>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">if</span> (searchData.<span class="property">length</span> === <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="title function_">fetch</span>(<span class="string">&#x27;&lt;%- config.root %&gt;search.xml&#x27;</span>)</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">res</span> =&gt;</span> res.<span class="title function_">text</span>())</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">xmlText</span> =&gt;</span> &#123;</span><br><span class="line">        <span class="keyword">const</span> parser = <span class="keyword">new</span> <span class="title class_">DOMParser</span>();</span><br><span class="line">        <span class="keyword">const</span> xml = parser.<span class="title function_">parseFromString</span>(xmlText, <span class="string">&#x27;text/xml&#x27;</span>);</span><br><span class="line">        <span class="keyword">const</span> entries = xml.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;entry&#x27;</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">let</span> entry <span class="keyword">of</span> entries) &#123;</span><br><span class="line">          searchData.<span class="title function_">push</span>(&#123;</span><br><span class="line">            <span class="attr">title</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;title&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">content</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;content&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">url</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;url&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span></span><br><span class="line">          &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="6-实现效果"><a href="#6-实现效果" class="headerlink" title="6. 实现效果"></a><strong>6. 实现效果</strong></h2><ul>
-<li>点击图标展示搜索框</li>
-<li>实时匹配文章标题&#x2F;内容</li>
-<li>结果以卡片形式展示</li>
-<li>黑色模式样式自动选择</li>
-<li>点击空白地方隐藏结果 + 清空文本</li>
-<li>移动端页面适配<br><img src="https://github.com/user-attachments/assets/430d306f-1836-4ca7-b1c6-c249835622bd" alt="image"></li>
-</ul>
-<hr>
-<h2 id="7-新生成并运行-Hexo"><a href="#7-新生成并运行-Hexo" class="headerlink" title="7. 新生成并运行 Hexo"></a><strong>7. 新生成并运行 Hexo</strong></h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
-
-<p>然后访问 <code>http://localhost:4000</code>，查看任意一段代码块，右上角应出现复制图标按钮。</p>
-<hr>
-<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> , <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 和 <a href="https://github.com/next-theme/hexo-generator-searchdb.git">hexo-generator-searchdb</a>。</p>
-]]></content>
-      <categories>
-        <category>Hexo</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-        <tag>博客</tag>
-        <tag>Blog</tag>
-        <tag>前端</tag>
       </tags>
   </entry>
   <entry>
@@ -794,11 +600,11 @@
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
-        <tag>Knowledge Graph</tag>
         <tag>Python</tag>
         <tag>GraphRAG</tag>
         <tag>RAG</tag>
         <tag>Gephi</tag>
+        <tag>Knowledge Graph</tag>
       </tags>
   </entry>
   <entry>
@@ -897,11 +703,11 @@
         <category>Hexo</category>
       </categories>
       <tags>
-        <tag>AI</tag>
         <tag>Hexo</tag>
         <tag>博客</tag>
         <tag>Blog</tag>
         <tag>前端</tag>
+        <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
         <tag>Agent</tag>
@@ -992,6 +798,200 @@
       </tags>
   </entry>
   <entry>
+    <title>Docling2md</title>
+    <url>/2025/05/01/Docling2md/</url>
+    <content><![CDATA[<h1 id="基于Docling结合多模态大模型的的PDF转Markdown"><a href="#基于Docling结合多模态大模型的的PDF转Markdown" class="headerlink" title="基于Docling结合多模态大模型的的PDF转Markdown"></a>基于Docling结合多模态大模型的的PDF转Markdown</h1><hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Docling2md.git">https://github.com/EvannZhongg/Docling2md.git</a></p>
+<hr>
+<h2 id="项目背景"><a href="#项目背景" class="headerlink" title="项目背景"></a>项目背景</h2><p>基于我当前使用 LLM 构建<strong>知识图谱</strong>的处理的是一系列复杂的PDF文档，这些PDF包含图像、表格、文本等混合信息，结构复杂、不规则，无法直接使用。因此，需要一个高效、可扩展的结构化预处理流程来为后续实体提取、图谱生成等任务提供清洗后的输入，同时流程需要兼具准确和部署的方便。</p>
+<p>例如 <code>MinerU</code> 和 <code>Textin</code> ，它们转换的效果都非常好；但 <code>MinerU</code> 部署不太方便集成到项目中显得笨重， <code>Textin</code> 是商用软件价格不美丽；于是近期发现了 <code>Docling</code> 的开源模型，同时python中也可以直接安装 <code>Docling</code> 的依赖包避免下载模型，于是尝试了一下感觉效果还不错符合我的预期。</p>
+<p>尤其是在对表格进行处理时，<code>Docling</code> 是将表格转化为管道表格结构，而 <code>MinerU</code> 和 <code>Textin</code> 都是将表格转换为 HTML 格式；相比 HTML 格式，管道表格在传递给大模型时能够节省更多的token，减轻了大模型的负担。</p>
+<p>本项目基于 <code>Docling</code> 框架，对 PDF 文件进行结构解析，结合多种大模型能力，实现了文档的多模态理解与 Markdown &#x2F; JSON 格式结构化输出，为知识图谱构建奠定基础。</p>
+<hr>
+<h2 id="实现的思想与目标"><a href="#实现的思想与目标" class="headerlink" title="实现的思想与目标"></a>实现的思想与目标</h2><p>项目的核心目标是提高PDF中信息保留的完整程度方便后续将纯文本信息输入给大模型构建知识图谱，并解决以下几个关键问题：</p>
+<ol>
+<li><strong>PDF转Markdown</strong>：通过Docling将PDF内容转化为Markdown，尤其是提取表格和图片，并在Markdown中保持其结构。</li>
+<li><strong>复杂表格图像的处理与修复</strong>：通过视觉大模型处理PDF中的表格图片，修复异常或模糊的表格结构。</li>
+<li><strong>异常文本分词的修复</strong>：直接使用 <code>Docling</code> 的OCR有时会出现文本识别异常，对于长文本中的异常无空格情况，通过大模型进行自动分词修复，保证文本可读性。</li>
+<li><strong>对图片的描述与理解</strong>: 对识别出的图像（非表格）调用视觉大模型进行内容描述，生成自然语言图像摘要，并写入 Markdown 与结构 JSON。</li>
+</ol>
+<p>流程示意：</p>
+<pre class="mermaid">graph TD
+    A[PDF Document] --> B[DocumentConverter]
+    B --> C[Structured Document]
+    C --> D[Element Iteration]
+
+    D --> E[Text Processing]
+    D --> F[Table Processing]
+    D --> G[Image Processing]
+
+    E --> H[LLM Classification]
+    F --> I[Table Structure Analysis]
+    G --> J[VLM Captioning]
+
+    H --> K[Markdown Output]
+    I --> K
+    J --> K
+
+    K --> L[Markdown File]
+    K --> M[JSON Metadata]
+    K --> N[Extracted Images]</pre>
+
+<hr>
+<h2 id="项目流程与技术细节"><a href="#项目流程与技术细节" class="headerlink" title="项目流程与技术细节"></a>项目流程与技术细节</h2><h3 id="1-表格结构识别与修复"><a href="#1-表格结构识别与修复" class="headerlink" title="1. 表格结构识别与修复"></a>1. 表格结构识别与修复</h3><ul>
+<li>使用 Docling 自动检测表格区域，导出 <code>DataFrame</code>。</li>
+<li>若存在列名重复或列数异常，启用视觉大模型模型对表格截图分块修复，生成标准 Markdown 管道表格（pipe table）。</li>
+<li>分块方式：按行高切图，并拼接小块确保高度。</li>
+<li>所有修复表格记录修复来源，存入 JSON 中以备审计与训练数据回溯。</li>
+</ul>
+<p>表格异常处理的流程结合了 <strong>按固定行高切块</strong> 和 <strong>基于最低高度与宽度的分块合并</strong> 两种方法。</p>
+<hr>
+<h4 id="按固定行高切块"><a href="#按固定行高切块" class="headerlink" title="按固定行高切块"></a>按固定行高切块</h4><p>在函数 <code>split_table_image_rows</code> 中，表格图像被按照固定的行高（默认为 400 像素）进行裁切。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">def split_table_image_rows(pil_img: Image.Image, row_height: int = 400) -&gt; list:</span><br><span class="line">    width, height = pil_img.size</span><br><span class="line">    slices = []</span><br><span class="line">    for top in range(0, height, row_height):</span><br><span class="line">        bottom = min(top + row_height, height)</span><br><span class="line">        crop = pil_img.crop((0, top, width, bottom))</span><br><span class="line">        slices.append(crop)</span><br><span class="line">    return slices</span><br></pre></td></tr></table></figure>
+<p>根据您上传的代码文件内容，表格异常处理的流程结合了<strong>按固定行高切块</strong>和<strong>基于最低高度与宽度的分块合并</strong>两种方法。以下是具体的实现细节和举例说明：</p>
+<ul>
+<li><strong>输入</strong>: 表格图像 <code>pil_img</code> 和一个可配置的 <code>row_height</code>（默认值为 400 像素）。</li>
+<li><strong>逻辑</strong>: <ul>
+<li>按照从上到下的顺序，每隔 <code>row_height</code> 像素裁切一次。</li>
+<li>如果剩余的高度不足 <code>row_height</code>，则取到最后的边界。</li>
+</ul>
+</li>
+<li><strong>输出</strong>: 返回一个包含多个裁切后图像片段的列表。</li>
+</ul>
+<p>这种方式确保了表格图像能够被分割成多个子图像，每个子图像的高度不超过 <code>row_height</code>。</p>
+<hr>
+<h4 id="基于最低高度与宽度的分块合并"><a href="#基于最低高度与宽度的分块合并" class="headerlink" title="基于最低高度与宽度的分块合并"></a>基于最低高度与宽度的分块合并</h4><p>在函数 <code>merge_small_chunks</code> 中，对裁切后的图像片段进一步处理，确保每个片段的高度和宽度满足最低要求（因为视觉大模型在上传图片时有最小像素要求，需要长宽大于 10 像素，为避免切块过小，这里默认高度为 300 像素，宽度为 20 像素）。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">def merge_small_chunks(chunks: list, min_height: int = 300, min_width: int = 20) -&gt; list:</span><br><span class="line">    merged_chunks = []</span><br><span class="line">    temp_chunk = None</span><br><span class="line">    for chunk in chunks:</span><br><span class="line">        width, height = chunk.size</span><br><span class="line">        # 如果当前块尺寸不足，则尝试拼接上下块</span><br><span class="line">        if height &lt; min_height or width &lt; min_width:</span><br><span class="line">            if temp_chunk is None:</span><br><span class="line">                temp_chunk = chunk</span><br><span class="line">            else:</span><br><span class="line">                # 拼接上下块</span><br><span class="line">                new_chunk = Image.new(&quot;RGB&quot;, (max(temp_chunk.width, chunk.width), temp_chunk.height + chunk.height))</span><br><span class="line">                new_chunk.paste(temp_chunk, (0, 0))</span><br><span class="line">                new_chunk.paste(chunk, (0, temp_chunk.height))</span><br><span class="line">                temp_chunk = new_chunk</span><br><span class="line">        else:</span><br><span class="line">            # 如果有未处理的临时块，先保存</span><br><span class="line">            if temp_chunk is not None:</span><br><span class="line">                merged_chunks.append(temp_chunk)</span><br><span class="line">                temp_chunk = None</span><br><span class="line">            merged_chunks.append(chunk)</span><br><span class="line">    # 添加最后一个临时块（如果有）</span><br><span class="line">    if temp_chunk is not None:</span><br><span class="line">        # 如果整个表格图片的高度低于最小高度，则按最低高度计算</span><br><span class="line">        if temp_chunk.height &lt; min_height:</span><br><span class="line">            new_chunk = Image.new(&quot;RGB&quot;, (temp_chunk.width, max(temp_chunk.height, 20)))</span><br><span class="line">            new_chunk.paste(temp_chunk, (0, 0))</span><br><span class="line">            merged_chunks.append(new_chunk)</span><br><span class="line">        else:</span><br><span class="line">            merged_chunks.append(temp_chunk)</span><br><span class="line">    return merged_chunks</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>输入</strong>: 裁切后的图像片段列表 <code>chunks</code>，以及最低高度 <code>min_height</code>（默认 300 像素）和最低宽度 <code>min_width</code>（默认 20 像素）。</li>
+<li><strong>逻辑</strong>:<ul>
+<li>遍历所有片段：<ul>
+<li>如果某个片段的高度或宽度小于最低要求，则将其与下一个片段拼接，直到满足最低尺寸要求。</li>
+<li>如果某个片段已经满足最低要求，则直接加入结果列表。</li>
+</ul>
+</li>
+<li>对于最后一个临时块，如果其高度仍低于最低要求，则创建一个新的图像块，填充到最低高度。</li>
+</ul>
+</li>
+<li><strong>输出</strong>: 返回一个经过合并后的图像片段列表。</li>
+</ul>
+<hr>
+<h4 id="3-综合处理流程"><a href="#3-综合处理流程" class="headerlink" title="3. 综合处理流程"></a>3. <strong>综合处理流程</strong></h4><p>在主流程中，表格异常的处理逻辑如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if not table_df.columns.is_unique or table_df.shape[1] &lt; 2:</span><br><span class="line">    log.warning(f&quot;表格 &#123;table_counter&#125; 结构异常，使用多轮图像推理修复&quot;)</span><br><span class="line">    # 自动图像切块</span><br><span class="line">    sub_images = split_table_image_rows(pil_img)</span><br><span class="line">    # 拼接不符合尺寸限制的切块</span><br><span class="line">    sub_images = merge_small_chunks(sub_images)</span><br><span class="line"></span><br><span class="line">    # 使用局部变量管理该表格的修复任务</span><br><span class="line">    chunk_futures = []</span><br><span class="line">    for idx, chunk_img in enumerate(sub_images):</span><br><span class="line">        future = vlm_executor.submit(ask_table_from_image, chunk_img)</span><br><span class="line">        chunk_futures.append((future, idx, chunk_img))</span><br><span class="line"></span><br><span class="line">    # 收集结果</span><br><span class="line">    full_md_lines = []</span><br><span class="line">    for future, idx, chunk_img in chunk_futures:</span><br><span class="line">        try:</span><br><span class="line">            chunk_md = future.result()</span><br><span class="line">            lines = chunk_md.splitlines()</span><br><span class="line">            if idx == 0:</span><br><span class="line">                full_md_lines.extend(lines)  # 表头 + 分隔线</span><br><span class="line">            else:</span><br><span class="line">                full_md_lines.extend(lines[2:])  # 仅数据行</span><br><span class="line">        except Exception as e:</span><br><span class="line">            log.warning(f&quot;表格分块处理失败: &#123;e&#125;&quot;)</span><br><span class="line"></span><br><span class="line">    markdown_lines.append(f&quot;&lt;!-- 表格 &#123;table_counter&#125; 使用 Qwen 修复，已分块拼接 --&gt;&quot;)</span><br><span class="line">    markdown_lines.append(&quot;\n&quot;.join(full_md_lines))</span><br><span class="line">    markdown_lines.append(&quot;&quot;)</span><br><span class="line">    json_data.append(&#123;</span><br><span class="line">        &quot;type&quot;: &quot;table&quot;,</span><br><span class="line">        &quot;level&quot;: level,</span><br><span class="line">        &quot;image&quot;: table_image_filename.name,</span><br><span class="line">        &quot;source&quot;: &quot;reconstructed_by_qwen_chunked&quot;,</span><br><span class="line">        &quot;markdown&quot;: &quot;\n&quot;.join(full_md_lines),</span><br><span class="line">        &quot;page_number&quot;: element.prov[0].page_no,</span><br><span class="line">        &quot;bbox&quot;: bbox</span><br><span class="line">    &#125;)</span><br><span class="line">    continue </span><br></pre></td></tr></table></figure>
+
+<h4 id="流程说明："><a href="#流程说明：" class="headerlink" title="流程说明："></a>流程说明：</h4><ol>
+<li><strong>检测表格异常</strong>:<ul>
+<li>如果表格的列名不唯一 (<code>table_df.columns.is_unique</code>) 或者列数少于 2 (<code>table_df.shape[1] &lt; 2</code>)，认为表格结构异常，这些异常通常是 OCR 模型本身的不足导致的表格生成失败。</li>
+</ul>
+</li>
+<li><strong>按固定行高切块</strong>:<ul>
+<li>使用 <code>split_table_image_rows</code> 将表格图像按固定行高（默认 400 像素）切分为多个片段。</li>
+</ul>
+</li>
+<li><strong>合并小块</strong>:<ul>
+<li>使用 <code>merge_small_chunks</code> 合并高度或宽度不足的片段，确保每个片段的高度至少为 300 像素，宽度至少为 20 像素。</li>
+</ul>
+</li>
+<li><strong>并发调用大模型</strong>:<ul>
+<li>对每个合并后的片段并发调用 <code>ask_table_from_image</code> 函数，将图像转换为 Markdown 表格。</li>
+</ul>
+</li>
+<li><strong>拼接结果</strong>:<ul>
+<li>将所有片段的 Markdown 表格拼接起来：<ul>
+<li>第一个片段保留表头和分割线。</li>
+<li>其余片段仅保留数据行。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>保存结果</strong>:<ul>
+<li>将修复后的表格以 Markdown 格式保存，并记录相关信息到 JSON 文件中。</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h4 id="举例说明"><a href="#举例说明" class="headerlink" title="举例说明"></a>举例说明</h4><p>假设我们有一个PDF文件，其中包含一个异常的表格图像。该表格的高度为 <strong>1208 像素</strong>，宽度为 <strong>900 像素</strong>，代码会按照以下步骤处理该表格图像：</p>
+<p>在函数 <code>split_table_image_rows</code> 中，表格图像会被按固定行高（默认为 400 像素）进行裁切。</p>
+<ul>
+<li>表格高度为 <strong>1208 像素</strong>，固定行高为 <strong>400 像素</strong>。</li>
+<li>裁切的片段范围如下：<ul>
+<li>第一块：<code>top=0</code>, <code>bottom=400</code> → 高度为 400 像素。</li>
+<li>第二块：<code>top=400</code>, <code>bottom=800</code> → 高度为 400 像素。</li>
+<li>第三块：<code>top=800</code>, <code>bottom=1200</code> → 高度为 400 像素。</li>
+<li>第四块：<code>top=1200</code>, <code>bottom=1208</code> → 高度为 8 像素。</li>
+</ul>
+</li>
+</ul>
+<p>最终会生成 <strong>4 个片段</strong>，其中前 3 个片段的高度为 400 像素，最后一个片段的高度为 8 像素。</p>
+<p>在函数 <code>merge_small_chunks</code> 中，会对裁切后的片段进行检查，确保每个片段的高度和宽度满足最低要求（默认高度为 300 像素，宽度为 20 像素）。</p>
+<ul>
+<li><strong>第一块</strong>：高度为 400 像素，宽度为 900 像素 → 符合最低要求，直接保留。</li>
+<li><strong>第二块</strong>：高度为 400 像素，宽度为 900 像素 → 符合最低要求，直接保留。</li>
+<li><strong>第三块</strong>：高度为 400 像素，宽度为 900 像素 → 符合最低要求，直接保留。</li>
+<li><strong>第四块</strong>：高度为 8 像素，宽度为 900 像素 → 不符合最低高度要求（300 像素），需要与前面的块合并。</li>
+</ul>
+<p>最终结果：</p>
+<ul>
+<li><strong>第四块（8 像素）</strong> 会与 <strong>第三块（400 像素）</strong> 合并，生成一个新的片段，高度为 <strong>408 像素</strong>，宽度为 <strong>900 像素</strong>。</li>
+</ul>
+<p>因此，经过合并后，最终会有 <strong>3 个片段</strong>：</p>
+<ol>
+<li>第一块：高度为 400 像素，宽度为 900 像素。</li>
+<li>第二块：高度为 400 像素，宽度为 900 像素。</li>
+<li>第三块：高度为 408 像素，宽度为 900 像素。</li>
+</ol>
+<p>在主流程中，合并后的片段会并发调用视觉模型（<code>ask_table_from_image</code>）进行修复，在收集所有片段的修复结果后，代码会将这些片段拼接成完整的 Markdown 表格。</p>
+<ul>
+<li><strong>第一块</strong> 的修复结果会保留表头和分割线。</li>
+<li><strong>第二块</strong> 和 <strong>第三块</strong> 的修复结果只会保留数据行。</li>
+<li>最终将所有片段的结果拼接成一个完整的 Markdown 表格。</li>
+</ul>
+<h4 id="使用视觉模型修复表格示例效果展示"><a href="#使用视觉模型修复表格示例效果展示" class="headerlink" title="使用视觉模型修复表格示例效果展示"></a>使用视觉模型修复表格示例效果展示</h4><p><img src="https://github.com/user-attachments/assets/ab583ea5-b8b2-4466-a6ed-ea8b43f21bd9" alt="709f27681f3bf94551b729283c54046a-table-17"></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">| tD(on)  | - | 20 | - | ns | V_DS=400V, V_GS=0 - 12V, I_D=3A, R_G=30Ω |</span><br><span class="line">| ------- | - | -- | - | -- | ---------------------------------------- |</span><br><span class="line">| tR      | - | 7  | - | ns | V_DS=400V, V_GS=0 - 12V, I_D=3A, R_G=30Ω |</span><br><span class="line">| tD(off) | - | 80 | - | ns | V_DS=400V, V_GS=0 - 12V, I_D=3A, R_G=30Ω |</span><br><span class="line">| tF      | - | 6  | - | ns | V_DS=400V, V_GS=0 - 12V, I_D=3A, R_G=30Ω |</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="2-文本内容处理"><a href="#2-文本内容处理" class="headerlink" title="2. 文本内容处理"></a>2. 文本内容处理</h3><ul>
+<li>使用 OCR 与 Docling 检测文本段落。</li>
+<li>文本类型判断：使用 OpenAI 文本模型判断是“标题”还是“正文”。</li>
+<li>英文分词修复机制：检测长串无空格文本，调用大模型进行英文分词恢复，提高可读性与准确性。</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">示例输入：</span><br><span class="line">THISISATESTSTRING</span><br><span class="line"></span><br><span class="line">示例输出：</span><br><span class="line">THIS IS A TEST STRING</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="3-图片内容理解"><a href="#3-图片内容理解" class="headerlink" title="3. 图片内容理解"></a>3. 图片内容理解</h3><ul>
+<li>对识别出的图像（非表格）调用视觉大模型进行内容描述，生成自然语言图像摘要，并写入 Markdown 与结构 JSON。</li>
+<li>摘要会插入在图片 <code>alt text</code> 中，例如：</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">![这是一个苹果](./1ca13ed90bf22bae348f93027fb876d5-picture-2.png)</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="4-生成Markdown文档"><a href="#4-生成Markdown文档" class="headerlink" title="4. 生成Markdown文档"></a>4. <strong>生成Markdown文档</strong></h3><p>在完成表格和图片的提取、文本处理之后，最终将所有提取的信息转换为Markdown文档，并保存到本地。每个表格、图像、文本都会被格式化成相应的Markdown格式，并以图像和表格形式嵌入。</p>
+<ul>
+<li>Markdown 文档（结构化展示图像、表格、文本，便于人工核查与发布）</li>
+<li>JSON 文档（结构化、含坐标 bbox、页码、分块来源，适合下游知识图谱任务进行锚点的标记）</li>
+</ul>
+<hr>
+<p>该项目代码参考 <a href="https://github.com/openfe-docling/docling">Docling</a> 框架，对 PDF 文件进行结构解析，结合多种大模型能力（如 Qwen-VL、OpenAI 文本模型），实现了文档的多模态理解与 markdown&#x2F;json 格式结构化输出，为知识图谱构建奠定基础。</p>
+<p>但该项目在处理复杂表格时仍存在不足，例如表格中存在字符是横着摆放时，或者是存在图像嵌入在表格中，则无法保证原有的结构。</p>
+<hr>
+]]></content>
+      <categories>
+        <category>OCR</category>
+      </categories>
+      <tags>
+        <tag>OCR</tag>
+        <tag>PDF</tag>
+        <tag>AI</tag>
+        <tag>LLM</tag>
+        <tag>大模型</tag>
+        <tag>Qwen</tag>
+        <tag>Knowledge Graph</tag>
+        <tag>Markdown</tag>
+        <tag>Docling</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>NebulaGraphQAChain</title>
     <url>/2025/03/20/NebulaGraphQAChain/</url>
     <content><![CDATA[<h1 id="基于Langchain在NebulaGraph实现GraphRAG"><a href="#基于Langchain在NebulaGraph实现GraphRAG" class="headerlink" title="基于Langchain在NebulaGraph实现GraphRAG"></a>基于Langchain在NebulaGraph实现GraphRAG</h1><hr>
@@ -1075,92 +1075,14 @@
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
-        <tag>Knowledge Graph</tag>
         <tag>Python</tag>
         <tag>GraphRAG</tag>
         <tag>RAG</tag>
+        <tag>Knowledge Graph</tag>
         <tag>flask</tag>
         <tag>图数据库</tag>
         <tag>LangChain</tag>
         <tag>NebulaGraph</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Sync Code Block Theme with Dark Mode in Hexo Chic</title>
-    <url>/2025/03/25/Sync-Code-Block-Theme-with-Dark-Mode-in-Hexo-Chic/</url>
-    <content><![CDATA[<h1 id="Hexo-Chic-主题为代码块实现明暗主题切换效果"><a href="#Hexo-Chic-主题为代码块实现明暗主题切换效果" class="headerlink" title="Hexo + Chic 主题为代码块实现明暗主题切换效果"></a>Hexo + Chic 主题为代码块实现明暗主题切换效果</h1><p>这份文档记录如何在 Hexo 博客（使用 Chic 主题），完成代码块 (highlight.js) 样式随明&#x2F;暗主题切换。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
-<hr>
-<h2 id="背景知识"><a href="#背景知识" class="headerlink" title="背景知识"></a>背景知识</h2><ul>
-<li><strong>代码块</strong> 是你写文章时用 &#96;&#96;&#96; 包起来的那些 Python&#x2F;JavaScript 代码部分。</li>
-<li><strong>highlight.js</strong> 是用来给代码块加颜色的工具，它有“亮色”和“暗色”两套样式。</li>
-</ul>
-<p>希望解决的问题是：</p>
-<blockquote>
-<p>当我切换网站到暗色模式时，代码块还是白底，看起来很突兀。</p>
-</blockquote>
-<p>我们要做的就是：让代码块也能“跟着变黑”。</p>
-<hr>
-<h2 id="1-确认-Hexo-正在使用-highlight-js"><a href="#1-确认-Hexo-正在使用-highlight-js" class="headerlink" title="1. 确认 Hexo 正在使用 highlight.js"></a><strong>1. 确认 Hexo 正在使用 highlight.js</strong></h2><p>打开你博客根目录下的 <code>_config.yml</code> 文件，找到下面的内容并确保设置一致：</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">syntax_highlighter:</span> <span class="string">highlight.js</span></span><br><span class="line"><span class="attr">highlight:</span></span><br><span class="line">  <span class="attr">line_number:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">auto_detect:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">tab_replace:</span> <span class="string">&#x27;&#x27;</span></span><br><span class="line">  <span class="attr">wrap:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">hljs:</span> <span class="literal">false</span></span><br></pre></td></tr></table></figure>
-
-<p>这段配置的意思是告诉 Hexo：我要用 highlight.js 来做代码高亮。</p>
-<hr>
-<h2 id="2-修改-head-ejs，引入代码高亮样式"><a href="#2-修改-head-ejs，引入代码高亮样式" class="headerlink" title="2.修改 head.ejs，引入代码高亮样式"></a><strong>2.修改 head.ejs，引入代码高亮样式</strong></h2><p>打开文件：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/head.ejs</span><br></pre></td></tr></table></figure>
-
-<p>在里面添加这几行（插入到已有的 <code>&lt;link&gt;</code> 标签之后即可）：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!-- highlight.js 样式（默认亮色） --&gt;</span><br><span class="line">&lt;link id=&quot;hljs-theme&quot; rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;&gt;</span><br><span class="line">&lt;!-- highlight.js 自动上色功能 --&gt;</span><br><span class="line">&lt;script src=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/highlight.min.js&quot;&gt;&lt;/script&gt;</span><br><span class="line">&lt;script&gt;hljs.highlightAll();&lt;/script&gt;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>第一行是默认代码样式（亮色）。</li>
-<li>第二三行是让代码自动加颜色。</li>
-</ul>
-<hr>
-<h2 id="3-修改-script-js，切换暗色样式时动态修改链接"><a href="#3-修改-script-js，切换暗色样式时动态修改链接" class="headerlink" title="3. 修改 script.js，切换暗色样式时动态修改链接"></a><strong>3. 修改 script.js，切换暗色样式时动态修改链接</strong></h2><p>打开文件：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/source/js/script.js</span><br></pre></td></tr></table></figure>
-
-<p>找到我们添加主题切换的地方，添加以下 JavaScript 代码：</p>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> hljsTheme = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;hljs-theme&#x27;</span>);</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">updateCodeHighlightStyle</span>(<span class="params">isDarkMode</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!hljsTheme) <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">const</span> newHref = isDarkMode</span><br><span class="line">        ? <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github-dark.css&quot;</span></span><br><span class="line">        : <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;</span>;</span><br><span class="line">    hljsTheme.<span class="title function_">setAttribute</span>(<span class="string">&#x27;href&#x27;</span>, newHref);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>然后就可以在主题切换按钮事件里调用：</p>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="title function_">updateCodeHighlightStyle</span>(<span class="literal">true</span>); <span class="comment">// 或 false，根据你当前模式</span></span><br></pre></td></tr></table></figure>
-
-<p>每次切换主题时都调用它，就能切换代码样式。</p>
-<hr>
-<h2 id="4-创建一个-CSS-文件，解决代码块“白边”问题"><a href="#4-创建一个-CSS-文件，解决代码块“白边”问题" class="headerlink" title="4. 创建一个 CSS 文件，解决代码块“白边”问题"></a><strong>4. 创建一个 CSS 文件，解决代码块“白边”问题</strong></h2><p>这个步骤很关键，否则在暗色样式时代码块周围可能会留下一圈白色边框，如下方图片所示：<br><img src="https://github.com/user-attachments/assets/6baef8c8-887d-448f-a5c9-5f0501ab4ee2" alt="image"></p>
-<h3 id="第一步：创建文件夹和文件"><a href="#第一步：创建文件夹和文件" class="headerlink" title="第一步：创建文件夹和文件"></a>第一步：创建文件夹和文件</h3><p>在终端中运行：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd themes/hexo-theme-Chic/source/css</span><br><span class="line">mkdir custom</span><br><span class="line">cd custom</span><br><span class="line">nano custom.css</span><br></pre></td></tr></table></figure>
-<p>或者手动：在 <code>themes/hexo-theme-Chic/source/css/</code> 下创建文件夹 <code>custom</code>，然后在里面新建文件 <code>custom.css</code></p>
-<h3 id="第二步：填入以下内容："><a href="#第二步：填入以下内容：" class="headerlink" title="第二步：填入以下内容："></a>第二步：填入以下内容：</h3><figure class="highlight css"><table><tr><td class="code"><pre><span class="line">pre,</span><br><span class="line"><span class="selector-tag">code</span>,</span><br><span class="line">pre <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">color</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 暗色背景 */</span></span><br><span class="line">    <span class="attribute">color</span>: <span class="number">#c9d1d9</span> <span class="meta">!important</span>;       <span class="comment">/* 暗色文字 */</span></span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre::-webkit-scrollbar-track,</span><br><span class="line">body.dark-theme code::-webkit-scrollbar-track &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 修复滚动条白边 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="5-在-head-ejs-中引入自定义-CSS-文件"><a href="#5-在-head-ejs-中引入自定义-CSS-文件" class="headerlink" title="5. 在 head.ejs 中引入自定义 CSS 文件"></a><strong>5. 在 head.ejs 中引入自定义 CSS 文件</strong></h2><p>在 <code>head.ejs</code> 中再加一行：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;link rel=&quot;stylesheet&quot; href=&quot;&lt;%- url_for(&#x27;/css/custom/custom.css&#x27;) %&gt;&quot;&gt;</span><br></pre></td></tr></table></figure>
-
-<p>放在其他 <code>&lt;link&gt;</code> 标签的下面。</p>
-<hr>
-<h2 id="6-重新生成并运行-Hexo"><a href="#6-重新生成并运行-Hexo" class="headerlink" title="6. 重新生成并运行 Hexo"></a><strong>6. 重新生成并运行 Hexo</strong></h2><p>运行以下命令，重新生成并启动本地预览：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
-
-<p>然后访问你的本地博客文章页面 <code>http://localhost:4000</code>，尝试切换主题，看代码块是否也会随之变色。</p>
-<p>在两种不同主题下的效果展示：</p>
-<p><img src="https://github.com/user-attachments/assets/db87a928-293d-4c00-8299-6619722c92f8" alt="image"></p>
-<p><img src="https://github.com/user-attachments/assets/550ba759-3113-41b6-9737-887242fcfa14" alt="image"></p>
-<hr>
-<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
-]]></content>
-      <categories>
-        <category>Hexo</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-        <tag>博客</tag>
-        <tag>Blog</tag>
-        <tag>前端</tag>
       </tags>
   </entry>
   <entry>
@@ -1240,10 +1162,88 @@
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
-        <tag>Qwen</tag>
         <tag>Agent</tag>
+        <tag>Qwen</tag>
         <tag>Python</tag>
         <tag>视觉</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Sync Code Block Theme with Dark Mode in Hexo Chic</title>
+    <url>/2025/03/25/Sync-Code-Block-Theme-with-Dark-Mode-in-Hexo-Chic/</url>
+    <content><![CDATA[<h1 id="Hexo-Chic-主题为代码块实现明暗主题切换效果"><a href="#Hexo-Chic-主题为代码块实现明暗主题切换效果" class="headerlink" title="Hexo + Chic 主题为代码块实现明暗主题切换效果"></a>Hexo + Chic 主题为代码块实现明暗主题切换效果</h1><p>这份文档记录如何在 Hexo 博客（使用 Chic 主题），完成代码块 (highlight.js) 样式随明&#x2F;暗主题切换。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="背景知识"><a href="#背景知识" class="headerlink" title="背景知识"></a>背景知识</h2><ul>
+<li><strong>代码块</strong> 是你写文章时用 &#96;&#96;&#96; 包起来的那些 Python&#x2F;JavaScript 代码部分。</li>
+<li><strong>highlight.js</strong> 是用来给代码块加颜色的工具，它有“亮色”和“暗色”两套样式。</li>
+</ul>
+<p>希望解决的问题是：</p>
+<blockquote>
+<p>当我切换网站到暗色模式时，代码块还是白底，看起来很突兀。</p>
+</blockquote>
+<p>我们要做的就是：让代码块也能“跟着变黑”。</p>
+<hr>
+<h2 id="1-确认-Hexo-正在使用-highlight-js"><a href="#1-确认-Hexo-正在使用-highlight-js" class="headerlink" title="1. 确认 Hexo 正在使用 highlight.js"></a><strong>1. 确认 Hexo 正在使用 highlight.js</strong></h2><p>打开你博客根目录下的 <code>_config.yml</code> 文件，找到下面的内容并确保设置一致：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">syntax_highlighter:</span> <span class="string">highlight.js</span></span><br><span class="line"><span class="attr">highlight:</span></span><br><span class="line">  <span class="attr">line_number:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">auto_detect:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">tab_replace:</span> <span class="string">&#x27;&#x27;</span></span><br><span class="line">  <span class="attr">wrap:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">hljs:</span> <span class="literal">false</span></span><br></pre></td></tr></table></figure>
+
+<p>这段配置的意思是告诉 Hexo：我要用 highlight.js 来做代码高亮。</p>
+<hr>
+<h2 id="2-修改-head-ejs，引入代码高亮样式"><a href="#2-修改-head-ejs，引入代码高亮样式" class="headerlink" title="2.修改 head.ejs，引入代码高亮样式"></a><strong>2.修改 head.ejs，引入代码高亮样式</strong></h2><p>打开文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/head.ejs</span><br></pre></td></tr></table></figure>
+
+<p>在里面添加这几行（插入到已有的 <code>&lt;link&gt;</code> 标签之后即可）：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;!-- highlight.js 样式（默认亮色） --&gt;</span><br><span class="line">&lt;link id=&quot;hljs-theme&quot; rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;&gt;</span><br><span class="line">&lt;!-- highlight.js 自动上色功能 --&gt;</span><br><span class="line">&lt;script src=&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/highlight.min.js&quot;&gt;&lt;/script&gt;</span><br><span class="line">&lt;script&gt;hljs.highlightAll();&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>第一行是默认代码样式（亮色）。</li>
+<li>第二三行是让代码自动加颜色。</li>
+</ul>
+<hr>
+<h2 id="3-修改-script-js，切换暗色样式时动态修改链接"><a href="#3-修改-script-js，切换暗色样式时动态修改链接" class="headerlink" title="3. 修改 script.js，切换暗色样式时动态修改链接"></a><strong>3. 修改 script.js，切换暗色样式时动态修改链接</strong></h2><p>打开文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/source/js/script.js</span><br></pre></td></tr></table></figure>
+
+<p>找到我们添加主题切换的地方，添加以下 JavaScript 代码：</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> hljsTheme = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;hljs-theme&#x27;</span>);</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">updateCodeHighlightStyle</span>(<span class="params">isDarkMode</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!hljsTheme) <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">const</span> newHref = isDarkMode</span><br><span class="line">        ? <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github-dark.css&quot;</span></span><br><span class="line">        : <span class="string">&quot;https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css&quot;</span>;</span><br><span class="line">    hljsTheme.<span class="title function_">setAttribute</span>(<span class="string">&#x27;href&#x27;</span>, newHref);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后就可以在主题切换按钮事件里调用：</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="title function_">updateCodeHighlightStyle</span>(<span class="literal">true</span>); <span class="comment">// 或 false，根据你当前模式</span></span><br></pre></td></tr></table></figure>
+
+<p>每次切换主题时都调用它，就能切换代码样式。</p>
+<hr>
+<h2 id="4-创建一个-CSS-文件，解决代码块“白边”问题"><a href="#4-创建一个-CSS-文件，解决代码块“白边”问题" class="headerlink" title="4. 创建一个 CSS 文件，解决代码块“白边”问题"></a><strong>4. 创建一个 CSS 文件，解决代码块“白边”问题</strong></h2><p>这个步骤很关键，否则在暗色样式时代码块周围可能会留下一圈白色边框，如下方图片所示：<br><img src="https://github.com/user-attachments/assets/6baef8c8-887d-448f-a5c9-5f0501ab4ee2" alt="image"></p>
+<h3 id="第一步：创建文件夹和文件"><a href="#第一步：创建文件夹和文件" class="headerlink" title="第一步：创建文件夹和文件"></a>第一步：创建文件夹和文件</h3><p>在终端中运行：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd themes/hexo-theme-Chic/source/css</span><br><span class="line">mkdir custom</span><br><span class="line">cd custom</span><br><span class="line">nano custom.css</span><br></pre></td></tr></table></figure>
+<p>或者手动：在 <code>themes/hexo-theme-Chic/source/css/</code> 下创建文件夹 <code>custom</code>，然后在里面新建文件 <code>custom.css</code></p>
+<h3 id="第二步：填入以下内容："><a href="#第二步：填入以下内容：" class="headerlink" title="第二步：填入以下内容："></a>第二步：填入以下内容：</h3><figure class="highlight css"><table><tr><td class="code"><pre><span class="line">pre,</span><br><span class="line"><span class="selector-tag">code</span>,</span><br><span class="line">pre <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">color</span>: inherit <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-tag">code</span>,</span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> <span class="selector-class">.highlight</span> &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 暗色背景 */</span></span><br><span class="line">    <span class="attribute">color</span>: <span class="number">#c9d1d9</span> <span class="meta">!important</span>;       <span class="comment">/* 暗色文字 */</span></span><br><span class="line">    <span class="attribute">box-shadow</span>: none <span class="meta">!important</span>;</span><br><span class="line">    <span class="attribute">border</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-tag">body</span><span class="selector-class">.dark-theme</span> pre::-webkit-scrollbar-track,</span><br><span class="line">body.dark-theme code::-webkit-scrollbar-track &#123;</span><br><span class="line">    <span class="attribute">background</span>: <span class="number">#0d1117</span> <span class="meta">!important</span>;  <span class="comment">/* 修复滚动条白边 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="5-在-head-ejs-中引入自定义-CSS-文件"><a href="#5-在-head-ejs-中引入自定义-CSS-文件" class="headerlink" title="5. 在 head.ejs 中引入自定义 CSS 文件"></a><strong>5. 在 head.ejs 中引入自定义 CSS 文件</strong></h2><p>在 <code>head.ejs</code> 中再加一行：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;link rel=&quot;stylesheet&quot; href=&quot;&lt;%- url_for(&#x27;/css/custom/custom.css&#x27;) %&gt;&quot;&gt;</span><br></pre></td></tr></table></figure>
+
+<p>放在其他 <code>&lt;link&gt;</code> 标签的下面。</p>
+<hr>
+<h2 id="6-重新生成并运行-Hexo"><a href="#6-重新生成并运行-Hexo" class="headerlink" title="6. 重新生成并运行 Hexo"></a><strong>6. 重新生成并运行 Hexo</strong></h2><p>运行以下命令，重新生成并启动本地预览：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
+
+<p>然后访问你的本地博客文章页面 <code>http://localhost:4000</code>，尝试切换主题，看代码块是否也会随之变色。</p>
+<p>在两种不同主题下的效果展示：</p>
+<p><img src="https://github.com/user-attachments/assets/db87a928-293d-4c00-8299-6619722c92f8" alt="image"></p>
+<p><img src="https://github.com/user-attachments/assets/550ba759-3113-41b6-9737-887242fcfa14" alt="image"></p>
+<hr>
+<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+]]></content>
+      <categories>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>Blog</tag>
+        <tag>前端</tag>
       </tags>
   </entry>
   <entry>
@@ -1547,21 +1547,28 @@
       </tags>
   </entry>
   <entry>
+    <title>category</title>
+    <url>/category/index.html</url>
+    <content><![CDATA[]]></content>
+  </entry>
+  <entry>
     <title>About Me</title>
     <url>/about/index.html</url>
     <content><![CDATA[<h2 id="👋-你好，我是-Evan-Zhong！"><a href="#👋-你好，我是-Evan-Zhong！" class="headerlink" title="👋 你好，我是 Evan Zhong！"></a>👋 你好，我是 Evan Zhong！</h2><ul>
 <li>目前是东南大学研究生在读</li>
 <li>研究方向是多模态大模型 &#x2F; Graph RAG</li>
 </ul>
-<h2 id="🔧-科研与项目经历"><a href="#🔧-科研与项目经历" class="headerlink" title="🔧 科研与项目经历"></a>🔧 科研与项目经历</h2><h3 id="补苗移栽机器人（2020-10-2020-12）"><a href="#补苗移栽机器人（2020-10-2020-12）" class="headerlink" title="补苗移栽机器人（2020&#x2F;10 - 2020&#x2F;12）"></a>补苗移栽机器人（2020&#x2F;10 - 2020&#x2F;12）</h3><ul>
+<h2 id="🔧-科研与项目经历"><a href="#🔧-科研与项目经历" class="headerlink" title="🔧 科研与项目经历"></a>🔧 科研与项目经历</h2><h3 id="基于-Django-MySQL-构建的电弧故障数据管理与分析平台（全栈开发）"><a href="#基于-Django-MySQL-构建的电弧故障数据管理与分析平台（全栈开发）" class="headerlink" title="基于 Django + MySQL 构建的电弧故障数据管理与分析平台（全栈开发）"></a>基于 <strong>Django</strong> + <strong>MySQL</strong> 构建的电弧故障数据管理与分析平台（全栈开发）</h3><ul>
+<li>前端使用 <strong>HTML5</strong> &#x2F; <strong>CSS3</strong> &#x2F; <strong>JavaScript</strong> + <strong>Fetch API</strong> 实现交互式页面与 <strong>RESTful API</strong> 通信。</li>
+<li>后端基于 <strong>Django</strong> 构建自定义用户系统，使用 <strong>ORM</strong> 管理用户、电弧数据、算法模型与测试结果，实现用户认证、数据上传、特征提取、算法模型评估与可视化等功能。</li>
+<li>实现电弧故障信号的特征工程，包括时域分析、频域分析和小波分析。</li>
+<li>设计实现完善的用户管理系统，包括用户认证、个人资料管理等功能。</li>
+<li>支持企业与用户自行上传算法模型评估（准确率、F1 分数、混淆矩阵等、误判率）。</li>
+</ul>
+<h3 id="补苗移栽机器人（2020-10-2020-12）"><a href="#补苗移栽机器人（2020-10-2020-12）" class="headerlink" title="补苗移栽机器人（2020&#x2F;10 - 2020&#x2F;12）"></a>补苗移栽机器人（2020&#x2F;10 - 2020&#x2F;12）</h3><ul>
 <li>设计机械臂结构</li>
 <li>主控 STM32 + 电机驱动电路设计</li>
 <li>行走程序编写（基于超声波传感器）</li>
-</ul>
-<h3 id="物流搬运机器人（2021-02-2021-04）"><a href="#物流搬运机器人（2021-02-2021-04）" class="headerlink" title="物流搬运机器人（2021&#x2F;02 - 2021&#x2F;04）"></a>物流搬运机器人（2021&#x2F;02 - 2021&#x2F;04）</h3><ul>
-<li>整体结构设计</li>
-<li>STM32 控制与驱动</li>
-<li>麦克纳姆轮 + 近红外灰度传感器程序开发</li>
 </ul>
 <h3 id="三相-AC-DC-变换电路（2021-11）"><a href="#三相-AC-DC-变换电路（2021-11）" class="headerlink" title="三相 AC-DC 变换电路（2021&#x2F;11）"></a>三相 AC-DC 变换电路（2021&#x2F;11）</h3><ul>
 <li>三相 PWM 整流双闭环电路设计</li>
@@ -1632,11 +1639,6 @@
   });
 });
 ]]></content>
-  </entry>
-  <entry>
-    <title>category</title>
-    <url>/category/index.html</url>
-    <content><![CDATA[]]></content>
   </entry>
   <entry>
     <title>tag</title>
