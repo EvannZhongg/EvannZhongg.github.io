@@ -1166,8 +1166,8 @@
   <entry>
     <title>Securely Rendering LLM-Generated Local Image Paths in Flask</title>
     <url>/2025/06/13/Securely-Rendering-LLM-Generated-Local-Image-Paths-in-Flask/</url>
-    <content><![CDATA[<h1 id="一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法"><a href="#一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法" class="headerlink" title="一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法"></a>一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法</h1><h2 id="1-问题背景：浏览器安全模型与本地文件访问限制"><a href="#1-问题背景：浏览器安全模型与本地文件访问限制" class="headerlink" title="1. 问题背景：浏览器安全模型与本地文件访问限制"></a>1. 问题背景：浏览器安全模型与本地文件访问限制</h2><p>在构建基于大型语言模型（<code>LLM</code>）的 <code>Web</code> 应用时，一个常见的场景是LLM的输出中包含了指向服务器本地文件系统的图片路径。例如，在一个本地搭建的 <code>RAG</code> 系统中，<code>LLM</code> 可能会根据上下文生成一段包含标准Markdown图片语法的回答：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">![封装图](D:\project\data\images\package_diagram.png)</span><br></pre></td></tr></table></figure>
+    <content><![CDATA[<h1 id="一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法"><a href="#一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法" class="headerlink" title="一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法"></a>一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法</h1><h2 id="1-问题背景：浏览器安全模型与本地文件访问限制"><a href="#1-问题背景：浏览器安全模型与本地文件访问限制" class="headerlink" title="1. 问题背景：浏览器安全模型与本地文件访问限制"></a>1. 问题背景：浏览器安全模型与本地文件访问限制</h2><p>在构建基于大型语言模型（<code>LLM</code>）的 <code>Web</code> 应用时，一个常见的场景是 <code>LLM</code> 的输出中包含了指向服务器本地文件系统的图片路径。例如，在一个本地搭建的 <code>RAG</code> 系统中，<code>LLM</code> 可能会根据上下文生成一段包含标准 <code>Markdown</code> 图片语法的回答：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">![图片](D:\images\image.png)</span><br></pre></td></tr></table></figure>
 <p>然而，如果将这段 <code>Markdown</code> 直接转换为 <code>HTML</code>（例如 <code>&lt;img src=&quot;D:\project\data\images\package_diagram.png&quot;&gt;</code>），并试图在用户浏览器中渲染，该请求将会失败出现报错：</p>
 <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Not allowed to load local resource: file:///D:/...</span><br></pre></td></tr></table></figure>
 <p>这是因为现代浏览器的安全模型，特别是同源策略（<code>Same-Origin Policy</code>）和安全沙箱机制，严格禁止网页中的JavaScript代码直接访问用户的本地或远程服务器的任意文件系统。这种限制是保障用户安全的基石。</p>
