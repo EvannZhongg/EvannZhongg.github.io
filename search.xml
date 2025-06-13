@@ -132,223 +132,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Convert PDF Tables to Readable Text</title>
-    <url>/2025/03/28/Convert-PDF-Tables-to-Readable-Text/</url>
-    <content><![CDATA[<h1 id="PDF-表格提取转为纯文本结构数据"><a href="#PDF-表格提取转为纯文本结构数据" class="headerlink" title="PDF 表格提取转为纯文本结构数据"></a>PDF 表格提取转为纯文本结构数据</h1><p>本文详细记录了如何使用读光的  Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Table_Extraction.git">https://github.com/EvannZhongg/Table_Extraction.git</a></p>
-<hr>
-<h2 id="项目概览"><a href="#项目概览" class="headerlink" title="项目概览"></a><strong>项目概览</strong></h2><p>本项目的主要目标是将 PDF 文件中存在的表格，作为图片提取参数信息，尤其是结构化表格。整个流程分为两个阶段：</p>
-<ol>
-<li><strong>表格结构识别</strong> —— 使用 Cycle-CenterNet 模型识别表格中每个单元格的位置（多边形坐标）。</li>
-<li><strong>OCR 文本识别</strong> —— 使用 PaddleOCR 识别图像中所有文字及其位置坐标。</li>
-</ol>
-<hr>
-<h2 id="环境与设置"><a href="#环境与设置" class="headerlink" title="环境与设置"></a><strong>环境与设置</strong></h2><h3 id="1-表格识别模型配置"><a href="#1-表格识别模型配置" class="headerlink" title="1. 表格识别模型配置"></a><strong>1. 表格识别模型配置</strong></h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git lfs install</span><br><span class="line">git <span class="built_in">clone</span> https://www.modelscope.cn/iic/cv_dla34_table-structure-recognition_cycle-centernet.git</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">model_path = <span class="string">&quot;your_absolute_path_to_cv_dla34_table-structure-recognition_cycle-centernet&quot;</span></span><br></pre></td></tr></table></figure>
-<p>建议自定义路径使用绝对路径</p>
-<p>例如：<code>model_path = &quot;D:/Table_Extraction/cv_dla34_table-structure-recognition_cycle-centernet&quot;</code></p>
-<h3 id="2-PaddleOCR-配置"><a href="#2-PaddleOCR-配置" class="headerlink" title="2. PaddleOCR 配置"></a><strong>2. PaddleOCR 配置</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">ocr = PaddleOCR(</span><br><span class="line">    use_gpu=<span class="literal">True</span>,</span><br><span class="line">    lang=<span class="string">&#x27;ch&#x27;</span>,</span><br><span class="line">    det_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_det_infer&#x27;</span>,</span><br><span class="line">    rec_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_rec_infer&#x27;</span>,</span><br><span class="line">    cls_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_ppocr_mobile_v2.0_cls_infer&#x27;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p>建议自定义路径使用绝对路径</p>
-<p>例如： <code>det_model_dir=&#39;D:/Table_Extraction/PaddleOCR/models/ch_PP-OCRv4_det_infer/&#39;</code></p>
-<hr>
-<h2 id="核心函数详解"><a href="#核心函数详解" class="headerlink" title="核心函数详解"></a><strong>核心函数详解</strong></h2><h3 id="1-函数-calculate-iot-cell-text"><a href="#1-函数-calculate-iot-cell-text" class="headerlink" title="1. 函数 calculate_iot(cell, text)"></a><strong>1. 函数 <code>calculate_iot(cell, text)</code></strong></h3><p><strong>功能</strong>：计算 OCR 文本框与表格单元格的交并比（IoT, Intersection over Text）。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>利用两组矩形坐标，计算它们重叠区域的面积。</li>
-<li>然后用重叠面积 &#x2F; 文本框面积作为 IoT 值。</li>
-<li>若值越大，表示文本越“贴合”单元格。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">calculate_iot</span>(<span class="params">cell, text</span>):</span><br><span class="line">    intersection_x1 = <span class="built_in">max</span>(cell[<span class="number">0</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>])</span><br><span class="line">    intersection_y1 = <span class="built_in">max</span>(cell[<span class="number">1</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    intersection_x2 = <span class="built_in">min</span>(cell[<span class="number">2</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>])</span><br><span class="line">    intersection_y2 = <span class="built_in">min</span>(cell[<span class="number">3</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> intersection_x1 &gt;= intersection_x2 <span class="keyword">or</span> intersection_y1 &gt;= intersection_y2:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.0</span></span><br><span class="line"></span><br><span class="line">    intersection_area = (intersection_x2 - intersection_x1) * (intersection_y2 - intersection_y1)</span><br><span class="line">    text_area = (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>]) * (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    <span class="keyword">return</span> intersection_area / text_area</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="2-函数-merge-text-into-cells-cell-coords-ocr-results"><a href="#2-函数-merge-text-into-cells-cell-coords-ocr-results" class="headerlink" title="2. 函数 merge_text_into_cells(cell_coords, ocr_results)"></a><strong>2. 函数 <code>merge_text_into_cells(cell_coords, ocr_results)</code></strong></h3><p><strong>功能</strong>：将 OCR 识别到的文字分配到表格对应单元格中。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>对每个单元格遍历所有 OCR 文本框，计算 IoT。</li>
-<li>若 IoT &gt; 0.5，则认为该文字属于该单元格。</li>
-<li>同时记录那些与所有单元格 IoT &lt; 0.1 的文字（非表格内容）。</li>
-<li>将属于单元格的文字合并为一个字符串。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">merge_text_into_cells</span>(<span class="params">cell_coords, ocr_results</span>):</span><br><span class="line">    cell_text_dict = &#123;cell: [] <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords&#125;</span><br><span class="line">    noncell_text_dict = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords:</span><br><span class="line">        <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">            <span class="keyword">if</span> calculate_iot(cell, result) &gt; <span class="number">0.5</span>:</span><br><span class="line">                cell_text_dict[cell].append(result[<span class="string">&#x27;text&#x27;</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">all</span>(calculate_iot(cell, result) &lt; <span class="number">0.1</span> <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords):</span><br><span class="line">            noncell_text_dict[result[<span class="string">&#x27;coords&#x27;</span>]] = result[<span class="string">&#x27;text&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    merged_text = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> cell, texts <span class="keyword">in</span> cell_text_dict.items():</span><br><span class="line">        merged_text[cell] = <span class="string">&#x27;&#x27;</span>.join(texts).strip()</span><br><span class="line">    <span class="keyword">for</span> coords, text <span class="keyword">in</span> noncell_text_dict.items():</span><br><span class="line">        merged_text[coords] = <span class="string">&#x27;&#x27;</span>.join(text).strip()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> merged_text</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="3-函数-adjust-coordinates-merged-text-image-path"><a href="#3-函数-adjust-coordinates-merged-text-image-path" class="headerlink" title="3. 函数 adjust_coordinates(merged_text, image_path)"></a><strong>3. 函数 <code>adjust_coordinates(merged_text, image_path)</code></strong></h3><p><strong>功能</strong>：将 y 坐标相近的单元格进行聚类并统一化，方便后续行级别排序。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>图像越高，容许的 y 偏差越大，使用 height &#x2F; 100 作为容差。</li>
-<li>将 y 值差距小于阈值的单元格归为一组。</li>
-<li>每组内统一 y 值为该组的平均 y 值，确保在同一“水平行”内。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">adjust_coordinates</span>(<span class="params">merged_text, image_path</span>):</span><br><span class="line">    image = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    width, height = image.size</span><br><span class="line">    threshold = height / <span class="number">100</span></span><br><span class="line">    groups = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> coordinates, text <span class="keyword">in</span> merged_text.items():</span><br><span class="line">        found_group = <span class="literal">False</span></span><br><span class="line">        <span class="keyword">for</span> group_y <span class="keyword">in</span> groups.keys():</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">abs</span>(coordinates[<span class="number">1</span>] - group_y) &lt;= threshold:</span><br><span class="line">                groups[group_y].append((coordinates, text))</span><br><span class="line">                found_group = <span class="literal">True</span></span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> found_group:</span><br><span class="line">            groups[coordinates[<span class="number">1</span>]] = [(coordinates, text)]</span><br><span class="line"></span><br><span class="line">    adjusted_coordinates = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> group_y, group_coords <span class="keyword">in</span> groups.items():</span><br><span class="line">        avg_y = <span class="built_in">sum</span>(coord[<span class="number">0</span>][<span class="number">1</span>] <span class="keyword">for</span> coord <span class="keyword">in</span> group_coords) / <span class="built_in">len</span>(group_coords)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> group_coords:</span><br><span class="line">            adjusted_coordinates[(i[<span class="number">0</span>][<span class="number">0</span>], avg_y, i[<span class="number">0</span>][<span class="number">2</span>], i[<span class="number">0</span>][<span class="number">3</span>])] = i[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> adjusted_coordinates</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="4-函数-draw-text-boxes-image-path-boxes-texts"><a href="#4-函数-draw-text-boxes-image-path-boxes-texts" class="headerlink" title="4.函数 draw_text_boxes(image_path, boxes, texts)"></a><strong>4.函数 <code>draw_text_boxes(image_path, boxes, texts)</code></strong></h3><p><strong>功能</strong>：在图像上绘制表格框与文字内容，进行可视化标注。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>利用 PIL 创建空白图层，绘制框线与文字。</li>
-<li>若文字宽度超出单元格宽度，则使用 textwrap 进行自动换行。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">draw_text_boxes</span>(<span class="params">image_path, boxes, texts</span>):</span><br><span class="line">    img = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    img = Image.new(<span class="string">&#x27;RGB&#x27;</span>, img.size, (<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>))</span><br><span class="line">    draw = ImageDraw.Draw(img)</span><br><span class="line">    font = ImageFont.truetype(<span class="string">&quot;./chinese_cht.ttf&quot;</span>, size=<span class="number">15</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> box, text <span class="keyword">in</span> <span class="built_in">zip</span>(boxes, texts):</span><br><span class="line">        x0, y0, x1, y1 = box</span><br><span class="line">        x0, x1 = <span class="built_in">sorted</span>([x0, x1])</span><br><span class="line">        y0, y1 = <span class="built_in">sorted</span>([y0, y1])</span><br><span class="line">        normalized_box = (x0, y0, x1, y1)</span><br><span class="line">        draw.rectangle(normalized_box, outline=<span class="string">&#x27;red&#x27;</span>, width=<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        text_len = draw.textbbox((x0, y0), text, font=font)</span><br><span class="line">        <span class="keyword">if</span> (text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) &gt; (x1 - x0):</span><br><span class="line">            text = <span class="string">&#x27;\n&#x27;</span>.join(textwrap.wrap(text, width=<span class="built_in">int</span>(</span><br><span class="line">                np.ceil(<span class="built_in">len</span>(text) / np.ceil((text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) / (x1 - x0))))))</span><br><span class="line"></span><br><span class="line">        draw.text((x0, y0), text, font=font, fill=<span class="string">&#x27;black&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    img.save(<span class="string">&#x27;your_image_storage_path/output.png&#x27;</span>)</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="5-最终文本输出（结构化行）"><a href="#5-最终文本输出（结构化行）" class="headerlink" title="5. 最终文本输出（结构化行）"></a><strong>5. 最终文本输出（结构化行）</strong></h2><p><strong>功能</strong>：将所有坐标按 y → x 排序，按行归组输出结构化文本。</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">adjusted_merged_text_sorted = <span class="built_in">sorted</span>(adjusted_merged_text.items(), key=<span class="keyword">lambda</span> x: (x[<span class="number">0</span>][<span class="number">1</span>], x[<span class="number">0</span>][<span class="number">0</span>]))</span><br><span class="line">adjusted_merged_text_sorted_group = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> coordinates, text <span class="keyword">in</span> adjusted_merged_text_sorted:</span><br><span class="line">    <span class="keyword">if</span> coordinates[<span class="number">1</span>] <span class="keyword">not</span> <span class="keyword">in</span> adjusted_merged_text_sorted_group:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]] = [text]</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]].append(text)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> text_list <span class="keyword">in</span> adjusted_merged_text_sorted_group.values():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27; | &#x27;</span>.join(text_list))</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a><strong>使用方法</strong></h2><ol>
-<li>运行脚本选择表格图片：</li>
-</ol>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python Table_Extraction.py</span><br></pre></td></tr></table></figure>
-<p>或</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python main.py</span><br></pre></td></tr></table></figure>
-
-<p>在项目目录会输出效果图片，终端会输出文本结果</p>
-<ol start="2">
-<li>效果展示<br><img src="https://github.com/user-attachments/assets/8e0f21d8-af6c-4da2-beb7-dcc7f5f73115" alt="image"><br><img src="https://github.com/user-attachments/assets/45ad3906-09df-431e-a4ec-4f0779137195" alt="image"><br>输出结果如下，你可以用这组结果测试大模型是否能读懂这组表格： <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PartNumber | TotalCapacitance(Ct) @ 50 V,(pF) | TotalCapacitance(Ct) @ 0 V,(pF) | SeriesResistance (Rs),@10 mA,(②) | MinorityCarrierLifetime (TL)@ 10 mA(ns) | VoltageRating2(M) | I-RegionThickness(μm) | ThermalResistance(0JC)(°C/W)</span><br><span class="line">Maximum | Typical | Maximum | Typical | Minimum | Nominal | Maximum</span><br><span class="line"></span><br><span class="line">Switching Applications(continued)</span><br><span class="line">| APD0810-203 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 174</span><br><span class="line">| APD0810-210 | 0.40 | 0.45 | 1.5 | 160 | 100 | 8 | 75</span><br><span class="line">| APD0810-219 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 143</span><br><span class="line">| APD0810-240 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 155</span><br><span class="line">| APD1505-203 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 172</span><br><span class="line">| APD1505-210 | 0.40 | 0.45@10 V | 2.5 | 350 | 200 | 15 | 74</span><br><span class="line">| APD1505-219 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 142</span><br><span class="line">| APD1505-240 | 0.40 | 0.45 @ 10 V | 2.5 | 350 | 200 | 15 | 150</span><br><span class="line">| APD1510-203 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 168</span><br><span class="line">| APD1510-210 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 70</span><br><span class="line">| APD1510-219 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 137</span><br><span class="line">| APD1510-240 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 149</span><br><span class="line">| APD1520-203 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 155</span><br><span class="line">| APD1520-210 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 57</span><br><span class="line">| APD1520-219 | 0.45 | 0.50 | 1.2 | 900 | 200 | 15 | 124</span><br><span class="line">| APD1520-240 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 136</span><br><span class="line"></span><br><span class="line">AttenuatorApplications</span><br><span class="line">| APD2220-203 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 132</span><br><span class="line">| APD2220-210 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 32</span><br><span class="line">| APD2220-219 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 104</span><br><span class="line">| APD2220-240 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 115</span><br></pre></td></tr></table></figure></li>
-</ol>
-<hr>
-<h2 id="补充说明"><a href="#补充说明" class="headerlink" title="补充说明"></a><strong>补充说明</strong></h2><ul>
-<li>字体文件 <code>chinese_cht.ttf</code> 必须存在，或替换为系统可识别的中文字体。</li>
-<li>对于复杂结构表格，当前模型仍然无法很好的处理。</li>
-</ul>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/wyf3/llm_related/tree/main">wyf3</a> 和 <a href="https://github.com/PaddlePaddle/PaddleOCR">PaddleOCR</a></p>
-]]></content>
-      <categories>
-        <category>OCR</category>
-      </categories>
-      <tags>
-        <tag>OCR</tag>
-        <tag>PaddleOCR</tag>
-        <tag>PDF</tag>
-        <tag>AI</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Function Calling</title>
-    <url>/2025/03/21/Function-Calling/</url>
-    <content><![CDATA[<h1 id="Qwen-Function-Calling-详细解析"><a href="#Qwen-Function-Calling-详细解析" class="headerlink" title="Qwen Function Calling 详细解析"></a>Qwen Function Calling 详细解析</h1><hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
-<hr>
-<h2 id="1-Function-Calling-简介"><a href="#1-Function-Calling-简介" class="headerlink" title="1. Function Calling 简介"></a><strong>1. Function Calling 简介</strong></h2><p>Function Calling 允许 LLM（大语言模型）在回答问题时调用外部工具，如 Python 函数、API 或数据库查询。</p>
-<p><strong>核心流程：</strong></p>
-<ol>
-<li><strong>用户输入问题</strong></li>
-<li><strong>AI 判断是否需要调用工具</strong></li>
-<li><strong>如果需要，AI 返回 <code>tool_calls</code>，请求调用特定函数</strong></li>
-<li><strong>开发者执行对应的 Python 函数，并返回执行结果</strong></li>
-<li><strong>AI 读取工具返回值，继续推理并生成最终回答</strong></li>
-</ol>
-<h2 id="2-代码拆解：Function-Calling-功能实现"><a href="#2-代码拆解：Function-Calling-功能实现" class="headerlink" title="2. 代码拆解：Function Calling 功能实现"></a><strong>2. 代码拆解：Function Calling 功能实现</strong></h2><p>本文定义了一个read_markdown函数，用于通过提问让大模型自主调用函数阅读markdown文本内容，回答问题。</p>
-<h3 id="（1）初始化-Qwen-客户端"><a href="#（1）初始化-Qwen-客户端" class="headerlink" title="（1）初始化 Qwen 客户端"></a><strong>（1）初始化 Qwen 客户端</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">client = OpenAI(</span><br><span class="line">    api_key=<span class="string">&quot;your_api_key&quot;</span>,</span><br><span class="line">    base_url=<span class="string">&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>连接 Qwen API 进行请求。</li>
-<li><code>api_key</code> 必须正确，否则请求会失败。</li>
-</ul>
-<hr>
-<h3 id="（2）定义工具（Function-Calling）"><a href="#（2）定义工具（Function-Calling）" class="headerlink" title="（2）定义工具（Function Calling）"></a><strong>（2）定义工具（Function Calling）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>告诉 Qwen 可调用的工具。</li>
-<li><code>name</code> 必须与 Python 函数名一致，否则无法正确调用。</li>
-<li><code>description</code> 用于让 AI 知道工具的用途。</li>
-<li>在 Qwen 的 Function Calling 中，工具的<code>parameters</code> 的 <code>type</code> 必须是 <code>object</code>。</li>
-<li><code>parameters</code> 为空 <code>&#123;&#125;</code>，表示此工具不需要参数。</li>
-<li><code>parameters</code> <strong>如果不为空</strong>，表示此工具需要<strong>传递参数</strong>。<ul>
-<li><code>properties</code> 定义了每个参数的名称、类型和描述。</li>
-<li><code>required</code> 指定了哪些参数是必填项。</li>
-</ul>
-</li>
-</ul>
-<p>如果代码中涉及到了多个工具的调用，可按照以下的格式进行多个工具的定义：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;fetch_weather&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;获取指定城市的天气信息。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                    <span class="string">&quot;city&quot;</span>: &#123;</span><br><span class="line">                        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;description&quot;</span>: <span class="string">&quot;要查询天气的城市名称&quot;</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;city&quot;</span>]</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
-<p><strong>示例解释：</strong></p>
-<ul>
-<li><code>read_markdown</code> <strong>不需要参数</strong>，所以 <code>properties</code> 为空。</li>
-<li><code>fetch_weather</code> <strong>需要参数</strong>，它的 <code>parameters</code> 里包含 <code>city</code> 这个字符串参数。</li>
-<li>AI 在调用 <code>fetch_weather</code> 时，会传递 JSON 结构的 <code>arguments</code>，如：<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;city&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Shanghai&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure></li>
-</ul>
-<hr>
-<h3 id="（3）读取-Markdown-文件"><a href="#（3）读取-Markdown-文件" class="headerlink" title="（3）读取 Markdown 文件"></a><strong>（3）读取 Markdown 文件</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">read_markdown</span>():</span><br><span class="line">    doc_path = <span class="string">&quot;documents&quot;</span></span><br><span class="line">    md_file = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> file <span class="keyword">in</span> os.listdir(doc_path):</span><br><span class="line">        <span class="keyword">if</span> file.endswith(<span class="string">&quot;.md&quot;</span>):</span><br><span class="line">            md_file = os.path.join(doc_path, file)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> md_file:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;No markdown file found in the &#x27;documents&#x27; folder.&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(md_file, <span class="string">&quot;r&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        content = f.read()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> content[:<span class="number">5000</span>]</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>读取 <code>documents/</code> 目录下后缀为 <code>.md</code> 文件。</li>
-<li>限制 5000 字符，防止超出 Token 限制。</li>
-<li>将<code>markdown</code>文本的前5000个字符传递给AI。</li>
-</ul>
-<hr>
-<h3 id="（4）获取天气信息（示例工具）"><a href="#（4）获取天气信息（示例工具）" class="headerlink" title="（4）获取天气信息（示例工具）"></a><strong>（4）获取天气信息（示例工具）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">fetch_weather</span>(<span class="params">city</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取指定城市的天气信息。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;当前 <span class="subst">&#123;city&#125;</span> 的天气：晴，25°C&quot;</span></span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>模拟获取天气信息，<strong>参数 <code>city</code> 必须传递</strong>。</li>
-<li>Qwen 在调用 <code>fetch_weather</code> 时，会自动提供 <code>city</code> 的值。</li>
-</ul>
-<h3 id="（5）主逻辑：工具调用的完整流程"><a href="#（5）主逻辑：工具调用的完整流程" class="headerlink" title="（5）主逻辑：工具调用的完整流程"></a><strong>（5）主逻辑：工具调用的完整流程</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    user_question = <span class="built_in">input</span>(<span class="string">&quot;请输入问题：&quot;</span>).strip()</span><br><span class="line">    messages = [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: user_question&#125;]</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>让用户输入问题，并存入 <code>messages</code> 作为对话历史。</li>
-</ul>
-<hr>
-<h3 id="（6）第一次请求：看看-AI-是否调用工具"><a href="#（6）第一次请求：看看-AI-是否调用工具" class="headerlink" title="（6）第一次请求：看看 AI 是否调用工具"></a><strong>（6）第一次请求：看看 AI 是否调用工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">completion = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>调用 Qwen，让其决定是否需要调用工具。</li>
-</ul>
-<hr>
-<h3 id="（7）检查-Qwen-是否调用了工具"><a href="#（7）检查-Qwen-是否调用了工具" class="headerlink" title="（7）检查 Qwen 是否调用了工具"></a><strong>（7）检查 Qwen 是否调用了工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> tool_calls:</span><br><span class="line">    tool_results = []</span><br><span class="line">    <span class="keyword">for</span> tool_call <span class="keyword">in</span> tool_calls:</span><br><span class="line">        tool_name = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;name&quot;</span>]</span><br><span class="line">        tool_id = tool_call[<span class="string">&quot;id&quot;</span>]</span><br><span class="line">        tool_args = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;arguments&quot;</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> tool_name == <span class="string">&quot;read_markdown&quot;</span>:</span><br><span class="line">            result_content = read_markdown()</span><br><span class="line">        <span class="keyword">elif</span> tool_name == <span class="string">&quot;fetch_weather&quot;</span>:</span><br><span class="line">            city = tool_args.get(<span class="string">&quot;city&quot;</span>, <span class="string">&quot;未知城市&quot;</span>)</span><br><span class="line">            result_content = fetch_weather(city)</span><br><span class="line">        </span><br><span class="line">        tool_results.append(&#123;</span><br><span class="line">            <span class="string">&quot;role&quot;</span>: <span class="string">&quot;tool&quot;</span>,</span><br><span class="line">            <span class="string">&quot;tool_call_id&quot;</span>: tool_id,</span><br><span class="line">            <span class="string">&quot;content&quot;</span>: result_content</span><br><span class="line">        &#125;)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>解析 Qwen 返回的 <code>tool_calls</code>。</li>
-<li><strong>调用不同的工具</strong>，如 <code>read_markdown()</code> 或 <code>fetch_weather(city)</code> ，并存入 <code>tool</code> 消息。</li>
-<li><strong>如果工具需要参数</strong>，就从 <code>tool_args</code> 里提取。</li>
-<li>若 <code>tool_calls</code> 为空，说明 AI <strong>不需要调用工具</strong>。</li>
-</ul>
-<hr>
-<h3 id="（8）让-Qwen-继续推理"><a href="#（8）让-Qwen-继续推理" class="headerlink" title="（8）让 Qwen 继续推理"></a><strong>（8）让 Qwen 继续推理</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tool_calls&quot;</span>: tool_calls</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)</span><br><span class="line"></span><br><span class="line">completion2 = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>让 Qwen <strong>读取工具返回值，并继续回答</strong>。</li>
-</ul>
-<hr>
-<p>效果测试：</p>
-<p align="center">
-  <img width="1198" alt="function_calling" src="https://github.com/user-attachments/assets/6da63b40-55b2-4eb0-b13c-b5f30225ff33" />
-</p>
-
-<hr>
-<h2 id="3-以下是我在测试的时候一些工具调用失败的原因"><a href="#3-以下是我在测试的时候一些工具调用失败的原因" class="headerlink" title="3. 以下是我在测试的时候一些工具调用失败的原因"></a><strong>3. 以下是我在测试的时候一些工具调用失败的原因</strong></h2><ol>
-<li><code>name</code> 和 Python 函数不匹配，导致 AI 无法正确调用工具。</li>
-<li><code>role=&quot;tool&quot;</code> 消息未紧跟 <code>assistant</code>，导致 AI 解析错误。</li>
-</ol>
-<ul>
-<li>解决方法是在调用完工具之后，向 messages 中手动插入一条 role&#x3D;”assistant” 的空消息，附带 tool_calls 字段，然后紧接着添加 role&#x3D;”tool” 的返回结果，这样就保证了正确的调用链路。<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    &quot;role&quot;: &quot;assistant&quot;,</span><br><span class="line">    &quot;content&quot;: &quot;&quot;,  # 一定为空</span><br><span class="line">    &quot;tool_calls&quot;: tool_calls  # 将 AI 最初返回的 tool_calls 原样放回</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)  # 马上接上 tool 返回值</span><br></pre></td></tr></table></figure></li>
-<li>因为 Qwen 模型的调用链规则如下：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">用户消息（role=&quot;user&quot;）</span><br><span class="line">→ AI 返回 tool_calls（role=&quot;assistant&quot;，tool_calls）</span><br><span class="line">→ 工具执行，返回结果（role=&quot;tool&quot;，tool_call_id）</span><br><span class="line">→ AI 接收到结果，继续推理</span><br></pre></td></tr></table></figure></li>
-<li>如果 role&#x3D;”tool” 的消息不紧跟在带有 tool_calls 的 assistant 消息后面，模型就无法对上“这个工具调用返回了这个值”，于是会报错或输出异常。</li>
-</ul>
-<ol start="3">
-<li><code>parameters</code> 设置错误，导致 AI 传递了错误的参数。</li>
-<li><code>messages</code> 结构错误，导致 AI 不能正确读取历史对话。</li>
-</ol>
-<hr>
-<p>该项目代码参考 <a href="https://help.aliyun.com/zh/model-studio/user-guide/qwen-function-calling?spm=0.0.0.i4#8c41d25020ipz">Qwen官方Function Calling</a>。</p>
-]]></content>
-      <categories>
-        <category>LLM学习之路</category>
-      </categories>
-      <tags>
-        <tag>AI</tag>
-        <tag>LLM</tag>
-        <tag>大模型</tag>
-        <tag>Function Calling</tag>
-        <tag>Agent</tag>
-        <tag>Qwen</tag>
-        <tag>Python</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Docling2md</title>
     <url>/2025/05/01/Docling2md/</url>
     <content><![CDATA[<h1 id="基于Docling结合多模态大模型的的PDF转Markdown"><a href="#基于Docling结合多模态大模型的的PDF转Markdown" class="headerlink" title="基于Docling结合多模态大模型的的PDF转Markdown"></a>基于Docling结合多模态大模型的的PDF转Markdown</h1><hr>
@@ -523,7 +306,7 @@
 <li>JSON 文档（结构化、含坐标 bbox、页码、分块来源，适合下游知识图谱任务进行锚点的标记）</li>
 </ul>
 <hr>
-<p>该项目代码参考 <a href="https://github.com/openfe-docling/docling">Docling</a> 框架，对 PDF 文件进行结构解析，结合多种大模型能力（如 Qwen-VL、OpenAI 文本模型），实现了文档的多模态理解与 markdown&#x2F;json 格式结构化输出，为知识图谱构建奠定基础。</p>
+<p>该项目代码参考 <a href="https://github.com/openfe-docling/docling">Docling</a> 框架，对 PDF 文件进行结构解析，结合多种大模型能力（如 Qwen-VL、OpenAI 文本模型），实现了文档的多模态理解与 Markdown &#x2F; JSON 格式结构化输出，为知识图谱构建奠定基础。</p>
 <p>但该项目在处理复杂表格时仍存在不足，例如表格中存在字符是横着摆放时，或者是存在图像嵌入在表格中，则无法保证原有的结构。</p>
 <hr>
 ]]></content>
@@ -533,123 +316,108 @@
       <tags>
         <tag>OCR</tag>
         <tag>PDF</tag>
+        <tag>Markdown</tag>
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
         <tag>Qwen</tag>
-        <tag>Markdown</tag>
         <tag>Docling</tag>
         <tag>Knowledge Graph</tag>
       </tags>
   </entry>
   <entry>
-    <title>Hexo AI Assistant</title>
-    <url>/2025/03/29/Hexo-AI-Assistant/</url>
-    <content><![CDATA[<h1 id="Hexo-博客专属AI助手"><a href="#Hexo-博客专属AI助手" class="headerlink" title="Hexo 博客专属AI助手"></a>Hexo 博客专属AI助手</h1><p>本项目通过向量检索 + 大语言模型（RAG）结合本地 Hexo 博客内容，实现基于语义的智能问答接口。</p>
+    <title>Convert PDF Tables to Readable Text</title>
+    <url>/2025/03/28/Convert-PDF-Tables-to-Readable-Text/</url>
+    <content><![CDATA[<h1 id="PDF-表格提取转为纯文本结构数据"><a href="#PDF-表格提取转为纯文本结构数据" class="headerlink" title="PDF 表格提取转为纯文本结构数据"></a>PDF 表格提取转为纯文本结构数据</h1><p>本文详细记录了如何使用读光的  Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。</p>
 <hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/hexo-ai-assistant.git">https://github.com/EvannZhongg/hexo-ai-assistant.git</a></p>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Table_Extraction.git">https://github.com/EvannZhongg/Table_Extraction.git</a></p>
 <hr>
-<h2 id="项目结构"><a href="#项目结构" class="headerlink" title="项目结构"></a>项目结构</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">📁 D:/YourProjects/</span><br><span class="line">├── 📁 Blog/                       # Hexo 博客项目目录</span><br><span class="line">│   ├── source/_posts/             # Markdown 博文文件目录</span><br><span class="line">│   ├── themes/hexo-theme-xxx/     # 自定义主题目录</span><br><span class="line">│   │   ├── layout/_partial/</span><br><span class="line">│   │   │   ├── footer.ejs         # 向量构建自动化脚本（Hexo 构建钩子）</span><br><span class="line">│   │   │   ├── chatbot.ejs        # ai助手UI</span><br><span class="line">│   │   │   └── ...</span><br><span class="line">│   │   └── ...  </span><br><span class="line">│   ├── scripts/auto_vector.js     # 向量构建自动化脚本（Hexo 构建钩子）</span><br><span class="line">│   └── ...                        # 其他 Hexo 文件</span><br><span class="line">│   </span><br><span class="line">├── 📁 hexo-ai-assistant/          # AI助手后端项目目录</span><br><span class="line">│   ├── build_vector_store.py      # 向量库和标题映射构建脚本</span><br><span class="line">│   ├── main.py                    # Flask 主服务入口（/ask 问答接口）</span><br><span class="line">│   ├── embedder.py                # 嵌入向量生成器（调用第三方 API）</span><br><span class="line">│   ├── chat.py                    # 通用 LLM 聊天模块（OpenAI / DeepSeek）</span><br><span class="line">│   ├── vector_store.json          # 本地语义向量数据库（自动生成）</span><br><span class="line">│   ├── title_mapping.json         # 博客标题与链接映射表（自动生成）</span><br><span class="line">│   ├── config.yml                 # 所有路径、模型、API Key 配置集中管理</span><br><span class="line">│   └── .venv/                     # 虚拟环境（可选）</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="执行原理（项目运行流程）"><a href="#执行原理（项目运行流程）" class="headerlink" title="执行原理（项目运行流程）"></a>执行原理（项目运行流程）</h2><ol>
-<li><p><strong>语义知识构建阶段</strong>（由 <code>build_vector_store.py</code> 执行）：</p>
-<ul>
-<li>扫描博客的 Markdown 源文件，提取文章正文内容。</li>
-<li>使用嵌入模型（如 BGE）生成语义向量。</li>
-<li>构建 <code>vector_store.json</code> 和 <code>title_mapping.json</code>，供问答使用。</li>
-</ul>
-</li>
-<li><p><strong>用户问答处理阶段</strong>（由 <code>main.py</code> 提供 API）：</p>
-<ul>
-<li>用户通过前端发送提问。</li>
-<li>后端提问向量化，与本地向量库匹配最相关文章。</li>
-<li>拼接问答上下文（包含语义内容和标题索引）发给大语言模型。</li>
-<li>模型生成带参考链接的回答，流式返回至前端。</li>
-</ul>
-</li>
-<li><p><strong>前端问答展示阶段</strong>（由 <code>chat.html</code> &#x2F; <code>chatbot.ejs</code> 负责）：</p>
-<ul>
-<li>用户界面加载聊天框，支持 Markdown 格式渲染和多轮对话。</li>
-<li>请求被代理转发至本地后端或公网中转地址。</li>
-</ul>
-</li>
+<h2 id="项目概览"><a href="#项目概览" class="headerlink" title="项目概览"></a><strong>项目概览</strong></h2><p>本项目的主要目标是将 PDF 文件中存在的表格，作为图片提取参数信息，尤其是结构化表格。整个流程分为两个阶段：</p>
+<ol>
+<li><strong>表格结构识别</strong> —— 使用 Cycle-CenterNet 模型识别表格中每个单元格的位置（多边形坐标）。</li>
+<li><strong>OCR 文本识别</strong> —— 使用 PaddleOCR 识别图像中所有文字及其位置坐标。</li>
 </ol>
 <hr>
-<h2 id="1-安装依赖"><a href="#1-安装依赖" class="headerlink" title="1. 安装依赖"></a>1. 安装依赖</h2><p>建议使用虚拟环境：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python -m venv .venv</span><br><span class="line">.venv\Scripts\activate</span><br><span class="line">pip install -r requirements.txt</span><br></pre></td></tr></table></figure>
+<h2 id="环境与设置"><a href="#环境与设置" class="headerlink" title="环境与设置"></a><strong>环境与设置</strong></h2><h3 id="1-表格识别模型配置"><a href="#1-表格识别模型配置" class="headerlink" title="1. 表格识别模型配置"></a><strong>1. 表格识别模型配置</strong></h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git lfs install</span><br><span class="line">git <span class="built_in">clone</span> https://www.modelscope.cn/iic/cv_dla34_table-structure-recognition_cycle-centernet.git</span><br></pre></td></tr></table></figure>
 
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">model_path = <span class="string">&quot;your_absolute_path_to_cv_dla34_table-structure-recognition_cycle-centernet&quot;</span></span><br></pre></td></tr></table></figure>
+<p>建议自定义路径使用绝对路径</p>
+<p>例如：<code>model_path = &quot;D:/Table_Extraction/cv_dla34_table-structure-recognition_cycle-centernet&quot;</code></p>
+<h3 id="2-PaddleOCR-配置"><a href="#2-PaddleOCR-配置" class="headerlink" title="2. PaddleOCR 配置"></a><strong>2. PaddleOCR 配置</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">ocr = PaddleOCR(</span><br><span class="line">    use_gpu=<span class="literal">True</span>,</span><br><span class="line">    lang=<span class="string">&#x27;ch&#x27;</span>,</span><br><span class="line">    det_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_det_infer&#x27;</span>,</span><br><span class="line">    rec_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_rec_infer&#x27;</span>,</span><br><span class="line">    cls_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_ppocr_mobile_v2.0_cls_infer&#x27;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>建议自定义路径使用绝对路径</p>
+<p>例如： <code>det_model_dir=&#39;D:/Table_Extraction/PaddleOCR/models/ch_PP-OCRv4_det_infer/&#39;</code></p>
 <hr>
-<h2 id="2-配置项修改（hexo-ai-assistant-config-yml）"><a href="#2-配置项修改（hexo-ai-assistant-config-yml）" class="headerlink" title="2. 配置项修改（hexo-ai-assistant/config.yml）"></a>2. 配置项修改（<code>hexo-ai-assistant/config.yml</code>）</h2><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">paths:</span></span><br><span class="line">  <span class="attr">blog_post_dir:</span> <span class="string">/your/path/to/hexo/source/_posts</span>     <span class="comment"># 修改为你的博客 Markdown 路径</span></span><br><span class="line">  <span class="attr">vector_store:</span> <span class="string">vector_store.json</span>                     <span class="comment"># 向量库保存路径，建议使用绝对路径</span></span><br><span class="line">  <span class="attr">title_mapping:</span> <span class="string">title_mapping.json</span>                   <span class="comment"># 博客标题映射表路径，建议使用绝对路径</span></span><br><span class="line"></span><br><span class="line"><span class="attr">blog:</span></span><br><span class="line">  <span class="attr">base_url:</span> <span class="string">https://your-github-pages-url.github.io</span>   <span class="comment"># 修改为你的博客地址（不含末尾 /）</span></span><br><span class="line"></span><br><span class="line"><span class="attr">embedding:</span></span><br><span class="line">  <span class="attr">api_url:</span> <span class="string">https://api.siliconflow.cn/v1/embeddings</span>    <span class="comment"># 嵌入模型 API 地址</span></span><br><span class="line">  <span class="attr">model:</span> <span class="string">BAAI/bge-large-zh-v1.5</span>                         <span class="comment"># 使用的中文嵌入模型</span></span><br><span class="line">  <span class="attr">api_key:</span> <span class="string">&lt;YOUR_EMBEDDING_API_KEY&gt;</span>                    <span class="comment"># 替换为你的嵌入模型 API Key</span></span><br><span class="line">  <span class="attr">max_characters:</span> <span class="number">5000</span>                                 <span class="comment"># 每篇文章最大截取字符数</span></span><br><span class="line"></span><br><span class="line"><span class="attr">chat:</span></span><br><span class="line">  <span class="attr">api_url:</span> <span class="string">https://api.deepseek.com/v1</span>                 <span class="comment"># Chat 模型 API 地址（可替换为 OpenAI）</span></span><br><span class="line">  <span class="attr">model:</span> <span class="string">deepseek-chat</span>                                 <span class="comment"># 使用的模型名称</span></span><br><span class="line">  <span class="attr">api_key:</span> <span class="string">&lt;YOUR_CHAT_API_KEY&gt;</span>                         <span class="comment"># 替换为你的 LLM 接口 Key</span></span><br><span class="line"></span><br><span class="line"><span class="attr">server:</span></span><br><span class="line">  <span class="attr">port:</span> <span class="number">5000</span>                                           <span class="comment"># 后端服务运行端口（默认5000）</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="3-构建向量库-标题映射表"><a href="#3-构建向量库-标题映射表" class="headerlink" title="3. 构建向量库 &amp; 标题映射表"></a>3. 构建向量库 &amp; 标题映射表</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python build_vector_store.py</span><br></pre></td></tr></table></figure>
-
-<p>生成文件：</p>
+<h2 id="核心函数详解"><a href="#核心函数详解" class="headerlink" title="核心函数详解"></a><strong>核心函数详解</strong></h2><h3 id="1-函数-calculate-iot-cell-text"><a href="#1-函数-calculate-iot-cell-text" class="headerlink" title="1. 函数 calculate_iot(cell, text)"></a><strong>1. 函数 <code>calculate_iot(cell, text)</code></strong></h3><p><strong>功能</strong>：计算 OCR 文本框与表格单元格的交并比（IoT, Intersection over Text）。</p>
+<p><strong>原理说明</strong>：</p>
 <ul>
-<li><code>vector_store.json</code>: 含每篇文章的文本和语义向量</li>
-<li><code>title_mapping.json</code>: 含每篇文章的标题 + 主标题 + 链接</li>
+<li>利用两组矩形坐标，计算它们重叠区域的面积。</li>
+<li>然后用重叠面积 &#x2F; 文本框面积作为 IoT 值。</li>
+<li>若值越大，表示文本越“贴合”单元格。</li>
 </ul>
-<p>博客格式需遵循以下结构：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: Article Title</span><br><span class="line">date: YYYY-MM-DD HH:mm:ss</span><br><span class="line">tags: [...]  # No impact</span><br><span class="line">categories: ...  # No impact</span><br><span class="line">---</span><br><span class="line"># Main Title  # Must be a first level title</span><br><span class="line"></span><br><span class="line">正文内容...</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">calculate_iot</span>(<span class="params">cell, text</span>):</span><br><span class="line">    intersection_x1 = <span class="built_in">max</span>(cell[<span class="number">0</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>])</span><br><span class="line">    intersection_y1 = <span class="built_in">max</span>(cell[<span class="number">1</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    intersection_x2 = <span class="built_in">min</span>(cell[<span class="number">2</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>])</span><br><span class="line">    intersection_y2 = <span class="built_in">min</span>(cell[<span class="number">3</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> intersection_x1 &gt;= intersection_x2 <span class="keyword">or</span> intersection_y1 &gt;= intersection_y2:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.0</span></span><br><span class="line"></span><br><span class="line">    intersection_area = (intersection_x2 - intersection_x1) * (intersection_y2 - intersection_y1)</span><br><span class="line">    text_area = (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>]) * (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    <span class="keyword">return</span> intersection_area / text_area</span><br></pre></td></tr></table></figure>
 
 <hr>
-<h2 id="4-启动后端问答服务"><a href="#4-启动后端问答服务" class="headerlink" title="4. 启动后端问答服务"></a>4. 启动后端问答服务</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python main.py</span><br></pre></td></tr></table></figure>
+<h3 id="2-函数-merge-text-into-cells-cell-coords-ocr-results"><a href="#2-函数-merge-text-into-cells-cell-coords-ocr-results" class="headerlink" title="2. 函数 merge_text_into_cells(cell_coords, ocr_results)"></a><strong>2. 函数 <code>merge_text_into_cells(cell_coords, ocr_results)</code></strong></h3><p><strong>功能</strong>：将 OCR 识别到的文字分配到表格对应单元格中。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>对每个单元格遍历所有 OCR 文本框，计算 IoT。</li>
+<li>若 IoT &gt; 0.5，则认为该文字属于该单元格。</li>
+<li>同时记录那些与所有单元格 IoT &lt; 0.1 的文字（非表格内容）。</li>
+<li>将属于单元格的文字合并为一个字符串。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">merge_text_into_cells</span>(<span class="params">cell_coords, ocr_results</span>):</span><br><span class="line">    cell_text_dict = &#123;cell: [] <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords&#125;</span><br><span class="line">    noncell_text_dict = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords:</span><br><span class="line">        <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">            <span class="keyword">if</span> calculate_iot(cell, result) &gt; <span class="number">0.5</span>:</span><br><span class="line">                cell_text_dict[cell].append(result[<span class="string">&#x27;text&#x27;</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">all</span>(calculate_iot(cell, result) &lt; <span class="number">0.1</span> <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords):</span><br><span class="line">            noncell_text_dict[result[<span class="string">&#x27;coords&#x27;</span>]] = result[<span class="string">&#x27;text&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    merged_text = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> cell, texts <span class="keyword">in</span> cell_text_dict.items():</span><br><span class="line">        merged_text[cell] = <span class="string">&#x27;&#x27;</span>.join(texts).strip()</span><br><span class="line">    <span class="keyword">for</span> coords, text <span class="keyword">in</span> noncell_text_dict.items():</span><br><span class="line">        merged_text[coords] = <span class="string">&#x27;&#x27;</span>.join(text).strip()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> merged_text</span><br></pre></td></tr></table></figure>
 
-<p>本地服务启动后默认监听：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://127.0.0.1:5000/ask</span><br></pre></td></tr></table></figure>
-<p>你可以在浏览器中打开 <code>chat.html</code> 进行测试，查看是否可以正确输出回答。</p>
 <hr>
-<h2 id="5-配置-Hexo-脚本"><a href="#5-配置-Hexo-脚本" class="headerlink" title="5. 配置 Hexo 脚本"></a>5. 配置 <code>Hexo</code> 脚本</h2><p>如果上述操作都正确执行后，将向量构建脚本接入 <code>Hexo</code> 构建流程</p>
-<h3 id="1-创建脚本文件-scripts-auto-vector-js："><a href="#1-创建脚本文件-scripts-auto-vector-js：" class="headerlink" title="1.创建脚本文件 scripts/auto_vector.js："></a>1.创建脚本文件 <code>scripts/auto_vector.js</code>：</h3><figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> &#123; exec &#125; = <span class="built_in">require</span>(<span class="string">&quot;child_process&quot;</span>);</span><br><span class="line"></span><br><span class="line">hexo.<span class="property">extend</span>.<span class="property">filter</span>.<span class="title function_">register</span>(<span class="string">&quot;before_generate&quot;</span>, <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&quot;构建博客向量中...&quot;</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Promise</span>(<span class="function">(<span class="params">resolve, reject</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="title function_">exec</span>(<span class="string">&quot;/your_project/.venv/Scripts/python build_vector_store.py&quot;</span>, &#123;</span><br><span class="line">      <span class="attr">cwd</span>: <span class="string">&quot;D:/your_project&quot;</span></span><br><span class="line">    &#125;, <span class="function">(<span class="params">err, stdout, stderr</span>) =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (err) &#123;</span><br><span class="line">        <span class="variable language_">console</span>.<span class="title function_">error</span>(<span class="string">&quot;构建失败:&quot;</span>, stderr);</span><br><span class="line">        <span class="title function_">reject</span>(err);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&quot;构建成功&quot;</span>);</span><br><span class="line">        <span class="title function_">resolve</span>();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-<p>这个脚本的作用是在运行 <code>hexo g</code> 时，自动重构向量库保证所有博客均被项链化。</p>
-<h3 id="2-在页面底部引入-ejs-文件"><a href="#2-在页面底部引入-ejs-文件" class="headerlink" title="2. 在页面底部引入 ejs 文件"></a>2. 在页面底部引入 ejs 文件</h3><p>打开文件：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/footer.ejs</span><br></pre></td></tr></table></figure>
+<h3 id="3-函数-adjust-coordinates-merged-text-image-path"><a href="#3-函数-adjust-coordinates-merged-text-image-path" class="headerlink" title="3. 函数 adjust_coordinates(merged_text, image_path)"></a><strong>3. 函数 <code>adjust_coordinates(merged_text, image_path)</code></strong></h3><p><strong>功能</strong>：将 y 坐标相近的单元格进行聚类并统一化，方便后续行级别排序。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>图像越高，容许的 y 偏差越大，使用 height &#x2F; 100 作为容差。</li>
+<li>将 y 值差距小于阈值的单元格归为一组。</li>
+<li>每组内统一 y 值为该组的平均 y 值，确保在同一“水平行”内。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">adjust_coordinates</span>(<span class="params">merged_text, image_path</span>):</span><br><span class="line">    image = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    width, height = image.size</span><br><span class="line">    threshold = height / <span class="number">100</span></span><br><span class="line">    groups = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> coordinates, text <span class="keyword">in</span> merged_text.items():</span><br><span class="line">        found_group = <span class="literal">False</span></span><br><span class="line">        <span class="keyword">for</span> group_y <span class="keyword">in</span> groups.keys():</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">abs</span>(coordinates[<span class="number">1</span>] - group_y) &lt;= threshold:</span><br><span class="line">                groups[group_y].append((coordinates, text))</span><br><span class="line">                found_group = <span class="literal">True</span></span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> found_group:</span><br><span class="line">            groups[coordinates[<span class="number">1</span>]] = [(coordinates, text)]</span><br><span class="line"></span><br><span class="line">    adjusted_coordinates = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> group_y, group_coords <span class="keyword">in</span> groups.items():</span><br><span class="line">        avg_y = <span class="built_in">sum</span>(coord[<span class="number">0</span>][<span class="number">1</span>] <span class="keyword">for</span> coord <span class="keyword">in</span> group_coords) / <span class="built_in">len</span>(group_coords)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> group_coords:</span><br><span class="line">            adjusted_coordinates[(i[<span class="number">0</span>][<span class="number">0</span>], avg_y, i[<span class="number">0</span>][<span class="number">2</span>], i[<span class="number">0</span>][<span class="number">3</span>])] = i[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> adjusted_coordinates</span><br></pre></td></tr></table></figure>
 
-<p>在 <code>&lt;/footer&gt;</code> 标签之后添加以下代码：</p>
-<figure class="highlight html"><table><tr><td class="code"><pre><span class="line">&lt;%- partial(&#x27;chatbot&#x27;) %&gt;</span><br></pre></td></tr></table></figure>
-
-<p>新建文件 <code>chatbot.ejs</code> 在路径 <code>themes\hexo-theme-Chic\layout\_partial\chatbot.ejs</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">将chatbot.ejs的代码拷贝至此处</span><br><span class="line">完整代码文件可见文章开头的项目地址中</span><br></pre></td></tr></table></figure>
-
-<p>运行以下命令，重新生成并启动本地预览：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
-<p>效果如下：<br><img src="https://github.com/user-attachments/assets/40f5a3c5-74a6-453b-b83b-6152c5b40990" alt="image"></p>
 <hr>
-<h2 id="6-使用-Ngrok-暴露后端接口（可选）"><a href="#6-使用-Ngrok-暴露后端接口（可选）" class="headerlink" title="6. 使用 Ngrok 暴露后端接口（可选）"></a>6. 使用 Ngrok 暴露后端接口（可选）</h2><p>在本地测试都没问题后，可以使用 Ngrok 暴露本地服务至公网</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ngrok http 5000</span><br></pre></td></tr></table></figure>
+<h3 id="4-函数-draw-text-boxes-image-path-boxes-texts"><a href="#4-函数-draw-text-boxes-image-path-boxes-texts" class="headerlink" title="4.函数 draw_text_boxes(image_path, boxes, texts)"></a><strong>4.函数 <code>draw_text_boxes(image_path, boxes, texts)</code></strong></h3><p><strong>功能</strong>：在图像上绘制表格框与文字内容，进行可视化标注。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>利用 PIL 创建空白图层，绘制框线与文字。</li>
+<li>若文字宽度超出单元格宽度，则使用 textwrap 进行自动换行。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">draw_text_boxes</span>(<span class="params">image_path, boxes, texts</span>):</span><br><span class="line">    img = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    img = Image.new(<span class="string">&#x27;RGB&#x27;</span>, img.size, (<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>))</span><br><span class="line">    draw = ImageDraw.Draw(img)</span><br><span class="line">    font = ImageFont.truetype(<span class="string">&quot;./chinese_cht.ttf&quot;</span>, size=<span class="number">15</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> box, text <span class="keyword">in</span> <span class="built_in">zip</span>(boxes, texts):</span><br><span class="line">        x0, y0, x1, y1 = box</span><br><span class="line">        x0, x1 = <span class="built_in">sorted</span>([x0, x1])</span><br><span class="line">        y0, y1 = <span class="built_in">sorted</span>([y0, y1])</span><br><span class="line">        normalized_box = (x0, y0, x1, y1)</span><br><span class="line">        draw.rectangle(normalized_box, outline=<span class="string">&#x27;red&#x27;</span>, width=<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        text_len = draw.textbbox((x0, y0), text, font=font)</span><br><span class="line">        <span class="keyword">if</span> (text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) &gt; (x1 - x0):</span><br><span class="line">            text = <span class="string">&#x27;\n&#x27;</span>.join(textwrap.wrap(text, width=<span class="built_in">int</span>(</span><br><span class="line">                np.ceil(<span class="built_in">len</span>(text) / np.ceil((text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) / (x1 - x0))))))</span><br><span class="line"></span><br><span class="line">        draw.text((x0, y0), text, font=font, fill=<span class="string">&#x27;black&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    img.save(<span class="string">&#x27;your_image_storage_path/output.png&#x27;</span>)</span><br></pre></td></tr></table></figure>
 
-<p>将 <code>https://xxx.ngrok-free.app/ask</code> 地址填入前端请求 <code>chatbot.ejs</code> 中：</p>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> response = <span class="keyword">await</span> <span class="title function_">fetch</span>(<span class="string">&quot;https://xxx.ngrok-free.app/ask&quot;</span>, &#123;...&#125;);</span><br></pre></td></tr></table></figure>
-
-<p>只使用 Ngrok 有网路安全问题，你可以自行设置代理保证你的端口不被暴露在公网中。</p>
 <hr>
-<h2 id="完整流程总结"><a href="#完整流程总结" class="headerlink" title="完整流程总结"></a>完整流程总结</h2><ol>
-<li>写好博客（Markdown 文件），保证格式符合要求</li>
-<li><code>build_vector_store.py</code> 提取文本并生成向量</li>
-<li><code>main.py</code> 启动问答服务并支持语义检索</li>
-<li>前端请求通过 Ngrok 访问服务</li>
-<li>模型结合语义内容和标题表生成参考明确的回答</li>
+<h2 id="5-最终文本输出（结构化行）"><a href="#5-最终文本输出（结构化行）" class="headerlink" title="5. 最终文本输出（结构化行）"></a><strong>5. 最终文本输出（结构化行）</strong></h2><p><strong>功能</strong>：将所有坐标按 y → x 排序，按行归组输出结构化文本。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">adjusted_merged_text_sorted = <span class="built_in">sorted</span>(adjusted_merged_text.items(), key=<span class="keyword">lambda</span> x: (x[<span class="number">0</span>][<span class="number">1</span>], x[<span class="number">0</span>][<span class="number">0</span>]))</span><br><span class="line">adjusted_merged_text_sorted_group = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> coordinates, text <span class="keyword">in</span> adjusted_merged_text_sorted:</span><br><span class="line">    <span class="keyword">if</span> coordinates[<span class="number">1</span>] <span class="keyword">not</span> <span class="keyword">in</span> adjusted_merged_text_sorted_group:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]] = [text]</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]].append(text)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> text_list <span class="keyword">in</span> adjusted_merged_text_sorted_group.values():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27; | &#x27;</span>.join(text_list))</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a><strong>使用方法</strong></h2><ol>
+<li>运行脚本选择表格图片：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python Table_Extraction.py</span><br></pre></td></tr></table></figure>
+<p>或</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python main.py</span><br></pre></td></tr></table></figure>
+
+<p>在项目目录会输出效果图片，终端会输出文本结果</p>
+<ol start="2">
+<li>效果展示<br><img src="https://github.com/user-attachments/assets/8e0f21d8-af6c-4da2-beb7-dcc7f5f73115" alt="image"><br><img src="https://github.com/user-attachments/assets/45ad3906-09df-431e-a4ec-4f0779137195" alt="image"><br>输出结果如下，你可以用这组结果测试大模型是否能读懂这组表格： <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PartNumber | TotalCapacitance(Ct) @ 50 V,(pF) | TotalCapacitance(Ct) @ 0 V,(pF) | SeriesResistance (Rs),@10 mA,(②) | MinorityCarrierLifetime (TL)@ 10 mA(ns) | VoltageRating2(M) | I-RegionThickness(μm) | ThermalResistance(0JC)(°C/W)</span><br><span class="line">Maximum | Typical | Maximum | Typical | Minimum | Nominal | Maximum</span><br><span class="line"></span><br><span class="line">Switching Applications(continued)</span><br><span class="line">| APD0810-203 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 174</span><br><span class="line">| APD0810-210 | 0.40 | 0.45 | 1.5 | 160 | 100 | 8 | 75</span><br><span class="line">| APD0810-219 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 143</span><br><span class="line">| APD0810-240 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 155</span><br><span class="line">| APD1505-203 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 172</span><br><span class="line">| APD1505-210 | 0.40 | 0.45@10 V | 2.5 | 350 | 200 | 15 | 74</span><br><span class="line">| APD1505-219 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 142</span><br><span class="line">| APD1505-240 | 0.40 | 0.45 @ 10 V | 2.5 | 350 | 200 | 15 | 150</span><br><span class="line">| APD1510-203 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 168</span><br><span class="line">| APD1510-210 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 70</span><br><span class="line">| APD1510-219 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 137</span><br><span class="line">| APD1510-240 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 149</span><br><span class="line">| APD1520-203 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 155</span><br><span class="line">| APD1520-210 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 57</span><br><span class="line">| APD1520-219 | 0.45 | 0.50 | 1.2 | 900 | 200 | 15 | 124</span><br><span class="line">| APD1520-240 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 136</span><br><span class="line"></span><br><span class="line">AttenuatorApplications</span><br><span class="line">| APD2220-203 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 132</span><br><span class="line">| APD2220-210 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 32</span><br><span class="line">| APD2220-219 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 104</span><br><span class="line">| APD2220-240 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 115</span><br></pre></td></tr></table></figure></li>
 </ol>
 <hr>
-<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+<h2 id="补充说明"><a href="#补充说明" class="headerlink" title="补充说明"></a><strong>补充说明</strong></h2><ul>
+<li>字体文件 <code>chinese_cht.ttf</code> 必须存在，或替换为系统可识别的中文字体。</li>
+<li>对于复杂结构表格，当前模型仍然无法很好的处理。</li>
+</ul>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/wyf3/llm_related/tree/main">wyf3</a> 和 <a href="https://github.com/PaddlePaddle/PaddleOCR">PaddleOCR</a></p>
 ]]></content>
       <categories>
-        <category>Hexo</category>
+        <category>OCR</category>
       </categories>
       <tags>
-        <tag>Hexo</tag>
-        <tag>博客</tag>
-        <tag>Blog</tag>
-        <tag>前端</tag>
+        <tag>OCR</tag>
+        <tag>PDF</tag>
         <tag>AI</tag>
-        <tag>LLM</tag>
-        <tag>大模型</tag>
-        <tag>Agent</tag>
-        <tag>后端</tag>
-        <tag>RAG</tag>
-        <tag>Ngrok</tag>
-        <tag>flask</tag>
+        <tag>PaddleOCR</tag>
       </tags>
   </entry>
   <entry>
@@ -904,11 +672,243 @@
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
-        <tag>Python</tag>
         <tag>Knowledge Graph</tag>
-        <tag>RAG</tag>
         <tag>GraphRAG</tag>
+        <tag>RAG</tag>
+        <tag>Python</tag>
         <tag>Gephi</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Function Calling</title>
+    <url>/2025/03/21/Function-Calling/</url>
+    <content><![CDATA[<h1 id="Qwen-Function-Calling-详细解析"><a href="#Qwen-Function-Calling-详细解析" class="headerlink" title="Qwen Function Calling 详细解析"></a>Qwen Function Calling 详细解析</h1><hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="1-Function-Calling-简介"><a href="#1-Function-Calling-简介" class="headerlink" title="1. Function Calling 简介"></a><strong>1. Function Calling 简介</strong></h2><p>Function Calling 允许 LLM（大语言模型）在回答问题时调用外部工具，如 Python 函数、API 或数据库查询。</p>
+<p><strong>核心流程：</strong></p>
+<ol>
+<li><strong>用户输入问题</strong></li>
+<li><strong>AI 判断是否需要调用工具</strong></li>
+<li><strong>如果需要，AI 返回 <code>tool_calls</code>，请求调用特定函数</strong></li>
+<li><strong>开发者执行对应的 Python 函数，并返回执行结果</strong></li>
+<li><strong>AI 读取工具返回值，继续推理并生成最终回答</strong></li>
+</ol>
+<h2 id="2-代码拆解：Function-Calling-功能实现"><a href="#2-代码拆解：Function-Calling-功能实现" class="headerlink" title="2. 代码拆解：Function Calling 功能实现"></a><strong>2. 代码拆解：Function Calling 功能实现</strong></h2><p>本文定义了一个read_markdown函数，用于通过提问让大模型自主调用函数阅读markdown文本内容，回答问题。</p>
+<h3 id="（1）初始化-Qwen-客户端"><a href="#（1）初始化-Qwen-客户端" class="headerlink" title="（1）初始化 Qwen 客户端"></a><strong>（1）初始化 Qwen 客户端</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">client = OpenAI(</span><br><span class="line">    api_key=<span class="string">&quot;your_api_key&quot;</span>,</span><br><span class="line">    base_url=<span class="string">&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>连接 Qwen API 进行请求。</li>
+<li><code>api_key</code> 必须正确，否则请求会失败。</li>
+</ul>
+<hr>
+<h3 id="（2）定义工具（Function-Calling）"><a href="#（2）定义工具（Function-Calling）" class="headerlink" title="（2）定义工具（Function Calling）"></a><strong>（2）定义工具（Function Calling）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>告诉 Qwen 可调用的工具。</li>
+<li><code>name</code> 必须与 Python 函数名一致，否则无法正确调用。</li>
+<li><code>description</code> 用于让 AI 知道工具的用途。</li>
+<li>在 Qwen 的 Function Calling 中，工具的<code>parameters</code> 的 <code>type</code> 必须是 <code>object</code>。</li>
+<li><code>parameters</code> 为空 <code>&#123;&#125;</code>，表示此工具不需要参数。</li>
+<li><code>parameters</code> <strong>如果不为空</strong>，表示此工具需要<strong>传递参数</strong>。<ul>
+<li><code>properties</code> 定义了每个参数的名称、类型和描述。</li>
+<li><code>required</code> 指定了哪些参数是必填项。</li>
+</ul>
+</li>
+</ul>
+<p>如果代码中涉及到了多个工具的调用，可按照以下的格式进行多个工具的定义：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;fetch_weather&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;获取指定城市的天气信息。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                    <span class="string">&quot;city&quot;</span>: &#123;</span><br><span class="line">                        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;description&quot;</span>: <span class="string">&quot;要查询天气的城市名称&quot;</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;city&quot;</span>]</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>示例解释：</strong></p>
+<ul>
+<li><code>read_markdown</code> <strong>不需要参数</strong>，所以 <code>properties</code> 为空。</li>
+<li><code>fetch_weather</code> <strong>需要参数</strong>，它的 <code>parameters</code> 里包含 <code>city</code> 这个字符串参数。</li>
+<li>AI 在调用 <code>fetch_weather</code> 时，会传递 JSON 结构的 <code>arguments</code>，如：<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;city&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Shanghai&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<hr>
+<h3 id="（3）读取-Markdown-文件"><a href="#（3）读取-Markdown-文件" class="headerlink" title="（3）读取 Markdown 文件"></a><strong>（3）读取 Markdown 文件</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">read_markdown</span>():</span><br><span class="line">    doc_path = <span class="string">&quot;documents&quot;</span></span><br><span class="line">    md_file = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> file <span class="keyword">in</span> os.listdir(doc_path):</span><br><span class="line">        <span class="keyword">if</span> file.endswith(<span class="string">&quot;.md&quot;</span>):</span><br><span class="line">            md_file = os.path.join(doc_path, file)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> md_file:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;No markdown file found in the &#x27;documents&#x27; folder.&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(md_file, <span class="string">&quot;r&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        content = f.read()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> content[:<span class="number">5000</span>]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>读取 <code>documents/</code> 目录下后缀为 <code>.md</code> 文件。</li>
+<li>限制 5000 字符，防止超出 Token 限制。</li>
+<li>将<code>markdown</code>文本的前5000个字符传递给AI。</li>
+</ul>
+<hr>
+<h3 id="（4）获取天气信息（示例工具）"><a href="#（4）获取天气信息（示例工具）" class="headerlink" title="（4）获取天气信息（示例工具）"></a><strong>（4）获取天气信息（示例工具）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">fetch_weather</span>(<span class="params">city</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取指定城市的天气信息。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;当前 <span class="subst">&#123;city&#125;</span> 的天气：晴，25°C&quot;</span></span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>模拟获取天气信息，<strong>参数 <code>city</code> 必须传递</strong>。</li>
+<li>Qwen 在调用 <code>fetch_weather</code> 时，会自动提供 <code>city</code> 的值。</li>
+</ul>
+<h3 id="（5）主逻辑：工具调用的完整流程"><a href="#（5）主逻辑：工具调用的完整流程" class="headerlink" title="（5）主逻辑：工具调用的完整流程"></a><strong>（5）主逻辑：工具调用的完整流程</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    user_question = <span class="built_in">input</span>(<span class="string">&quot;请输入问题：&quot;</span>).strip()</span><br><span class="line">    messages = [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: user_question&#125;]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>让用户输入问题，并存入 <code>messages</code> 作为对话历史。</li>
+</ul>
+<hr>
+<h3 id="（6）第一次请求：看看-AI-是否调用工具"><a href="#（6）第一次请求：看看-AI-是否调用工具" class="headerlink" title="（6）第一次请求：看看 AI 是否调用工具"></a><strong>（6）第一次请求：看看 AI 是否调用工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">completion = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>调用 Qwen，让其决定是否需要调用工具。</li>
+</ul>
+<hr>
+<h3 id="（7）检查-Qwen-是否调用了工具"><a href="#（7）检查-Qwen-是否调用了工具" class="headerlink" title="（7）检查 Qwen 是否调用了工具"></a><strong>（7）检查 Qwen 是否调用了工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> tool_calls:</span><br><span class="line">    tool_results = []</span><br><span class="line">    <span class="keyword">for</span> tool_call <span class="keyword">in</span> tool_calls:</span><br><span class="line">        tool_name = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;name&quot;</span>]</span><br><span class="line">        tool_id = tool_call[<span class="string">&quot;id&quot;</span>]</span><br><span class="line">        tool_args = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;arguments&quot;</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> tool_name == <span class="string">&quot;read_markdown&quot;</span>:</span><br><span class="line">            result_content = read_markdown()</span><br><span class="line">        <span class="keyword">elif</span> tool_name == <span class="string">&quot;fetch_weather&quot;</span>:</span><br><span class="line">            city = tool_args.get(<span class="string">&quot;city&quot;</span>, <span class="string">&quot;未知城市&quot;</span>)</span><br><span class="line">            result_content = fetch_weather(city)</span><br><span class="line">        </span><br><span class="line">        tool_results.append(&#123;</span><br><span class="line">            <span class="string">&quot;role&quot;</span>: <span class="string">&quot;tool&quot;</span>,</span><br><span class="line">            <span class="string">&quot;tool_call_id&quot;</span>: tool_id,</span><br><span class="line">            <span class="string">&quot;content&quot;</span>: result_content</span><br><span class="line">        &#125;)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>解析 Qwen 返回的 <code>tool_calls</code>。</li>
+<li><strong>调用不同的工具</strong>，如 <code>read_markdown()</code> 或 <code>fetch_weather(city)</code> ，并存入 <code>tool</code> 消息。</li>
+<li><strong>如果工具需要参数</strong>，就从 <code>tool_args</code> 里提取。</li>
+<li>若 <code>tool_calls</code> 为空，说明 AI <strong>不需要调用工具</strong>。</li>
+</ul>
+<hr>
+<h3 id="（8）让-Qwen-继续推理"><a href="#（8）让-Qwen-继续推理" class="headerlink" title="（8）让 Qwen 继续推理"></a><strong>（8）让 Qwen 继续推理</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tool_calls&quot;</span>: tool_calls</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)</span><br><span class="line"></span><br><span class="line">completion2 = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>让 Qwen <strong>读取工具返回值，并继续回答</strong>。</li>
+</ul>
+<hr>
+<p>效果测试：</p>
+<p align="center">
+  <img width="1198" alt="function_calling" src="https://github.com/user-attachments/assets/6da63b40-55b2-4eb0-b13c-b5f30225ff33" />
+</p>
+
+<hr>
+<h2 id="3-以下是我在测试的时候一些工具调用失败的原因"><a href="#3-以下是我在测试的时候一些工具调用失败的原因" class="headerlink" title="3. 以下是我在测试的时候一些工具调用失败的原因"></a><strong>3. 以下是我在测试的时候一些工具调用失败的原因</strong></h2><ol>
+<li><code>name</code> 和 Python 函数不匹配，导致 AI 无法正确调用工具。</li>
+<li><code>role=&quot;tool&quot;</code> 消息未紧跟 <code>assistant</code>，导致 AI 解析错误。</li>
+</ol>
+<ul>
+<li>解决方法是在调用完工具之后，向 messages 中手动插入一条 role&#x3D;”assistant” 的空消息，附带 tool_calls 字段，然后紧接着添加 role&#x3D;”tool” 的返回结果，这样就保证了正确的调用链路。<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    &quot;role&quot;: &quot;assistant&quot;,</span><br><span class="line">    &quot;content&quot;: &quot;&quot;,  # 一定为空</span><br><span class="line">    &quot;tool_calls&quot;: tool_calls  # 将 AI 最初返回的 tool_calls 原样放回</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)  # 马上接上 tool 返回值</span><br></pre></td></tr></table></figure></li>
+<li>因为 Qwen 模型的调用链规则如下：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">用户消息（role=&quot;user&quot;）</span><br><span class="line">→ AI 返回 tool_calls（role=&quot;assistant&quot;，tool_calls）</span><br><span class="line">→ 工具执行，返回结果（role=&quot;tool&quot;，tool_call_id）</span><br><span class="line">→ AI 接收到结果，继续推理</span><br></pre></td></tr></table></figure></li>
+<li>如果 role&#x3D;”tool” 的消息不紧跟在带有 tool_calls 的 assistant 消息后面，模型就无法对上“这个工具调用返回了这个值”，于是会报错或输出异常。</li>
+</ul>
+<ol start="3">
+<li><code>parameters</code> 设置错误，导致 AI 传递了错误的参数。</li>
+<li><code>messages</code> 结构错误，导致 AI 不能正确读取历史对话。</li>
+</ol>
+<hr>
+<p>该项目代码参考 <a href="https://help.aliyun.com/zh/model-studio/user-guide/qwen-function-calling?spm=0.0.0.i4#8c41d25020ipz">Qwen官方Function Calling</a>。</p>
+]]></content>
+      <categories>
+        <category>LLM学习之路</category>
+      </categories>
+      <tags>
+        <tag>AI</tag>
+        <tag>LLM</tag>
+        <tag>大模型</tag>
+        <tag>Qwen</tag>
+        <tag>Python</tag>
+        <tag>Function Calling</tag>
+        <tag>Agent</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hexo AI Assistant</title>
+    <url>/2025/03/29/Hexo-AI-Assistant/</url>
+    <content><![CDATA[<h1 id="Hexo-博客专属AI助手"><a href="#Hexo-博客专属AI助手" class="headerlink" title="Hexo 博客专属AI助手"></a>Hexo 博客专属AI助手</h1><p>本项目通过向量检索 + 大语言模型（RAG）结合本地 Hexo 博客内容，实现基于语义的智能问答接口。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/hexo-ai-assistant.git">https://github.com/EvannZhongg/hexo-ai-assistant.git</a></p>
+<hr>
+<h2 id="项目结构"><a href="#项目结构" class="headerlink" title="项目结构"></a>项目结构</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">📁 D:/YourProjects/</span><br><span class="line">├── 📁 Blog/                       # Hexo 博客项目目录</span><br><span class="line">│   ├── source/_posts/             # Markdown 博文文件目录</span><br><span class="line">│   ├── themes/hexo-theme-xxx/     # 自定义主题目录</span><br><span class="line">│   │   ├── layout/_partial/</span><br><span class="line">│   │   │   ├── footer.ejs         # 向量构建自动化脚本（Hexo 构建钩子）</span><br><span class="line">│   │   │   ├── chatbot.ejs        # ai助手UI</span><br><span class="line">│   │   │   └── ...</span><br><span class="line">│   │   └── ...  </span><br><span class="line">│   ├── scripts/auto_vector.js     # 向量构建自动化脚本（Hexo 构建钩子）</span><br><span class="line">│   └── ...                        # 其他 Hexo 文件</span><br><span class="line">│   </span><br><span class="line">├── 📁 hexo-ai-assistant/          # AI助手后端项目目录</span><br><span class="line">│   ├── build_vector_store.py      # 向量库和标题映射构建脚本</span><br><span class="line">│   ├── main.py                    # Flask 主服务入口（/ask 问答接口）</span><br><span class="line">│   ├── embedder.py                # 嵌入向量生成器（调用第三方 API）</span><br><span class="line">│   ├── chat.py                    # 通用 LLM 聊天模块（OpenAI / DeepSeek）</span><br><span class="line">│   ├── vector_store.json          # 本地语义向量数据库（自动生成）</span><br><span class="line">│   ├── title_mapping.json         # 博客标题与链接映射表（自动生成）</span><br><span class="line">│   ├── config.yml                 # 所有路径、模型、API Key 配置集中管理</span><br><span class="line">│   └── .venv/                     # 虚拟环境（可选）</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="执行原理（项目运行流程）"><a href="#执行原理（项目运行流程）" class="headerlink" title="执行原理（项目运行流程）"></a>执行原理（项目运行流程）</h2><ol>
+<li><p><strong>语义知识构建阶段</strong>（由 <code>build_vector_store.py</code> 执行）：</p>
+<ul>
+<li>扫描博客的 Markdown 源文件，提取文章正文内容。</li>
+<li>使用嵌入模型（如 BGE）生成语义向量。</li>
+<li>构建 <code>vector_store.json</code> 和 <code>title_mapping.json</code>，供问答使用。</li>
+</ul>
+</li>
+<li><p><strong>用户问答处理阶段</strong>（由 <code>main.py</code> 提供 API）：</p>
+<ul>
+<li>用户通过前端发送提问。</li>
+<li>后端提问向量化，与本地向量库匹配最相关文章。</li>
+<li>拼接问答上下文（包含语义内容和标题索引）发给大语言模型。</li>
+<li>模型生成带参考链接的回答，流式返回至前端。</li>
+</ul>
+</li>
+<li><p><strong>前端问答展示阶段</strong>（由 <code>chat.html</code> &#x2F; <code>chatbot.ejs</code> 负责）：</p>
+<ul>
+<li>用户界面加载聊天框，支持 Markdown 格式渲染和多轮对话。</li>
+<li>请求被代理转发至本地后端或公网中转地址。</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2 id="1-安装依赖"><a href="#1-安装依赖" class="headerlink" title="1. 安装依赖"></a>1. 安装依赖</h2><p>建议使用虚拟环境：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python -m venv .venv</span><br><span class="line">.venv\Scripts\activate</span><br><span class="line">pip install -r requirements.txt</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="2-配置项修改（hexo-ai-assistant-config-yml）"><a href="#2-配置项修改（hexo-ai-assistant-config-yml）" class="headerlink" title="2. 配置项修改（hexo-ai-assistant/config.yml）"></a>2. 配置项修改（<code>hexo-ai-assistant/config.yml</code>）</h2><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">paths:</span></span><br><span class="line">  <span class="attr">blog_post_dir:</span> <span class="string">/your/path/to/hexo/source/_posts</span>     <span class="comment"># 修改为你的博客 Markdown 路径</span></span><br><span class="line">  <span class="attr">vector_store:</span> <span class="string">vector_store.json</span>                     <span class="comment"># 向量库保存路径，建议使用绝对路径</span></span><br><span class="line">  <span class="attr">title_mapping:</span> <span class="string">title_mapping.json</span>                   <span class="comment"># 博客标题映射表路径，建议使用绝对路径</span></span><br><span class="line"></span><br><span class="line"><span class="attr">blog:</span></span><br><span class="line">  <span class="attr">base_url:</span> <span class="string">https://your-github-pages-url.github.io</span>   <span class="comment"># 修改为你的博客地址（不含末尾 /）</span></span><br><span class="line"></span><br><span class="line"><span class="attr">embedding:</span></span><br><span class="line">  <span class="attr">api_url:</span> <span class="string">https://api.siliconflow.cn/v1/embeddings</span>    <span class="comment"># 嵌入模型 API 地址</span></span><br><span class="line">  <span class="attr">model:</span> <span class="string">BAAI/bge-large-zh-v1.5</span>                         <span class="comment"># 使用的中文嵌入模型</span></span><br><span class="line">  <span class="attr">api_key:</span> <span class="string">&lt;YOUR_EMBEDDING_API_KEY&gt;</span>                    <span class="comment"># 替换为你的嵌入模型 API Key</span></span><br><span class="line">  <span class="attr">max_characters:</span> <span class="number">5000</span>                                 <span class="comment"># 每篇文章最大截取字符数</span></span><br><span class="line"></span><br><span class="line"><span class="attr">chat:</span></span><br><span class="line">  <span class="attr">api_url:</span> <span class="string">https://api.deepseek.com/v1</span>                 <span class="comment"># Chat 模型 API 地址（可替换为 OpenAI）</span></span><br><span class="line">  <span class="attr">model:</span> <span class="string">deepseek-chat</span>                                 <span class="comment"># 使用的模型名称</span></span><br><span class="line">  <span class="attr">api_key:</span> <span class="string">&lt;YOUR_CHAT_API_KEY&gt;</span>                         <span class="comment"># 替换为你的 LLM 接口 Key</span></span><br><span class="line"></span><br><span class="line"><span class="attr">server:</span></span><br><span class="line">  <span class="attr">port:</span> <span class="number">5000</span>                                           <span class="comment"># 后端服务运行端口（默认5000）</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="3-构建向量库-标题映射表"><a href="#3-构建向量库-标题映射表" class="headerlink" title="3. 构建向量库 &amp; 标题映射表"></a>3. 构建向量库 &amp; 标题映射表</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python build_vector_store.py</span><br></pre></td></tr></table></figure>
+
+<p>生成文件：</p>
+<ul>
+<li><code>vector_store.json</code>: 含每篇文章的文本和语义向量</li>
+<li><code>title_mapping.json</code>: 含每篇文章的标题 + 主标题 + 链接</li>
+</ul>
+<p>博客格式需遵循以下结构：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: Article Title</span><br><span class="line">date: YYYY-MM-DD HH:mm:ss</span><br><span class="line">tags: [...]  # No impact</span><br><span class="line">categories: ...  # No impact</span><br><span class="line">---</span><br><span class="line"># Main Title  # Must be a first level title</span><br><span class="line"></span><br><span class="line">正文内容...</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="4-启动后端问答服务"><a href="#4-启动后端问答服务" class="headerlink" title="4. 启动后端问答服务"></a>4. 启动后端问答服务</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python main.py</span><br></pre></td></tr></table></figure>
+
+<p>本地服务启动后默认监听：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://127.0.0.1:5000/ask</span><br></pre></td></tr></table></figure>
+<p>你可以在浏览器中打开 <code>chat.html</code> 进行测试，查看是否可以正确输出回答。</p>
+<hr>
+<h2 id="5-配置-Hexo-脚本"><a href="#5-配置-Hexo-脚本" class="headerlink" title="5. 配置 Hexo 脚本"></a>5. 配置 <code>Hexo</code> 脚本</h2><p>如果上述操作都正确执行后，将向量构建脚本接入 <code>Hexo</code> 构建流程</p>
+<h3 id="1-创建脚本文件-scripts-auto-vector-js："><a href="#1-创建脚本文件-scripts-auto-vector-js：" class="headerlink" title="1.创建脚本文件 scripts/auto_vector.js："></a>1.创建脚本文件 <code>scripts/auto_vector.js</code>：</h3><figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> &#123; exec &#125; = <span class="built_in">require</span>(<span class="string">&quot;child_process&quot;</span>);</span><br><span class="line"></span><br><span class="line">hexo.<span class="property">extend</span>.<span class="property">filter</span>.<span class="title function_">register</span>(<span class="string">&quot;before_generate&quot;</span>, <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&quot;构建博客向量中...&quot;</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Promise</span>(<span class="function">(<span class="params">resolve, reject</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="title function_">exec</span>(<span class="string">&quot;/your_project/.venv/Scripts/python build_vector_store.py&quot;</span>, &#123;</span><br><span class="line">      <span class="attr">cwd</span>: <span class="string">&quot;D:/your_project&quot;</span></span><br><span class="line">    &#125;, <span class="function">(<span class="params">err, stdout, stderr</span>) =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (err) &#123;</span><br><span class="line">        <span class="variable language_">console</span>.<span class="title function_">error</span>(<span class="string">&quot;构建失败:&quot;</span>, stderr);</span><br><span class="line">        <span class="title function_">reject</span>(err);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&quot;构建成功&quot;</span>);</span><br><span class="line">        <span class="title function_">resolve</span>();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<p>这个脚本的作用是在运行 <code>hexo g</code> 时，自动重构向量库保证所有博客均被项链化。</p>
+<h3 id="2-在页面底部引入-ejs-文件"><a href="#2-在页面底部引入-ejs-文件" class="headerlink" title="2. 在页面底部引入 ejs 文件"></a>2. 在页面底部引入 ejs 文件</h3><p>打开文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/footer.ejs</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>&lt;/footer&gt;</code> 标签之后添加以下代码：</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line">&lt;%- partial(&#x27;chatbot&#x27;) %&gt;</span><br></pre></td></tr></table></figure>
+
+<p>新建文件 <code>chatbot.ejs</code> 在路径 <code>themes\hexo-theme-Chic\layout\_partial\chatbot.ejs</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">将chatbot.ejs的代码拷贝至此处</span><br><span class="line">完整代码文件可见文章开头的项目地址中</span><br></pre></td></tr></table></figure>
+
+<p>运行以下命令，重新生成并启动本地预览：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+<p>效果如下：<br><img src="https://github.com/user-attachments/assets/40f5a3c5-74a6-453b-b83b-6152c5b40990" alt="image"></p>
+<hr>
+<h2 id="6-使用-Ngrok-暴露后端接口（可选）"><a href="#6-使用-Ngrok-暴露后端接口（可选）" class="headerlink" title="6. 使用 Ngrok 暴露后端接口（可选）"></a>6. 使用 Ngrok 暴露后端接口（可选）</h2><p>在本地测试都没问题后，可以使用 Ngrok 暴露本地服务至公网</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ngrok http 5000</span><br></pre></td></tr></table></figure>
+
+<p>将 <code>https://xxx.ngrok-free.app/ask</code> 地址填入前端请求 <code>chatbot.ejs</code> 中：</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> response = <span class="keyword">await</span> <span class="title function_">fetch</span>(<span class="string">&quot;https://xxx.ngrok-free.app/ask&quot;</span>, &#123;...&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>只使用 Ngrok 有网路安全问题，你可以自行设置代理保证你的端口不被暴露在公网中。</p>
+<hr>
+<h2 id="完整流程总结"><a href="#完整流程总结" class="headerlink" title="完整流程总结"></a>完整流程总结</h2><ol>
+<li>写好博客（Markdown 文件），保证格式符合要求</li>
+<li><code>build_vector_store.py</code> 提取文本并生成向量</li>
+<li><code>main.py</code> 启动问答服务并支持语义检索</li>
+<li>前端请求通过 Ngrok 访问服务</li>
+<li>模型结合语义内容和标题表生成参考明确的回答</li>
+</ol>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+]]></content>
+      <categories>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>Blog</tag>
+        <tag>前端</tag>
+        <tag>AI</tag>
+        <tag>LLM</tag>
+        <tag>大模型</tag>
+        <tag>RAG</tag>
+        <tag>Agent</tag>
+        <tag>后端</tag>
+        <tag>Ngrok</tag>
+        <tag>flask</tag>
       </tags>
   </entry>
   <entry>
@@ -1075,11 +1075,11 @@
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
-        <tag>Python</tag>
         <tag>Knowledge Graph</tag>
-        <tag>RAG</tag>
-        <tag>flask</tag>
         <tag>GraphRAG</tag>
+        <tag>RAG</tag>
+        <tag>Python</tag>
+        <tag>flask</tag>
         <tag>图数据库</tag>
         <tag>LangChain</tag>
         <tag>NebulaGraph</tag>
@@ -1164,86 +1164,94 @@
       </tags>
   </entry>
   <entry>
-    <title>Uploading Local Images to Vision LLM</title>
-    <url>/2025/04/18/Uploading-Local-Images-to-Vision-LLM/</url>
-    <content><![CDATA[<h1 id="如何使用视觉大模型上传本地图像并生成回答"><a href="#如何使用视觉大模型上传本地图像并生成回答" class="headerlink" title="如何使用视觉大模型上传本地图像并生成回答"></a>如何使用视觉大模型上传本地图像并生成回答</h1><p>在本篇博客中，我将讲解如何将本地图片上传至视觉大模型，并让模型生成图像的描述，本文以 Qwen 的模型举例。</p>
-<h2 id="1-什么是视觉模型？"><a href="#1-什么是视觉模型？" class="headerlink" title="1. 什么是视觉模型？"></a>1. 什么是视觉模型？</h2><p>视觉模型是一个基于大规模视觉-语言模型的工具，能够将图片与自然语言结合。通过调用该模型，你可以将图像发送给它，并让它生成对图像内容的详细描述。例如，它可以描述图像中的物体、场景甚至情感。</p>
+    <title>Securely Rendering LLM-Generated Local Image Paths in Flask</title>
+    <url>/2025/06/13/Securely-Rendering-LLM-Generated-Local-Image-Paths-in-Flask/</url>
+    <content><![CDATA[<h1 id="一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法"><a href="#一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法" class="headerlink" title="一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法"></a>一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法</h1><h2 id="1-问题背景：浏览器安全模型与本地文件访问限制"><a href="#1-问题背景：浏览器安全模型与本地文件访问限制" class="headerlink" title="1. 问题背景：浏览器安全模型与本地文件访问限制"></a>1. 问题背景：浏览器安全模型与本地文件访问限制</h2><p>在构建基于大型语言模型（<code>LLM</code>）的 <code>Web</code> 应用时，一个常见的场景是LLM的输出中包含了指向服务器本地文件系统的图片路径。例如，在一个本地搭建的 <code>RAG</code> 系统中，<code>LLM</code> 可能会根据上下文生成一段包含标准Markdown图片语法的回答：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">![封装图](D:\project\data\images\package_diagram.png)</span><br></pre></td></tr></table></figure>
+<p>然而，如果将这段 <code>Markdown</code> 直接转换为 <code>HTML</code>（例如 <code>&lt;img src=&quot;D:\project\data\images\package_diagram.png&quot;&gt;</code>），并试图在用户浏览器中渲染，该请求将会失败出现报错：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Not allowed to load local resource: file:///D:/...</span><br></pre></td></tr></table></figure>
+<p>这是因为现代浏览器的安全模型，特别是同源策略（<code>Same-Origin Policy</code>）和安全沙箱机制，严格禁止网页中的JavaScript代码直接访问用户的本地或远程服务器的任意文件系统。这种限制是保障用户安全的基石。</p>
+<p>因此，必须设计一个安全且有效的机制，作为浏览器和服务器文件系统之间的“中间人”，以实现图片的正确渲染。</p>
 <hr>
-<h2 id="2-Qwen官方的-API-调用方法"><a href="#2-Qwen官方的-API-调用方法" class="headerlink" title="2. Qwen官方的 API 调用方法"></a>2. Qwen官方的 API 调用方法</h2><p>Qwen 官方提供的视觉大模型调用方式是通过直接提供图像的 URL 来进行图像分析。代码如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import os</span><br><span class="line">from openai import OpenAI</span><br><span class="line"></span><br><span class="line">client = OpenAI(</span><br><span class="line">    # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key=&quot;sk-xxx&quot;,</span><br><span class="line">    api_key=os.getenv(&quot;DASHSCOPE_API_KEY&quot;),</span><br><span class="line">    base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">completion = client.chat.completions.create(</span><br><span class="line">    model=&quot;qwen-vl-plus&quot;,  # 此处以qwen-vl-plus为例，可按需更换模型名称。</span><br><span class="line">    messages=[&#123;</span><br><span class="line">        &quot;role&quot;: &quot;user&quot;,</span><br><span class="line">        &quot;content&quot;: [</span><br><span class="line">            &#123;&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: &quot;这是什么&quot;&#125;,</span><br><span class="line">            &#123;&quot;type&quot;: &quot;image_url&quot;, </span><br><span class="line">             &quot;image_url&quot;: &#123;&quot;url&quot;: &quot;https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg&quot;&#125;&#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;]</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">print(completion.model_dump_json())</span><br></pre></td></tr></table></figure>
-<p>这个方法需要将图像的 URL（指向图片存储的网络地址）作为消息发送给模型。</p>
-<p>但对于本地图片要上传至大模型处理，先转为 URL 显然有些繁琐。</p>
+<h2 id="2-解决方案架构：建立一个“受信任的中间人”"><a href="#2-解决方案架构：建立一个“受信任的中间人”" class="headerlink" title="2. 解决方案架构：建立一个“受信任的中间人”"></a>2. 解决方案架构：建立一个“受信任的中间人”</h2><p>既然前端浏览器不能直接去服务器硬盘上“拿”图片，我们就需要一个“中间人”来代劳。这个中间人必须是服务器自己，因为服务器有权限访问自己的文件系统。</p>
+<p>这个思路引出了一种经典的架构模式：代理服务（<code>Proxy Service</code>）。</p>
+<p>我们的方法论可以分解为以下几个步骤：</p>
+<ul>
+<li><p><strong>约定一个暗号</strong>：前端和后端约定一个特殊的 <code>URL</code> 格式，作为请求图片的“暗号”。这个 <code>URL</code> 不会暴露真实的文件路径，而是指向我们即将创建的后端服务。</p>
+</li>
+<li><p><strong>创建后端代理端点</strong>：在 <code>Flask</code> 中创建一个 <code>API</code> 端点（例如 <code>/image</code>）。这个端点是唯一有权访问服务器上特定图片目录的“守门人”。</p>
+</li>
+<li><p><strong>前端发起代理请求</strong>：当前端需要显示一张本地图片时，它不直接使用文件路径，而是向这个 <code>/image</code> 端点发起一个请求，并将真实的文件路径作为参数传递。</p>
+</li>
+<li><p><strong>后端验证并服务</strong>：后端代理收到请求后，首先进行严格的安全检查，确保请求的路径是合法的。验证通过后，它才去硬盘上读取图片文件。</p>
+</li>
+<li><p><strong>安全的数据传输</strong>：后端不直接发送文件，而是将图片内容编码为 <code>Base64</code> 字符串。这是一种能将二进制数据转换为纯文本的编码方式，非常适合在 <code>JSON</code> 中传输。</p>
+</li>
+<li><p><strong>前端动态渲染</strong>：前端接收到包含Base64数据的JSON后，用这些数据动态地构建一个 <code>Data URL</code> ，并将其赋给 <code>&lt;img&gt;</code> 标签的 <code>src</code> 属性，最终将图片显示出来。</p>
+</li>
+</ul>
+<p>这个流程的核心在于，将一个不安全的直接文件访问，转变为一个安全的、受控的 <code>API</code> 调用。</p>
 <hr>
-<h2 id="3-如何将本地图片上传至大模型"><a href="#3-如何将本地图片上传至大模型" class="headerlink" title="3. 如何将本地图片上传至大模型"></a>3. 如何将本地图片上传至大模型</h2><p>这里我将介绍一个本地图片上传至 Qwen 视觉模型，并让模型根据prompt生成图像的描述的方法。</p>
-<p>以下是完整的代码模板：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">from PIL import Image</span><br><span class="line">import base64</span><br><span class="line">from io import BytesIO</span><br><span class="line">from openai import OpenAI</span><br><span class="line"></span><br><span class="line"># 初始化 API 客户端</span><br><span class="line">client = OpenAI(</span><br><span class="line">    api_key=&quot;你的百炼Key&quot;,</span><br><span class="line">    base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># === 准备图像（PIL）并转为 base64 ===</span><br><span class="line">def pil_image_to_base64(pil_img: Image.Image) -&gt; str:</span><br><span class="line">    buffered = BytesIO()</span><br><span class="line">    pil_img.save(buffered, format=&quot;JPEG&quot;)</span><br><span class="line">    return base64.b64encode(buffered.getvalue()).decode(&quot;utf-8&quot;)</span><br><span class="line"></span><br><span class="line"># === 构建调用内容并发送 ===</span><br><span class="line">def call_qwen_vl(pil_img: Image.Image, prompt_text: str = &quot;请描述图像内容&quot;) -&gt; str:</span><br><span class="line">    img_b64 = pil_image_to_base64(pil_img)</span><br><span class="line"></span><br><span class="line">    content = [</span><br><span class="line">        &#123;&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: prompt_text&#125;,</span><br><span class="line">        &#123;&quot;type&quot;: &quot;image_url&quot;, &quot;image_url&quot;: &#123;</span><br><span class="line">            &quot;url&quot;: f&quot;data:image/jpeg;base64,&#123;img_b64&#125;&quot;</span><br><span class="line">        &#125;&#125;</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    response = client.chat.completions.create(</span><br><span class="line">        model=&quot;qwen-vl-plus&quot;,</span><br><span class="line">        messages=[&#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: content&#125;]</span><br><span class="line">    )</span><br><span class="line">    return response.choices[0].message.content.strip()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>相比官方的 API 调用方法，这个方法通过将图像转换为 Base64 编码 字符串的方式传输图像，这样就可以将图像嵌入到请求中，直接将本地图片上传至视觉大模型进行理解</p>
-<hr>
-<h2 id="4-代码解析"><a href="#4-代码解析" class="headerlink" title="4. 代码解析"></a>4. 代码解析</h2><p>接下来，我们来看如何实现这个过程。整个代码的核心分为几个步骤：图像加载、图像转换为 base64 编码、构建 API 请求、获取并处理模型的响应。</p>
-<h3 id="4-1-导入必要的库"><a href="#4-1-导入必要的库" class="headerlink" title="4.1 导入必要的库"></a>4.1 导入必要的库</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"><span class="keyword">from</span> io <span class="keyword">import</span> BytesIO</span><br><span class="line"><span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI</span><br></pre></td></tr></table></figure>
+<h2 id="3-代码实现详解"><a href="#3-代码实现详解" class="headerlink" title="3. 代码实现详解"></a>3. 代码实现详解</h2><h3 id="3-1-后端-app-py-构建安全的文件代理与Base64编码器"><a href="#3-1-后端-app-py-构建安全的文件代理与Base64编码器" class="headerlink" title="3.1. 后端 (app.py): 构建安全的文件代理与Base64编码器"></a>3.1. 后端 (app.py): 构建安全的文件代理与Base64编码器</h3><p>核心改动是在Flask应用中增加 <code>/image</code> 路由。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import os</span><br><span class="line">import base64</span><br><span class="line">from flask import Flask, jsonify, request, abort</span><br><span class="line"></span><br><span class="line"># ... (其他Flask应用设置) ...</span><br><span class="line"></span><br><span class="line"># 1. 定义一个安全的根目录，所有图片请求都必须在此目录之下</span><br><span class="line">#    为安全起见，请将此路径设置为您的项目根目录或包含所有图片的特定父目录。</span><br><span class="line">#    os.getcwd() 会获取当前脚本运行的目录，这是一个安全的默认值。</span><br><span class="line">IMAGE_BASE_DIR = os.path.abspath(os.getcwd())</span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/image&#x27;)</span><br><span class="line">def serve_image():</span><br><span class="line">    # 2. 获取前端通过URL参数传来的路径</span><br><span class="line">    image_path = request.args.get(&#x27;path&#x27;)</span><br><span class="line"></span><br><span class="line">    # 3. 安全校验：确保请求的路径没有“越界”</span><br><span class="line">    safe_path = os.path.abspath(image_path)</span><br><span class="line">    if not safe_path.startswith(IMAGE_BASE_DIR):</span><br><span class="line">        abort(403) # 拒绝非法请求</span><br><span class="line"></span><br><span class="line">    # 4. 读取文件并编码为Base64</span><br><span class="line">    try:</span><br><span class="line">        with open(safe_path, &quot;rb&quot;) as image_file:</span><br><span class="line">            encoded_string = base64.b64encode(image_file.read()).decode(&#x27;utf-8&#x27;)</span><br><span class="line">        </span><br><span class="line">        # 5. 构造包含MIME类型和编码数据的Data URL</span><br><span class="line">        ext = os.path.splitext(safe_path)[1].lower()</span><br><span class="line">        mime_type = &#123;&#x27;.png&#x27;: &#x27;image/png&#x27;, &#x27;.jpg&#x27;: &#x27;image/jpeg&#x27;&#125;.get(ext, &#x27;application/octet-stream&#x27;)</span><br><span class="line">        data_url = f&quot;data:&#123;mime_type&#125;;base64,&#123;encoded_string&#125;&quot;</span><br><span class="line"></span><br><span class="line">        # 6. 将Data URL打包成JSON返回</span><br><span class="line">        return jsonify(&#123;&quot;imageData&quot;: data_url&#125;)</span><br><span class="line">    except FileNotFoundError:</span><br><span class="line">        abort(404)</span><br><span class="line">    except Exception as e:</span><br><span class="line">        abort(500)</span><br></pre></td></tr></table></figure>
 
 <ul>
-<li><strong>PIL</strong>：用于打开和处理图像文件。</li>
-<li><strong>base64</strong>：用于将图像数据转换为 base64 编码，使其适合通过 HTTP 请求传输。</li>
-<li><strong>BytesIO</strong>：将图像数据保存在内存中的缓冲区，而不是写入磁盘。</li>
-<li><strong>OpenAI</strong>：用于与 OpenAI API 进行交互，调用 Qwen-VL 模型。</li>
+<li><p>安全检查: <code>IMAGE_BASE_DIR</code> 的设置和 <code>startswith()</code> 的验证是此端点的安全核心，它将文件访问权限严格限制在预设的目录范围内。</p>
+</li>
+<li><p>Base64编码: 将图片转换为 <code>Base64</code> 格式的 <code>Data URL</code>，允许图片数据作为文本嵌入到 <code>JSON</code> 响应中，并能被浏览器直接渲染，避免了前端需要为获取图片而发起额外的 <code>HTTP</code> 请求。</p>
+</li>
 </ul>
-<h3 id="4-2-初始化-API-客户端"><a href="#4-2-初始化-API-客户端" class="headerlink" title="4.2 初始化 API 客户端"></a>4.2 初始化 API 客户端</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">client = OpenAI(</span><br><span class="line">    api_key=<span class="string">&quot;你的百炼Key&quot;</span>,</span><br><span class="line">    base_url=<span class="string">&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-
-<p>你需要提供一个 <strong>API 密钥</strong>（<code>api_key</code>）来进行身份验证。<code>base_url</code> 是 API 的地址，用来与 Qwen 模型通信。</p>
-<h3 id="4-3-图像转换为-Base64-编码"><a href="#4-3-图像转换为-Base64-编码" class="headerlink" title="4.3 图像转换为 Base64 编码"></a>4.3 图像转换为 Base64 编码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">pil_image_to_base64</span>(<span class="params">pil_img: Image.Image</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    buffered = BytesIO()</span><br><span class="line">    pil_img.save(buffered, <span class="built_in">format</span>=<span class="string">&quot;JPEG&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> base64.b64encode(buffered.getvalue()).decode(<span class="string">&quot;utf-8&quot;</span>)</span><br></pre></td></tr></table></figure>
-
-<p>这段代码的作用是将图像从 <strong>PIL 图像格式</strong> 转换为 <strong>base64 编码</strong>，并返回一个字符串。为什么要这么做呢？</p>
-<ul>
-<li>图像是二进制数据，而网络通信（特别是通过 HTTP 请求）更擅长处理文本数据。通过将图像转换为 base64 编码，我们可以轻松地将其嵌入到文本请求中发送给 API。</li>
-<li><code>BytesIO()</code> 是一个内存中的文件对象，用来暂存图像数据。</li>
-<li><code>pil_img.save(buffered, format=&quot;JPEG&quot;)</code> 将图像保存到内存中的缓冲区（<code>buffered</code>），并指定图像格式为 JPEG。</li>
-<li><code>base64.b64encode(buffered.getvalue())</code> 将内存中的图像数据进行 base64 编码。</li>
-<li><code>.decode(&quot;utf-8&quot;)</code> 将编码后的字节数据转换为可读的字符串。</li>
-</ul>
-<h3 id="4-4-构建-API-请求并发送"><a href="#4-4-构建-API-请求并发送" class="headerlink" title="4.4 构建 API 请求并发送"></a>4.4 构建 API 请求并发送</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">call_qwen_vl</span>(<span class="params">pil_img: Image.Image, prompt_text: <span class="built_in">str</span> = <span class="string">&quot;请描述图像内容&quot;</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    img_b64 = pil_image_to_base64(pil_img)</span><br><span class="line"></span><br><span class="line">    content = [</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>, <span class="string">&quot;text&quot;</span>: prompt_text&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;image_url&quot;</span>, <span class="string">&quot;image_url&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;url&quot;</span>: <span class="string">f&quot;data:image/jpeg;base64,<span class="subst">&#123;img_b64&#125;</span>&quot;</span></span><br><span class="line">        &#125;&#125;</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    response = client.chat.completions.create(</span><br><span class="line">        model=<span class="string">&quot;qwen-vl-plus&quot;</span>,</span><br><span class="line">        messages=[&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: content&#125;]</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> response.choices[<span class="number">0</span>].message.content.strip()</span><br></pre></td></tr></table></figure>
-
-<p>这一段是代码的核心，主要完成了以下工作：</p>
-<ol>
-<li><p><strong>将图像转换为 Base64</strong>：我们先调用前面写的 <code>pil_image_to_base64()</code> 函数将图像转换为 base64 编码。</p>
-</li>
-<li><p><strong>构建请求内容</strong>：这里我们准备了一个内容列表 <code>content</code>，包括了两个部分：</p>
-<ul>
-<li><strong>文本提示</strong>：<code>&#123;&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: prompt_text&#125;</code>，这是给模型的提示，告诉它需要描述图像的内容。默认的prompt文本是“请描述图像内容”。</li>
-<li><strong>图像数据</strong>：<code>&#123;&quot;type&quot;: &quot;image_url&quot;, &quot;image_url&quot;: &#123;&quot;url&quot;: f&quot;data:image/jpeg;base64,&#123;img_b64&#125;&quot;&#125;&#125;</code>。这里我们使用了一个 <code>data:image/jpeg;base64,...</code> 的 URL 格式来将图像数据嵌入请求中，这个过程避免了图像必须托管在网络上的限制。</li>
-</ul>
-</li>
-<li><p><strong>发送请求</strong>：<code>client.chat.completions.create(...)</code> 这行代码通过 OpenAI 客户端向 Qwen-VL 模型发送请求。这里指定了使用的模型 <code>qwen-vl-plus</code>（你可以自己跟换所需的视觉大模型），并将构建好的消息内容传递给模型。</p>
-</li>
-<li><p><strong>获取响应</strong>：模型处理完图像后，会返回一个响应。我们从 <code>response.choices[0].message.content</code> 中提取出模型生成的描述，并使用 <code>.strip()</code> 去除两端的空白字符。</p>
-</li>
-</ol>
-<h3 id="4-5-完整流程"><a href="#4-5-完整流程" class="headerlink" title="4.5 完整流程"></a>4.5 完整流程</h3><ol>
-<li><strong>加载图像</strong>：首先从本地加载图像，通常使用 <code>PIL.Image.open()</code> 来打开文件。</li>
-<li><strong>图像转换</strong>：然后我们将图像转换为 base64 编码，使其能够通过网络请求安全传输。</li>
-<li><strong>构建请求并发送给 Qwen-VL 模型</strong>：构建一个包含图像和文本提示的请求，发送给 Qwen-VL 模型。</li>
-<li><strong>接收并处理模型的响应</strong>：模型会分析图像并生成一段描述文本，我们从响应中提取并返回这段文本。</li>
-</ol>
-<h2 id="5-示例：如何使用该代码"><a href="#5-示例：如何使用该代码" class="headerlink" title="5. 示例：如何使用该代码"></a>5. 示例：如何使用该代码</h2><p>假设你有一个本地的图像文件 <code>example.jpg</code>，你想让视觉模型描述它的内容。以下是一个简单的代码示例：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"></span><br><span class="line"><span class="comment"># 打开本地图像文件</span></span><br><span class="line">image_path = <span class="string">&quot;example.jpg&quot;</span></span><br><span class="line">img = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用 Qwen-VL 模型获取图像描述</span></span><br><span class="line">description = call_qwen_vl(img)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;图像描述：&quot;</span>, description)</span><br></pre></td></tr></table></figure>
-
-<h3 id="5-1-结果"><a href="#5-1-结果" class="headerlink" title="5.1 结果"></a>5.1 结果</h3><p>当你运行这段代码时，模型会分析图像并生成对该图像的描述。例如，它可能会返回类似这样的描述：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">图像描述：这是一张包含一个绿色苹果的照片，苹果放置在白色背景上，旁边还有一些小草。</span><br></pre></td></tr></table></figure>
-
 <hr>
-<p>该项目代码参考 <a href="https://bailian.console.aliyun.com/?spm=5176.28197619.aillm.2.4d7a1ad8wlSXpQ&scm=20140722.S_%E5%AF%BC%E8%88%AA%E5%88%B0%E6%A8%A1%E5%9E%8B%E5%B9%BF%E5%9C%BA._.RL_%E5%AF%BC%E8%88%AA%E5%88%B0%E6%A8%A1%E5%9E%8B%E5%B9%BF%E5%9C%BA-LOC_aillm-OR_chat-V_3-RC_llm&accounttraceid=2fcac53a3ff94398a308227a35f9638fekhp&tab=api#/api/?type=model&url=https%3A%2F%2Fhelp.aliyun.com%2Fdocument_detail%2F2712576.html%23cde3eb109flda">Qwen官方的视觉模型图像输入使用方法</a>。</p>
+<h3 id="3-2-前端-index-html-自定义Markdown渲染与异步加载"><a href="#3-2-前端-index-html-自定义Markdown渲染与异步加载" class="headerlink" title="3.2. 前端 (index.html): 自定义Markdown渲染与异步加载"></a>3.2. 前端 (index.html): 自定义Markdown渲染与异步加载</h3><p>前端的核心工作在 <code>appendAiMessage</code> 函数中，通过重写 <code>marked.js</code> 的图片渲染逻辑来实现。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function appendAiMessage(data, fullLog = &#x27;&#x27;) &#123;</span><br><span class="line">    // ... (其他创建消息元素的代码) ...</span><br><span class="line">    const messageDiv = document.createElement(&#x27;div&#x27;);</span><br><span class="line">    </span><br><span class="line">    // --- 1. 自定义Markdown图片渲染规则 ---</span><br><span class="line">    const renderer = new marked.Renderer();</span><br><span class="line">    renderer.image = (href, title, text) =&gt; &#123;</span><br><span class="line">        // 安全检查，确保href是字符串</span><br><span class="line">        if (typeof href !== &#x27;string&#x27;) &#123;</span><br><span class="line">            console.error(&quot;marked.js renderer received a non-string href:&quot;, href);</span><br><span class="line">            return &#x27;&#x27;; </span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        const decodedHref = decodeURIComponent(href || &#x27;&#x27;);</span><br><span class="line">        </span><br><span class="line">        // 使用正则表达式检查是否是需要代理的本地绝对路径</span><br><span class="line">        if (/^[a-zA-Z]:[\\\/]/.test(decodedHref)) &#123;</span><br><span class="line">            const encodedPath = encodeURIComponent(decodedHref);</span><br><span class="line">            // **步骤 A (生成占位符)**: 返回一个&lt;img&gt;标签，其src指向后端的/image代理API</span><br><span class="line">            return &#x27;&lt;img src=&quot;/image?path=&#x27; + encodedPath + &#x27;&quot; alt=&quot;&#x27; + (text || &#x27;相关图片&#x27;) + &#x27;&quot; style=&quot;opacity: 0.5;&quot;&gt;&#x27;;</span><br><span class="line">        &#125;</span><br><span class="line">        // 对于标准的网络图片，维持原样</span><br><span class="line">        return &#x27;&lt;img src=&quot;&#x27; + href + &#x27;&quot; alt=&quot;&#x27; + (text || &#x27;&#x27;) + &#x27;&quot;&gt;&#x27;;</span><br><span class="line">    &#125;;</span><br><span class="line">    </span><br><span class="line">    // 使用自定义渲染器将Markdown文本转换为HTML</span><br><span class="line">    const htmlContent = marked.parse(answer || &quot;抱歉，没有收到回答。&quot;, &#123; renderer: renderer &#125;);</span><br><span class="line">    messageDiv.innerHTML = htmlContent;</span><br><span class="line">    // ... (将messageDiv添加到聊天窗口) ...</span><br><span class="line"></span><br><span class="line">    // --- 2. 异步获取并替换图片 ---</span><br><span class="line">    // 查找所有需要从后端加载的&quot;占位&quot;图片</span><br><span class="line">    const imagesToLoad = messageDiv.querySelectorAll(&#x27;img[src^=&quot;/image?path=&quot;]&#x27;);</span><br><span class="line">    imagesToLoad.forEach(async (img) =&gt; &#123;</span><br><span class="line">        const placeholderSrc = img.getAttribute(&#x27;src&#x27;);</span><br><span class="line">        if (!placeholderSrc) return;</span><br><span class="line"></span><br><span class="line">        try &#123;</span><br><span class="line">            // **步骤 B (发起代理请求)**: 异步向后端API请求真实的图片数据</span><br><span class="line">            const response = await fetch(placeholderSrc);</span><br><span class="line">            if (!response.ok) throw new Error(&#x27;Failed to fetch image data: &#x27; + response.status);</span><br><span class="line">            const imgData = await response.json(); // 解析后端返回的JSON</span><br><span class="line">            </span><br><span class="line">            // **步骤 C (替换src)**: 将图片的src属性替换为后端返回的Base64 Data URL</span><br><span class="line">            if (imgData.imageData) &#123;</span><br><span class="line">                img.src = imgData.imageData;</span><br><span class="line">                img.style.opacity = 1; // 使图片完全可见</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; catch (error) &#123;</span><br><span class="line">            console.error(&#x27;加载图片失败:&#x27;, error);</span><br><span class="line">            img.alt = &quot;图片加载失败&quot;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    // ... (其他代码) ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>渲染逻辑分离: <code>HTML</code> 的初始渲染和图片的最终加载是分离的。<code>marked.js</code> 首先创建了包含代理 <code>URL</code> 的 <code>HTML</code> 结构。</p>
+</li>
+<li><p>异步非阻塞: 图片的加载过程是异步的，不会阻塞用户界面的其他操作。用户可以立即看到文本内容，而图片会在后台加载完成后显示。</p>
+</li>
+</ul>
+<hr>
+<h3 id="3-2-1-正则表达式详解"><a href="#3-2-1-正则表达式详解" class="headerlink" title="3.2.1. 正则表达式详解"></a>3.2.1. 正则表达式详解</h3><p>在前端代码中，用于判断路径是否为本地绝对路径的正则表达式 <code>/^(?:[a-zA-Z]:[\\\/]|\/)/</code> 是一个关键部分。让我们来详细解析它的工作原理：</p>
+<ul>
+<li><p><code>^</code>: 这个符号代表“字符串的开始”。它确保我们只匹配路径的起始部分，而不是路径中间的某个位置。</p>
+</li>
+<li><p><code>(?: ... )</code>: 这是一个非捕获组（<code>non-capturing group</code>）。它的作用是将括号内的多个模式组合成一个单元，但不会像普通括号那样“捕获”匹配到的内容。在这里，它将两种主要的路径格式组合在一起。</p>
+</li>
+<li><p><code>[a-zA-Z]:[\\\/]</code>: 这是用来匹配Windows绝对路径的部分。</p>
+</li>
+<li><p><code>[a-zA-Z]</code>: 匹配任意一个大写或小写字母（即盘符，如 C, D）。</p>
+</li>
+<li><p><code>:</code>: 匹配紧跟在盘符后面的冒号。</p>
+</li>
+<li><p><code>[\\\/]</code>: 匹配一个路径分隔符。\ 是对反斜杠 \ 的转义，&#x2F; 是正斜杠。这个部分意味着无论是 <code>D:\...</code> 还是 <code>D:/...</code>  格式的路径都能被识别。</p>
+</li>
+<li><p><code>|</code>: 这是一个“或”操作符。它表示匹配左边的模式 或者 右边的模式。</p>
+</li>
+<li><p><code>/</code>: 这是用来匹配Unix&#x2F;Linux绝对路径的部分。所有Unix-like系统的绝对路径都以一个正斜杠 &#x2F; 开始（例如 <code>/home/user/image.png</code>）。</p>
+</li>
+</ul>
+<hr>
+<h2 id="4-对LLM的输出引导"><a href="#4-对LLM的输出引导" class="headerlink" title="4. 对LLM的输出引导"></a>4. 对LLM的输出引导</h2><p>最后一步是确保LLM能够持续生成符合我们预期的、包含本地路径的 <code>Markdown</code> 图片语法。这通过在系统提示（System Prompt）中提供清晰的指令和示例来完成。</p>
+<p>指令示例:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">图片处理: 如果一个节点的值是文件路径（例如以 .png, .jpg 等结尾），你应该说“它的封装图如下所示：”或类似的话，然后另起一行，使用标准的Markdown语法 ![封装图](图片路径) 来格式化并展示图片。</span><br></pre></td></tr></table></figure>
+
+<p>成功在前端渲染 <code>markdown</code> 图片效果展示：<br><img src="https://github.com/user-attachments/assets/6241fccf-1ec6-4c52-af78-6b115500ad48" alt="image"></p>
+<hr>
+<p>该项目代码参考 <a href="https://www.jianshu.com/p/5cc1fff0280c">Not allowed to load local resource: 报错解决方法</a></p>
 ]]></content>
       <categories>
         <category>LLM学习之路</category>
       </categories>
       <tags>
+        <tag>前端</tag>
+        <tag>Markdown</tag>
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
-        <tag>Agent</tag>
-        <tag>Qwen</tag>
+        <tag>RAG</tag>
         <tag>Python</tag>
-        <tag>视觉</tag>
+        <tag>flask</tag>
       </tags>
   </entry>
   <entry>
@@ -1363,6 +1371,89 @@
         <tag>Python</tag>
         <tag>算法</tag>
         <tag>LeetCode</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Uploading Local Images to Vision LLM</title>
+    <url>/2025/04/18/Uploading-Local-Images-to-Vision-LLM/</url>
+    <content><![CDATA[<h1 id="如何使用视觉大模型上传本地图像并生成回答"><a href="#如何使用视觉大模型上传本地图像并生成回答" class="headerlink" title="如何使用视觉大模型上传本地图像并生成回答"></a>如何使用视觉大模型上传本地图像并生成回答</h1><p>在本篇博客中，我将讲解如何将本地图片上传至视觉大模型，并让模型生成图像的描述，本文以 Qwen 的模型举例。</p>
+<h2 id="1-什么是视觉模型？"><a href="#1-什么是视觉模型？" class="headerlink" title="1. 什么是视觉模型？"></a>1. 什么是视觉模型？</h2><p>视觉模型是一个基于大规模视觉-语言模型的工具，能够将图片与自然语言结合。通过调用该模型，你可以将图像发送给它，并让它生成对图像内容的详细描述。例如，它可以描述图像中的物体、场景甚至情感。</p>
+<hr>
+<h2 id="2-Qwen官方的-API-调用方法"><a href="#2-Qwen官方的-API-调用方法" class="headerlink" title="2. Qwen官方的 API 调用方法"></a>2. Qwen官方的 API 调用方法</h2><p>Qwen 官方提供的视觉大模型调用方式是通过直接提供图像的 URL 来进行图像分析。代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import os</span><br><span class="line">from openai import OpenAI</span><br><span class="line"></span><br><span class="line">client = OpenAI(</span><br><span class="line">    # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key=&quot;sk-xxx&quot;,</span><br><span class="line">    api_key=os.getenv(&quot;DASHSCOPE_API_KEY&quot;),</span><br><span class="line">    base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">completion = client.chat.completions.create(</span><br><span class="line">    model=&quot;qwen-vl-plus&quot;,  # 此处以qwen-vl-plus为例，可按需更换模型名称。</span><br><span class="line">    messages=[&#123;</span><br><span class="line">        &quot;role&quot;: &quot;user&quot;,</span><br><span class="line">        &quot;content&quot;: [</span><br><span class="line">            &#123;&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: &quot;这是什么&quot;&#125;,</span><br><span class="line">            &#123;&quot;type&quot;: &quot;image_url&quot;, </span><br><span class="line">             &quot;image_url&quot;: &#123;&quot;url&quot;: &quot;https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg&quot;&#125;&#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;]</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">print(completion.model_dump_json())</span><br></pre></td></tr></table></figure>
+<p>这个方法需要将图像的 URL（指向图片存储的网络地址）作为消息发送给模型。</p>
+<p>但对于本地图片要上传至大模型处理，先转为 URL 显然有些繁琐。</p>
+<hr>
+<h2 id="3-如何将本地图片上传至大模型"><a href="#3-如何将本地图片上传至大模型" class="headerlink" title="3. 如何将本地图片上传至大模型"></a>3. 如何将本地图片上传至大模型</h2><p>这里我将介绍一个本地图片上传至 Qwen 视觉模型，并让模型根据prompt生成图像的描述的方法。</p>
+<p>以下是完整的代码模板：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">from PIL import Image</span><br><span class="line">import base64</span><br><span class="line">from io import BytesIO</span><br><span class="line">from openai import OpenAI</span><br><span class="line"></span><br><span class="line"># 初始化 API 客户端</span><br><span class="line">client = OpenAI(</span><br><span class="line">    api_key=&quot;你的百炼Key&quot;,</span><br><span class="line">    base_url=&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># === 准备图像（PIL）并转为 base64 ===</span><br><span class="line">def pil_image_to_base64(pil_img: Image.Image) -&gt; str:</span><br><span class="line">    buffered = BytesIO()</span><br><span class="line">    pil_img.save(buffered, format=&quot;JPEG&quot;)</span><br><span class="line">    return base64.b64encode(buffered.getvalue()).decode(&quot;utf-8&quot;)</span><br><span class="line"></span><br><span class="line"># === 构建调用内容并发送 ===</span><br><span class="line">def call_qwen_vl(pil_img: Image.Image, prompt_text: str = &quot;请描述图像内容&quot;) -&gt; str:</span><br><span class="line">    img_b64 = pil_image_to_base64(pil_img)</span><br><span class="line"></span><br><span class="line">    content = [</span><br><span class="line">        &#123;&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: prompt_text&#125;,</span><br><span class="line">        &#123;&quot;type&quot;: &quot;image_url&quot;, &quot;image_url&quot;: &#123;</span><br><span class="line">            &quot;url&quot;: f&quot;data:image/jpeg;base64,&#123;img_b64&#125;&quot;</span><br><span class="line">        &#125;&#125;</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    response = client.chat.completions.create(</span><br><span class="line">        model=&quot;qwen-vl-plus&quot;,</span><br><span class="line">        messages=[&#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: content&#125;]</span><br><span class="line">    )</span><br><span class="line">    return response.choices[0].message.content.strip()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>相比官方的 API 调用方法，这个方法通过将图像转换为 Base64 编码 字符串的方式传输图像，这样就可以将图像嵌入到请求中，直接将本地图片上传至视觉大模型进行理解</p>
+<hr>
+<h2 id="4-代码解析"><a href="#4-代码解析" class="headerlink" title="4. 代码解析"></a>4. 代码解析</h2><p>接下来，我们来看如何实现这个过程。整个代码的核心分为几个步骤：图像加载、图像转换为 base64 编码、构建 API 请求、获取并处理模型的响应。</p>
+<h3 id="4-1-导入必要的库"><a href="#4-1-导入必要的库" class="headerlink" title="4.1 导入必要的库"></a>4.1 导入必要的库</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"><span class="keyword">from</span> io <span class="keyword">import</span> BytesIO</span><br><span class="line"><span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>PIL</strong>：用于打开和处理图像文件。</li>
+<li><strong>base64</strong>：用于将图像数据转换为 base64 编码，使其适合通过 HTTP 请求传输。</li>
+<li><strong>BytesIO</strong>：将图像数据保存在内存中的缓冲区，而不是写入磁盘。</li>
+<li><strong>OpenAI</strong>：用于与 OpenAI API 进行交互，调用 Qwen-VL 模型。</li>
+</ul>
+<h3 id="4-2-初始化-API-客户端"><a href="#4-2-初始化-API-客户端" class="headerlink" title="4.2 初始化 API 客户端"></a>4.2 初始化 API 客户端</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">client = OpenAI(</span><br><span class="line">    api_key=<span class="string">&quot;你的百炼Key&quot;</span>,</span><br><span class="line">    base_url=<span class="string">&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>你需要提供一个 <strong>API 密钥</strong>（<code>api_key</code>）来进行身份验证。<code>base_url</code> 是 API 的地址，用来与 Qwen 模型通信。</p>
+<h3 id="4-3-图像转换为-Base64-编码"><a href="#4-3-图像转换为-Base64-编码" class="headerlink" title="4.3 图像转换为 Base64 编码"></a>4.3 图像转换为 Base64 编码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">pil_image_to_base64</span>(<span class="params">pil_img: Image.Image</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    buffered = BytesIO()</span><br><span class="line">    pil_img.save(buffered, <span class="built_in">format</span>=<span class="string">&quot;JPEG&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> base64.b64encode(buffered.getvalue()).decode(<span class="string">&quot;utf-8&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>这段代码的作用是将图像从 <strong>PIL 图像格式</strong> 转换为 <strong>base64 编码</strong>，并返回一个字符串。为什么要这么做呢？</p>
+<ul>
+<li>图像是二进制数据，而网络通信（特别是通过 HTTP 请求）更擅长处理文本数据。通过将图像转换为 base64 编码，我们可以轻松地将其嵌入到文本请求中发送给 API。</li>
+<li><code>BytesIO()</code> 是一个内存中的文件对象，用来暂存图像数据。</li>
+<li><code>pil_img.save(buffered, format=&quot;JPEG&quot;)</code> 将图像保存到内存中的缓冲区（<code>buffered</code>），并指定图像格式为 JPEG。</li>
+<li><code>base64.b64encode(buffered.getvalue())</code> 将内存中的图像数据进行 base64 编码。</li>
+<li><code>.decode(&quot;utf-8&quot;)</code> 将编码后的字节数据转换为可读的字符串。</li>
+</ul>
+<h3 id="4-4-构建-API-请求并发送"><a href="#4-4-构建-API-请求并发送" class="headerlink" title="4.4 构建 API 请求并发送"></a>4.4 构建 API 请求并发送</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">call_qwen_vl</span>(<span class="params">pil_img: Image.Image, prompt_text: <span class="built_in">str</span> = <span class="string">&quot;请描述图像内容&quot;</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    img_b64 = pil_image_to_base64(pil_img)</span><br><span class="line"></span><br><span class="line">    content = [</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>, <span class="string">&quot;text&quot;</span>: prompt_text&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;image_url&quot;</span>, <span class="string">&quot;image_url&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;url&quot;</span>: <span class="string">f&quot;data:image/jpeg;base64,<span class="subst">&#123;img_b64&#125;</span>&quot;</span></span><br><span class="line">        &#125;&#125;</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    response = client.chat.completions.create(</span><br><span class="line">        model=<span class="string">&quot;qwen-vl-plus&quot;</span>,</span><br><span class="line">        messages=[&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: content&#125;]</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> response.choices[<span class="number">0</span>].message.content.strip()</span><br></pre></td></tr></table></figure>
+
+<p>这一段是代码的核心，主要完成了以下工作：</p>
+<ol>
+<li><p><strong>将图像转换为 Base64</strong>：我们先调用前面写的 <code>pil_image_to_base64()</code> 函数将图像转换为 base64 编码。</p>
+</li>
+<li><p><strong>构建请求内容</strong>：这里我们准备了一个内容列表 <code>content</code>，包括了两个部分：</p>
+<ul>
+<li><strong>文本提示</strong>：<code>&#123;&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: prompt_text&#125;</code>，这是给模型的提示，告诉它需要描述图像的内容。默认的prompt文本是“请描述图像内容”。</li>
+<li><strong>图像数据</strong>：<code>&#123;&quot;type&quot;: &quot;image_url&quot;, &quot;image_url&quot;: &#123;&quot;url&quot;: f&quot;data:image/jpeg;base64,&#123;img_b64&#125;&quot;&#125;&#125;</code>。这里我们使用了一个 <code>data:image/jpeg;base64,...</code> 的 URL 格式来将图像数据嵌入请求中，这个过程避免了图像必须托管在网络上的限制。</li>
+</ul>
+</li>
+<li><p><strong>发送请求</strong>：<code>client.chat.completions.create(...)</code> 这行代码通过 OpenAI 客户端向 Qwen-VL 模型发送请求。这里指定了使用的模型 <code>qwen-vl-plus</code>（你可以自己跟换所需的视觉大模型），并将构建好的消息内容传递给模型。</p>
+</li>
+<li><p><strong>获取响应</strong>：模型处理完图像后，会返回一个响应。我们从 <code>response.choices[0].message.content</code> 中提取出模型生成的描述，并使用 <code>.strip()</code> 去除两端的空白字符。</p>
+</li>
+</ol>
+<h3 id="4-5-完整流程"><a href="#4-5-完整流程" class="headerlink" title="4.5 完整流程"></a>4.5 完整流程</h3><ol>
+<li><strong>加载图像</strong>：首先从本地加载图像，通常使用 <code>PIL.Image.open()</code> 来打开文件。</li>
+<li><strong>图像转换</strong>：然后我们将图像转换为 base64 编码，使其能够通过网络请求安全传输。</li>
+<li><strong>构建请求并发送给 Qwen-VL 模型</strong>：构建一个包含图像和文本提示的请求，发送给 Qwen-VL 模型。</li>
+<li><strong>接收并处理模型的响应</strong>：模型会分析图像并生成一段描述文本，我们从响应中提取并返回这段文本。</li>
+</ol>
+<h2 id="5-示例：如何使用该代码"><a href="#5-示例：如何使用该代码" class="headerlink" title="5. 示例：如何使用该代码"></a>5. 示例：如何使用该代码</h2><p>假设你有一个本地的图像文件 <code>example.jpg</code>，你想让视觉模型描述它的内容。以下是一个简单的代码示例：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"></span><br><span class="line"><span class="comment"># 打开本地图像文件</span></span><br><span class="line">image_path = <span class="string">&quot;example.jpg&quot;</span></span><br><span class="line">img = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用 Qwen-VL 模型获取图像描述</span></span><br><span class="line">description = call_qwen_vl(img)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;图像描述：&quot;</span>, description)</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-1-结果"><a href="#5-1-结果" class="headerlink" title="5.1 结果"></a>5.1 结果</h3><p>当你运行这段代码时，模型会分析图像并生成对该图像的描述。例如，它可能会返回类似这样的描述：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">图像描述：这是一张包含一个绿色苹果的照片，苹果放置在白色背景上，旁边还有一些小草。</span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>该项目代码参考 <a href="https://bailian.console.aliyun.com/?spm=5176.28197619.aillm.2.4d7a1ad8wlSXpQ&scm=20140722.S_%E5%AF%BC%E8%88%AA%E5%88%B0%E6%A8%A1%E5%9E%8B%E5%B9%BF%E5%9C%BA._.RL_%E5%AF%BC%E8%88%AA%E5%88%B0%E6%A8%A1%E5%9E%8B%E5%B9%BF%E5%9C%BA-LOC_aillm-OR_chat-V_3-RC_llm&accounttraceid=2fcac53a3ff94398a308227a35f9638fekhp&tab=api#/api/?type=model&url=https%3A%2F%2Fhelp.aliyun.com%2Fdocument_detail%2F2712576.html%23cde3eb109flda">Qwen官方的视觉模型图像输入使用方法</a>。</p>
+]]></content>
+      <categories>
+        <category>LLM学习之路</category>
+      </categories>
+      <tags>
+        <tag>AI</tag>
+        <tag>LLM</tag>
+        <tag>大模型</tag>
+        <tag>Qwen</tag>
+        <tag>Python</tag>
+        <tag>Agent</tag>
+        <tag>视觉</tag>
       </tags>
   </entry>
   <entry>
@@ -1556,7 +1647,7 @@
 <h2 id="🔧-科研与项目经历"><a href="#🔧-科研与项目经历" class="headerlink" title="🔧 科研与项目经历"></a>🔧 科研与项目经历</h2><h3 id="基于-Django-MySQL-构建的电弧故障数据管理与分析平台（全栈开发）"><a href="#基于-Django-MySQL-构建的电弧故障数据管理与分析平台（全栈开发）" class="headerlink" title="基于 Django + MySQL 构建的电弧故障数据管理与分析平台（全栈开发）"></a>基于 <strong>Django</strong> + <strong>MySQL</strong> 构建的电弧故障数据管理与分析平台（全栈开发）</h3><ul>
 <li>前端使用 <strong>HTML5</strong> &#x2F; <strong>CSS3</strong> &#x2F; <strong>JavaScript</strong> + <strong>Fetch API</strong> 实现交互式页面与 <strong>RESTful API</strong> 通信。</li>
 <li>后端基于 <strong>Django</strong> 构建自定义用户系统，使用 <strong>ORM</strong> 管理用户、电弧数据、算法模型与测试结果，实现用户认证、数据上传、特征提取、算法模型评估与可视化等功能。</li>
-<li>实现电弧故障信号的特征工程，包括时域分析、频域分析和小波分析。</li>
+<li>设计 <strong>FFT</strong> 实现电弧故障信号的特征工程，包括时域分析、频域分析和小波分析。</li>
 <li>设计实现完善的用户管理系统，包括用户认证、个人资料管理等功能。</li>
 <li>支持企业与用户自行上传算法模型评估（准确率、F1 分数、混淆矩阵等、误判率）。</li>
 </ul>
@@ -1571,6 +1662,16 @@
 <li>实物电路焊接调试</li>
 </ul>
 ]]></content>
+  </entry>
+  <entry>
+    <title>category</title>
+    <url>/category/index.html</url>
+    <content><![CDATA[]]></content>
+  </entry>
+  <entry>
+    <title>tag</title>
+    <url>/tag/index.html</url>
+    <content><![CDATA[]]></content>
   </entry>
   <entry>
     <title></title>
@@ -1634,15 +1735,5 @@
   });
 });
 ]]></content>
-  </entry>
-  <entry>
-    <title>tag</title>
-    <url>/tag/index.html</url>
-    <content><![CDATA[]]></content>
-  </entry>
-  <entry>
-    <title>category</title>
-    <url>/category/index.html</url>
-    <content><![CDATA[]]></content>
   </entry>
 </search>

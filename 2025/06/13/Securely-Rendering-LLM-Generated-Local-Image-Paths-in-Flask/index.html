@@ -13,7 +13,7 @@
 
 
 
-<title>Custom Search Integration for Hexo Chic | Hexo</title>
+<title>Securely Rendering LLM-Generated Local Image Paths in Flask | Hexo</title>
 
 
 
@@ -308,7 +308,7 @@
     
     <article class="post-wrap">
         <header class="post-header">
-            <h1 class="post-title">Custom Search Integration for Hexo Chic</h1>
+            <h1 class="post-title">Securely Rendering LLM-Generated Local Image Paths in Flask</h1>
             
                 <div class="post-meta">
                     
@@ -317,14 +317,14 @@
 
                     
                         <span class="post-time">
-                        Date: <a href="#">March 27, 2025&nbsp;&nbsp;0:09:05</a>
+                        Date: <a href="#">June 13, 2025&nbsp;&nbsp;15:10:54</a>
                         </span>
                     
                     
                         <span class="post-category">
                     Category:
                             
-                                <a href="/categories/Hexo/">Hexo</a>
+                                <a href="/categories/LLM%E5%AD%A6%E4%B9%A0%E4%B9%8B%E8%B7%AF/">LLM学习之路</a>
                             
                         </span>
                     
@@ -333,70 +333,79 @@
         </header>
 
         <div class="post-content">
-            <h1 id="Hexo-Chic-主题实现搜索功能"><a href="#Hexo-Chic-主题实现搜索功能" class="headerlink" title="Hexo + Chic 主题实现搜索功能"></a>Hexo + Chic 主题实现搜索功能</h1><p>本文详细记录如何在 Hexo 中使用插件 <code>hexo-generator-searchdb</code> 实现基于 Chic 主题的实时搜索功能，包括搜索回复框、搜索结果卡、暗黑模式适配等细节。</p>
+            <h1 id="一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法"><a href="#一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法" class="headerlink" title="一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法"></a>一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法</h1><h2 id="1-问题背景：浏览器安全模型与本地文件访问限制"><a href="#1-问题背景：浏览器安全模型与本地文件访问限制" class="headerlink" title="1. 问题背景：浏览器安全模型与本地文件访问限制"></a>1. 问题背景：浏览器安全模型与本地文件访问限制</h2><p>在构建基于大型语言模型（<code>LLM</code>）的 <code>Web</code> 应用时，一个常见的场景是LLM的输出中包含了指向服务器本地文件系统的图片路径。例如，在一个本地搭建的 <code>RAG</code> 系统中，<code>LLM</code> 可能会根据上下文生成一段包含标准Markdown图片语法的回答：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">![封装图](D:\project\data\images\package_diagram.png)</span><br></pre></td></tr></table></figure>
+<p>然而，如果将这段 <code>Markdown</code> 直接转换为 <code>HTML</code>（例如 <code>&lt;img src=&quot;D:\project\data\images\package_diagram.png&quot;&gt;</code>），并试图在用户浏览器中渲染，该请求将会失败出现报错：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Not allowed to load local resource: file:///D:/...</span><br></pre></td></tr></table></figure>
+<p>这是因为现代浏览器的安全模型，特别是同源策略（<code>Same-Origin Policy</code>）和安全沙箱机制，严格禁止网页中的JavaScript代码直接访问用户的本地或远程服务器的任意文件系统。这种限制是保障用户安全的基石。</p>
+<p>因此，必须设计一个安全且有效的机制，作为浏览器和服务器文件系统之间的“中间人”，以实现图片的正确渲染。</p>
 <hr>
-<p>项目地址：<a target="_blank" rel="noopener" href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<h2 id="2-解决方案架构：建立一个“受信任的中间人”"><a href="#2-解决方案架构：建立一个“受信任的中间人”" class="headerlink" title="2. 解决方案架构：建立一个“受信任的中间人”"></a>2. 解决方案架构：建立一个“受信任的中间人”</h2><p>既然前端浏览器不能直接去服务器硬盘上“拿”图片，我们就需要一个“中间人”来代劳。这个中间人必须是服务器自己，因为服务器有权限访问自己的文件系统。</p>
+<p>这个思路引出了一种经典的架构模式：代理服务（<code>Proxy Service</code>）。</p>
+<p>我们的方法论可以分解为以下几个步骤：</p>
+<ul>
+<li><p><strong>约定一个暗号</strong>：前端和后端约定一个特殊的 <code>URL</code> 格式，作为请求图片的“暗号”。这个 <code>URL</code> 不会暴露真实的文件路径，而是指向我们即将创建的后端服务。</p>
+</li>
+<li><p><strong>创建后端代理端点</strong>：在 <code>Flask</code> 中创建一个 <code>API</code> 端点（例如 <code>/image</code>）。这个端点是唯一有权访问服务器上特定图片目录的“守门人”。</p>
+</li>
+<li><p><strong>前端发起代理请求</strong>：当前端需要显示一张本地图片时，它不直接使用文件路径，而是向这个 <code>/image</code> 端点发起一个请求，并将真实的文件路径作为参数传递。</p>
+</li>
+<li><p><strong>后端验证并服务</strong>：后端代理收到请求后，首先进行严格的安全检查，确保请求的路径是合法的。验证通过后，它才去硬盘上读取图片文件。</p>
+</li>
+<li><p><strong>安全的数据传输</strong>：后端不直接发送文件，而是将图片内容编码为 <code>Base64</code> 字符串。这是一种能将二进制数据转换为纯文本的编码方式，非常适合在 <code>JSON</code> 中传输。</p>
+</li>
+<li><p><strong>前端动态渲染</strong>：前端接收到包含Base64数据的JSON后，用这些数据动态地构建一个 <code>Data URL</code> ，并将其赋给 <code>&lt;img&gt;</code> 标签的 <code>src</code> 属性，最终将图片显示出来。</p>
+</li>
+</ul>
+<p>这个流程的核心在于，将一个不安全的直接文件访问，转变为一个安全的、受控的 <code>API</code> 调用。</p>
 <hr>
-<h2 id="1-安装插件"><a href="#1-安装插件" class="headerlink" title="1. 安装插件"></a><strong>1. 安装插件</strong></h2><p>在 <code>Hexo</code> 根目录下打开终端，执行</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-generator-searchdb --save</span><br></pre></td></tr></table></figure>
+<h2 id="3-代码实现详解"><a href="#3-代码实现详解" class="headerlink" title="3. 代码实现详解"></a>3. 代码实现详解</h2><h3 id="3-1-后端-app-py-构建安全的文件代理与Base64编码器"><a href="#3-1-后端-app-py-构建安全的文件代理与Base64编码器" class="headerlink" title="3.1. 后端 (app.py): 构建安全的文件代理与Base64编码器"></a>3.1. 后端 (app.py): 构建安全的文件代理与Base64编码器</h3><p>核心改动是在Flask应用中增加 <code>/image</code> 路由。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">import os</span><br><span class="line">import base64</span><br><span class="line">from flask import Flask, jsonify, request, abort</span><br><span class="line"></span><br><span class="line"># ... (其他Flask应用设置) ...</span><br><span class="line"></span><br><span class="line"># 1. 定义一个安全的根目录，所有图片请求都必须在此目录之下</span><br><span class="line">#    为安全起见，请将此路径设置为您的项目根目录或包含所有图片的特定父目录。</span><br><span class="line">#    os.getcwd() 会获取当前脚本运行的目录，这是一个安全的默认值。</span><br><span class="line">IMAGE_BASE_DIR = os.path.abspath(os.getcwd())</span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/image&#x27;)</span><br><span class="line">def serve_image():</span><br><span class="line">    # 2. 获取前端通过URL参数传来的路径</span><br><span class="line">    image_path = request.args.get(&#x27;path&#x27;)</span><br><span class="line"></span><br><span class="line">    # 3. 安全校验：确保请求的路径没有“越界”</span><br><span class="line">    safe_path = os.path.abspath(image_path)</span><br><span class="line">    if not safe_path.startswith(IMAGE_BASE_DIR):</span><br><span class="line">        abort(403) # 拒绝非法请求</span><br><span class="line"></span><br><span class="line">    # 4. 读取文件并编码为Base64</span><br><span class="line">    try:</span><br><span class="line">        with open(safe_path, &quot;rb&quot;) as image_file:</span><br><span class="line">            encoded_string = base64.b64encode(image_file.read()).decode(&#x27;utf-8&#x27;)</span><br><span class="line">        </span><br><span class="line">        # 5. 构造包含MIME类型和编码数据的Data URL</span><br><span class="line">        ext = os.path.splitext(safe_path)[1].lower()</span><br><span class="line">        mime_type = &#123;&#x27;.png&#x27;: &#x27;image/png&#x27;, &#x27;.jpg&#x27;: &#x27;image/jpeg&#x27;&#125;.get(ext, &#x27;application/octet-stream&#x27;)</span><br><span class="line">        data_url = f&quot;data:&#123;mime_type&#125;;base64,&#123;encoded_string&#125;&quot;</span><br><span class="line"></span><br><span class="line">        # 6. 将Data URL打包成JSON返回</span><br><span class="line">        return jsonify(&#123;&quot;imageData&quot;: data_url&#125;)</span><br><span class="line">    except FileNotFoundError:</span><br><span class="line">        abort(404)</span><br><span class="line">    except Exception as e:</span><br><span class="line">        abort(500)</span><br></pre></td></tr></table></figure>
 
-<hr>
-<h2 id="2-打开根目录的-config-yml-文件，添加（或修改）如下配置："><a href="#2-打开根目录的-config-yml-文件，添加（或修改）如下配置：" class="headerlink" title="2. 打开根目录的 _config.yml 文件，添加（或修改）如下配置："></a><strong>2. 打开根目录的 <code>_config.yml</code> 文件，添加（或修改）如下配置：</strong></h2><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">search:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">search.xml</span></span><br><span class="line">  <span class="attr">field:</span> <span class="string">post</span></span><br><span class="line">  <span class="attr">format:</span> <span class="string">html</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="3-新建-search-css"><a href="#3-新建-search-css" class="headerlink" title="3. 新建 search.css"></a><strong>3. 新建 search.css</strong></h2><p><strong>建议路径</strong>: <code>themes/hexo-theme-Chic/source/css/search.css</code></p>
-<p>包含搜索框&#x2F;结果卡&#x2F;暗黑模式样式，具体代码可带文章开头项目地址中获取：</p>
-<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-class">.search-container</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-result</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.search-card</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.search-card-snippet</span> &#123; ... &#125;</span><br><span class="line"><span class="keyword">@media</span> (<span class="attribute">max-width</span>: <span class="number">768px</span>) &#123; ... &#125;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="4-修改主题配置"><a href="#4-修改主题配置" class="headerlink" title="4. 修改主题配置"></a><strong>4. 修改主题配置</strong></h2><p>打开<code>theme/hexo-theme-Chic/_config.yml</code> ，在 <code>stylesheets </code>下增加一行 <code>search.css</code> 确保加载样式文件：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">stylesheets:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/style.css</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/search.css</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="5-修改-header-ejs"><a href="#5-修改-header-ejs" class="headerlink" title="5. 修改 header.ejs"></a><strong>5. 修改 <code>header.ejs</code></strong></h2><p>对 <code>theme/hexo-theme-Chic/layout/_partial/header.ejs</code> 做了如下关键修改，具体代码可带文章开头项目地址中获取：</p>
-<h3 id="HTML-结构改动"><a href="#HTML-结构改动" class="headerlink" title="HTML 结构改动"></a>HTML 结构改动</h3><ol>
-<li>在 <code>&lt;div class=&quot;menu navbar-right&quot;&gt;</code> 中插入：</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;div class=&quot;search-container&quot;&gt;</span><br><span class="line">  &lt;a href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍&lt;/a&gt;</span><br><span class="line">  &lt;input type=&quot;text&quot; id=&quot;nav-search-input&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">  &lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li>在移动端导航 <code>&lt;div id=&quot;mobile-menu&quot;&gt;</code> 中插入：</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;a class=&quot;menu-item&quot; href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍 Search&lt;/a&gt;</span><br><span class="line">&lt;input type=&quot;text&quot; id=&quot;nav-search-input-mobile&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">&lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-
-<ol start="3">
-<li>保留并未更动主题切换按钮：</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;input id=&quot;switch_default&quot; type=&quot;checkbox&quot; class=&quot;switch_default&quot;&gt;</span><br><span class="line">&lt;label for=&quot;switch_default&quot; class=&quot;toggleBtn&quot;&gt;&lt;/label&gt;</span><br></pre></td></tr></table></figure>
-
-<h3 id="JS-功能改动"><a href="#JS-功能改动" class="headerlink" title="JS 功能改动"></a>JS 功能改动</h3><ol>
-<li>新增 <code>toggleSearchInput()</code> 方法，实现点击图标展开或隐藏搜索框。</li>
-<li></li>
-</ol>
-<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">toggleSearchInput</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> inputs = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-input&#x27;</span>);</span><br><span class="line">  <span class="keyword">const</span> results = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-result&#x27;</span>);</span><br><span class="line">  inputs.<span class="title function_">forEach</span>(<span class="function"><span class="params">input</span> =&gt;</span> &#123;</span><br><span class="line">    input.<span class="property">classList</span>.<span class="title function_">toggle</span>(<span class="string">&#x27;active&#x27;</span>);</span><br><span class="line">    <span class="keyword">if</span> (input.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;active&#x27;</span>)) input.<span class="title function_">focus</span>();</span><br><span class="line">  &#125;);</span><br><span class="line">  results.<span class="title function_">forEach</span>(<span class="function"><span class="params">r</span> =&gt;</span> r.<span class="property">style</span>.<span class="property">display</span> = <span class="string">&#x27;none&#x27;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<ol start="2">
-<li>新增 <code>navSearch()</code> 方法，实现从 <code>search.xml</code> 加载数据并匹配关键词。</li>
-<li>新增空白点击关闭逻辑：点击 <code>.search-container</code> 外部区域后自动隐藏搜索框并清空内容。</li>
-</ol>
-<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">if</span> (searchData.<span class="property">length</span> === <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="title function_">fetch</span>(<span class="string">&#x27;&lt;%- config.root %&gt;search.xml&#x27;</span>)</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">res</span> =&gt;</span> res.<span class="title function_">text</span>())</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">xmlText</span> =&gt;</span> &#123;</span><br><span class="line">        <span class="keyword">const</span> parser = <span class="keyword">new</span> <span class="title class_">DOMParser</span>();</span><br><span class="line">        <span class="keyword">const</span> xml = parser.<span class="title function_">parseFromString</span>(xmlText, <span class="string">&#x27;text/xml&#x27;</span>);</span><br><span class="line">        <span class="keyword">const</span> entries = xml.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;entry&#x27;</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">let</span> entry <span class="keyword">of</span> entries) &#123;</span><br><span class="line">          searchData.<span class="title function_">push</span>(&#123;</span><br><span class="line">            <span class="attr">title</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;title&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">content</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;content&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">url</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;url&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span></span><br><span class="line">          &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="6-实现效果"><a href="#6-实现效果" class="headerlink" title="6. 实现效果"></a><strong>6. 实现效果</strong></h2><ul>
-<li>点击图标展示搜索框</li>
-<li>实时匹配文章标题&#x2F;内容</li>
-<li>结果以卡片形式展示</li>
-<li>黑色模式样式自动选择</li>
-<li>点击空白地方隐藏结果 + 清空文本</li>
-<li>移动端页面适配<br><img src="https://github.com/user-attachments/assets/430d306f-1836-4ca7-b1c6-c249835622bd" alt="image"></li>
+<ul>
+<li><p>安全检查: <code>IMAGE_BASE_DIR</code> 的设置和 <code>startswith()</code> 的验证是此端点的安全核心，它将文件访问权限严格限制在预设的目录范围内。</p>
+</li>
+<li><p>Base64编码: 将图片转换为 <code>Base64</code> 格式的 <code>Data URL</code>，允许图片数据作为文本嵌入到 <code>JSON</code> 响应中，并能被浏览器直接渲染，避免了前端需要为获取图片而发起额外的 <code>HTTP</code> 请求。</p>
+</li>
 </ul>
 <hr>
-<h2 id="7-新生成并运行-Hexo"><a href="#7-新生成并运行-Hexo" class="headerlink" title="7. 新生成并运行 Hexo"></a><strong>7. 新生成并运行 Hexo</strong></h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
+<h3 id="3-2-前端-index-html-自定义Markdown渲染与异步加载"><a href="#3-2-前端-index-html-自定义Markdown渲染与异步加载" class="headerlink" title="3.2. 前端 (index.html): 自定义Markdown渲染与异步加载"></a>3.2. 前端 (index.html): 自定义Markdown渲染与异步加载</h3><p>前端的核心工作在 <code>appendAiMessage</code> 函数中，通过重写 <code>marked.js</code> 的图片渲染逻辑来实现。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line">function appendAiMessage(data, fullLog = &#x27;&#x27;) &#123;</span><br><span class="line">    // ... (其他创建消息元素的代码) ...</span><br><span class="line">    const messageDiv = document.createElement(&#x27;div&#x27;);</span><br><span class="line">    </span><br><span class="line">    // --- 1. 自定义Markdown图片渲染规则 ---</span><br><span class="line">    const renderer = new marked.Renderer();</span><br><span class="line">    renderer.image = (href, title, text) =&gt; &#123;</span><br><span class="line">        // 安全检查，确保href是字符串</span><br><span class="line">        if (typeof href !== &#x27;string&#x27;) &#123;</span><br><span class="line">            console.error(&quot;marked.js renderer received a non-string href:&quot;, href);</span><br><span class="line">            return &#x27;&#x27;; </span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        const decodedHref = decodeURIComponent(href || &#x27;&#x27;);</span><br><span class="line">        </span><br><span class="line">        // 使用正则表达式检查是否是需要代理的本地绝对路径</span><br><span class="line">        if (/^[a-zA-Z]:[\\\/]/.test(decodedHref)) &#123;</span><br><span class="line">            const encodedPath = encodeURIComponent(decodedHref);</span><br><span class="line">            // **步骤 A (生成占位符)**: 返回一个&lt;img&gt;标签，其src指向后端的/image代理API</span><br><span class="line">            return &#x27;&lt;img src=&quot;/image?path=&#x27; + encodedPath + &#x27;&quot; alt=&quot;&#x27; + (text || &#x27;相关图片&#x27;) + &#x27;&quot; style=&quot;opacity: 0.5;&quot;&gt;&#x27;;</span><br><span class="line">        &#125;</span><br><span class="line">        // 对于标准的网络图片，维持原样</span><br><span class="line">        return &#x27;&lt;img src=&quot;&#x27; + href + &#x27;&quot; alt=&quot;&#x27; + (text || &#x27;&#x27;) + &#x27;&quot;&gt;&#x27;;</span><br><span class="line">    &#125;;</span><br><span class="line">    </span><br><span class="line">    // 使用自定义渲染器将Markdown文本转换为HTML</span><br><span class="line">    const htmlContent = marked.parse(answer || &quot;抱歉，没有收到回答。&quot;, &#123; renderer: renderer &#125;);</span><br><span class="line">    messageDiv.innerHTML = htmlContent;</span><br><span class="line">    // ... (将messageDiv添加到聊天窗口) ...</span><br><span class="line"></span><br><span class="line">    // --- 2. 异步获取并替换图片 ---</span><br><span class="line">    // 查找所有需要从后端加载的&quot;占位&quot;图片</span><br><span class="line">    const imagesToLoad = messageDiv.querySelectorAll(&#x27;img[src^=&quot;/image?path=&quot;]&#x27;);</span><br><span class="line">    imagesToLoad.forEach(async (img) =&gt; &#123;</span><br><span class="line">        const placeholderSrc = img.getAttribute(&#x27;src&#x27;);</span><br><span class="line">        if (!placeholderSrc) return;</span><br><span class="line"></span><br><span class="line">        try &#123;</span><br><span class="line">            // **步骤 B (发起代理请求)**: 异步向后端API请求真实的图片数据</span><br><span class="line">            const response = await fetch(placeholderSrc);</span><br><span class="line">            if (!response.ok) throw new Error(&#x27;Failed to fetch image data: &#x27; + response.status);</span><br><span class="line">            const imgData = await response.json(); // 解析后端返回的JSON</span><br><span class="line">            </span><br><span class="line">            // **步骤 C (替换src)**: 将图片的src属性替换为后端返回的Base64 Data URL</span><br><span class="line">            if (imgData.imageData) &#123;</span><br><span class="line">                img.src = imgData.imageData;</span><br><span class="line">                img.style.opacity = 1; // 使图片完全可见</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; catch (error) &#123;</span><br><span class="line">            console.error(&#x27;加载图片失败:&#x27;, error);</span><br><span class="line">            img.alt = &quot;图片加载失败&quot;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    // ... (其他代码) ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>然后访问 <code>http://localhost:4000</code>，查看任意一段代码块，右上角应出现复制图标按钮。</p>
+<ul>
+<li><p>渲染逻辑分离: <code>HTML</code> 的初始渲染和图片的最终加载是分离的。<code>marked.js</code> 首先创建了包含代理 <code>URL</code> 的 <code>HTML</code> 结构。</p>
+</li>
+<li><p>异步非阻塞: 图片的加载过程是异步的，不会阻塞用户界面的其他操作。用户可以立即看到文本内容，而图片会在后台加载完成后显示。</p>
+</li>
+</ul>
 <hr>
-<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
+<h3 id="3-2-1-正则表达式详解"><a href="#3-2-1-正则表达式详解" class="headerlink" title="3.2.1. 正则表达式详解"></a>3.2.1. 正则表达式详解</h3><p>在前端代码中，用于判断路径是否为本地绝对路径的正则表达式 <code>/^(?:[a-zA-Z]:[\\\/]|\/)/</code> 是一个关键部分。让我们来详细解析它的工作原理：</p>
+<ul>
+<li><p><code>^</code>: 这个符号代表“字符串的开始”。它确保我们只匹配路径的起始部分，而不是路径中间的某个位置。</p>
+</li>
+<li><p><code>(?: ... )</code>: 这是一个非捕获组（<code>non-capturing group</code>）。它的作用是将括号内的多个模式组合成一个单元，但不会像普通括号那样“捕获”匹配到的内容。在这里，它将两种主要的路径格式组合在一起。</p>
+</li>
+<li><p><code>[a-zA-Z]:[\\\/]</code>: 这是用来匹配Windows绝对路径的部分。</p>
+</li>
+<li><p><code>[a-zA-Z]</code>: 匹配任意一个大写或小写字母（即盘符，如 C, D）。</p>
+</li>
+<li><p><code>:</code>: 匹配紧跟在盘符后面的冒号。</p>
+</li>
+<li><p><code>[\\\/]</code>: 匹配一个路径分隔符。\ 是对反斜杠 \ 的转义，&#x2F; 是正斜杠。这个部分意味着无论是 <code>D:\...</code> 还是 <code>D:/...</code>  格式的路径都能被识别。</p>
+</li>
+<li><p><code>|</code>: 这是一个“或”操作符。它表示匹配左边的模式 或者 右边的模式。</p>
+</li>
+<li><p><code>/</code>: 这是用来匹配Unix&#x2F;Linux绝对路径的部分。所有Unix-like系统的绝对路径都以一个正斜杠 &#x2F; 开始（例如 <code>/home/user/image.png</code>）。</p>
+</li>
+</ul>
 <hr>
-<p>该项目代码基于 <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo.git">Hexo</a> , <a target="_blank" rel="noopener" href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 和 <a target="_blank" rel="noopener" href="https://github.com/next-theme/hexo-generator-searchdb.git">hexo-generator-searchdb</a>。</p>
+<h2 id="4-对LLM的输出引导"><a href="#4-对LLM的输出引导" class="headerlink" title="4. 对LLM的输出引导"></a>4. 对LLM的输出引导</h2><p>最后一步是确保LLM能够持续生成符合我们预期的、包含本地路径的 <code>Markdown</code> 图片语法。这通过在系统提示（System Prompt）中提供清晰的指令和示例来完成。</p>
+<p>指令示例:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">图片处理: 如果一个节点的值是文件路径（例如以 .png, .jpg 等结尾），你应该说“它的封装图如下所示：”或类似的话，然后另起一行，使用标准的Markdown语法 ![封装图](图片路径) 来格式化并展示图片。</span><br></pre></td></tr></table></figure>
+
+<p>成功在前端渲染 <code>markdown</code> 图片效果展示：<br><img src="https://github.com/user-attachments/assets/6241fccf-1ec6-4c52-af78-6b115500ad48" alt="image"></p>
+<hr>
+<p>该项目代码参考 <a target="_blank" rel="noopener" href="https://www.jianshu.com/p/5cc1fff0280c">Not allowed to load local resource: 报错解决方法</a></p>
 
         </div>
 
@@ -411,7 +420,7 @@
                 
                     <p class="copyright-item">
                         <span>Permalink:</span>
-                        <span><a href="https://evannzhongg.github.io/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/">https://evannzhongg.github.io/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/</a></span>
+                        <span><a href="https://evannzhongg.github.io/2025/06/13/Securely-Rendering-LLM-Generated-Local-Image-Paths-in-Flask/">https://evannzhongg.github.io/2025/06/13/Securely-Rendering-LLM-Generated-Local-Image-Paths-in-Flask/</a></span>
                     </p>
                 
                 
@@ -430,13 +439,21 @@
                 <span class="tag">
                     
                     
-                        <a href="/tags/Hexo/"># Hexo</a>
-                    
-                        <a href="/tags/%E5%8D%9A%E5%AE%A2/"># 博客</a>
-                    
-                        <a href="/tags/Blog/"># Blog</a>
-                    
                         <a href="/tags/%E5%89%8D%E7%AB%AF/"># 前端</a>
+                    
+                        <a href="/tags/Markdown/"># Markdown</a>
+                    
+                        <a href="/tags/AI/"># AI</a>
+                    
+                        <a href="/tags/LLM/"># LLM</a>
+                    
+                        <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"># 大模型</a>
+                    
+                        <a href="/tags/RAG/"># RAG</a>
+                    
+                        <a href="/tags/Python/"># Python</a>
+                    
+                        <a href="/tags/flask/"># flask</a>
                     
                         
                 </span>
@@ -449,10 +466,8 @@
         </section>
         <section class="post-nav">
             
-                <a class="prev" rel="prev" href="/2025/03/28/Convert-PDF-Tables-to-Readable-Text/">Convert PDF Tables to Readable Text</a>
             
-            
-            <a class="next" rel="next" href="/2025/03/26/Add-Copy-Button-to-Code-Blocks-in-Hexo/">Add Copy Button to Code Blocks in Hexo</a>
+            <a class="next" rel="next" href="/2025/05/01/Docling2md/">Docling2md</a>
             
         </section>
 
