@@ -15,7 +15,7 @@
 <!-- oogle Search Console 验证标签 -->
 <meta name="google-site-verification" content="0hjafUT-HANjK2izAW9bOEq2iQG3VWXZTPPKl5pVMyc" />
 
-<title>NebulaGraphQAChain | Hexo</title>
+<title>Run vLLM Locally and Expose with Cloudflare Tunnel | Hexo</title>
 
 
 
@@ -310,7 +310,7 @@
     
     <article class="post-wrap">
         <header class="post-header">
-            <h1 class="post-title">NebulaGraphQAChain</h1>
+            <h1 class="post-title">Run vLLM Locally and Expose with Cloudflare Tunnel</h1>
             
                 <div class="post-meta">
                     
@@ -319,14 +319,14 @@
 
                     
                         <span class="post-time">
-                        Date: <a href="#">March 20, 2025&nbsp;&nbsp;21:50:06</a>
+                        Date: <a href="#">September 1, 2025&nbsp;&nbsp;11:47:03</a>
                         </span>
                     
                     
                         <span class="post-category">
                     Category:
                             
-                                <a href="/categories/Knowledge-Graph/">Knowledge Graph</a>
+                                <a href="/categories/LLM%E5%AD%A6%E4%B9%A0%E4%B9%8B%E8%B7%AF/">LLM学习之路</a>
                             
                         </span>
                     
@@ -335,79 +335,145 @@
         </header>
 
         <div class="post-content">
-            <h1 id="基于Langchain在NebulaGraph实现GraphRAG"><a href="#基于Langchain在NebulaGraph实现GraphRAG" class="headerlink" title="基于Langchain在NebulaGraph实现GraphRAG"></a>基于Langchain在NebulaGraph实现GraphRAG</h1><hr>
-<p>项目地址：<a target="_blank" rel="noopener" href="https://github.com/EvannZhongg/NebulaGraphQAChain.git">https://github.com/EvannZhongg/NebulaGraphQAChain.git</a></p>
+            <h1 id="通过vLLM部署本地模型并通过Cloudflare-Tunnel发布到公网"><a href="#通过vLLM部署本地模型并通过Cloudflare-Tunnel发布到公网" class="headerlink" title="通过vLLM部署本地模型并通过Cloudflare Tunnel发布到公网"></a>通过vLLM部署本地模型并通过Cloudflare Tunnel发布到公网</h1><p>这份指南将以我本人解决问题的历程为线索，记录每一步的命令、参数、遇到的问题以及相应的解决方案。</p>
 <hr>
-<h2 id="1-这个代码是做什么的？"><a href="#1-这个代码是做什么的？" class="headerlink" title="1. 这个代码是做什么的？"></a><strong>1. 这个代码是做什么的？</strong></h2><ul>
-<li><strong>把自然语言问题转化为图数据库NebulaGraph查询语句</strong></li>
-<li><strong>查询 NebulaGraph（确保图数据库中已经存在数据，本代码不再额外构建数据插入图数据库）</strong></li>
-<li><strong>返回查询结果</strong></li>
+<h2 id="1-准备工作"><a href="#1-准备工作" class="headerlink" title="1. 准备工作"></a>1. 准备工作</h2><p>在开始之前，请确保您具备以下条件：</p>
+<ul>
+<li><strong>硬件</strong>：一台拥有至少24GB显存的NVIDIA GPU。</li>
+<li><strong>软件</strong>：<ul>
+<li>64位的Linux操作系统（例如Ubuntu 20.04+）。</li>
+<li>Python 3.8+ 环境。</li>
+<li><code>pip</code> 包管理器。</li>
 </ul>
-<p><strong>简单来说</strong>：<br>你可以用“人话”问它问题，它会自动 <strong>翻译成图数据库语言</strong>，然后去 <strong>图数据库找答案</strong>，将查询到的结果与提问相结合重新用“人话”回答问题。</p>
+</li>
+<li><strong>账户与域名</strong>：<ul>
+<li>一个 <a target="_blank" rel="noopener" href="https://www.cloudflare.com/">Cloudflare</a> 账户。（若不进行接口的公网开放可以没有）</li>
+<li>一个您自己的域名，并将其DNS管理设置为使用Cloudflare。（若不进行接口的公网开放可以没有）</li>
+</ul>
+</li>
+</ul>
 <hr>
-<h2 id="2-代码执行的流程是什么？"><a href="#2-代码执行的流程是什么？" class="headerlink" title="2. 代码执行的流程是什么？"></a><strong>2. 代码执行的流程是什么？</strong></h2><ol>
-<li>读取 <strong>API 配置</strong>（告诉代码如何访问 LLM）</li>
-<li>调用 <strong>大模型（LLM）</strong>，让它帮我们翻译问题</li>
-<li>连接 <strong>NebulaGraph</strong> 数据库</li>
-<li>执行 <strong>数据库查询</strong>，获得结果</li>
-<li>返回最终的查询结果</li>
+<h2 id="2-部署本地vLLM服务"><a href="#2-部署本地vLLM服务" class="headerlink" title="2. 部署本地vLLM服务"></a>2. 部署本地vLLM服务</h2><h3 id="2-1-安装vLLM"><a href="#2-1-安装vLLM" class="headerlink" title="2.1 安装vLLM"></a>2.1 安装vLLM</h3><p>首先，创建一个干净的Python虚拟环境并安装vLLM及其依赖。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建并激活虚拟环境</span></span><br><span class="line">python3 -m venv vllm_env</span><br><span class="line"><span class="built_in">source</span> vllm_env/bin/activate</span><br><span class="line"></span><br><span class="line"><span class="comment"># 升级pip</span></span><br><span class="line">pip install --upgrade pip</span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装vllm多模态版本和openai客户端</span></span><br><span class="line">pip install <span class="string">&quot;vllm[multimodal]&quot;</span> openai</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-2-下载模型文件（离线部署准备）"><a href="#2-2-下载模型文件（离线部署准备）" class="headerlink" title="2.2 下载模型文件（离线部署准备）"></a>2.2 下载模型文件（离线部署准备）</h3><p>由于本人的服务器网络环境不佳，我们选择在另一台网络好的电脑上下载模型，再上传到服务器进行离线部署。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在一台Windows电脑上尝试使用git clone</span></span><br><span class="line">git <span class="built_in">clone</span> https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>若<code>git clone</code> 命令失败，报错 <code>Failed to connect to huggingface.co port 443 after ... ms: Could not connect to server</code>。</p>
+<ul>
+<li><p><strong>原因分析</strong>：网络问题，Git无法建立稳定的HTTPS连接。</p>
+<ul>
+<li><p><strong>解决方案</strong>：直接从Hugging Face网站手动下载或使用官方库下载。</p>
+<ol>
+<li><p><strong>手动下载</strong>：访问模型页面的 “<a target="_blank" rel="noopener" href="https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct/tree/main">Files and versions</a>“标（以Qwen2.5-VL-7B-Instruct为例），逐个下载所有文件，并将它们全部放在一个新建的文件夹里。</p>
+</li>
+<li><p><strong>使用<code>huggingface-hub</code>库下载</strong>：编写一个简单的Python脚本来下载，该方法支持断点续传，更稳定。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">          <span class="comment"># download_model.py</span></span><br><span class="line">          <span class="keyword">from</span> huggingface_hub <span class="keyword">import</span> snapshot_download</span><br><span class="line">          snapshot_download(</span><br><span class="line">              repo_id=<span class="string">&quot;Qwen/Qwen2.5-VL-7B-Instruct&quot;</span>,</span><br><span class="line">              local_dir=<span class="string">&quot;/path/to/save/models/Qwen2.5-VL-7B-Instruct&quot;</span>, <span class="comment"># 指定本地保存路径</span></span><br><span class="line">              local_dir_use_symlinks=<span class="literal">False</span></span><br><span class="line">          )</span><br><span class="line">下载完成后，将包含所有模型文件的 `Qwen2<span class="number">.5</span>-VL-7B-Instruct` 文件夹完整上传到你的Linux AI服务器上，例如路径为：`/home/models/Qwen2<span class="number">.5</span>-VL-7B-Instruct`。</span><br><span class="line"></span><br><span class="line"><span class="comment">### 2.3 启动vLLM服务</span></span><br><span class="line"></span><br><span class="line">在模型文件准备就绪后，我们开始启动vLLM服务。</span><br><span class="line"></span><br><span class="line"><span class="comment">#### 第1轮：基础启动尝试</span></span><br><span class="line"></span><br><span class="line"> * **初始指令**:</span><br><span class="line"></span><br><span class="line">   ```bash</span><br><span class="line">   python -m vllm.entrypoints.openai.api_server \</span><br><span class="line">       --model /path/to/models/Qwen2<span class="number">.5</span>-VL-7B-Instruct \  <span class="comment"># 这里需要需要修改为你Linux服务器实际存储模型文件的路径</span></span><br><span class="line">       --port <span class="number">8000</span> \  <span class="comment"># vLLM的本地运行端口，由于我本人在后端运行django，为避免冲突可以修改端口号，例如8001</span></span><br><span class="line">       --trust-remote-code</span><br></pre></td></tr></table></figure></li>
 </ol>
-<hr>
-<h2 id="3-代码分解讲解"><a href="#3-代码分解讲解" class="headerlink" title="3. 代码分解讲解"></a><strong>3. 代码分解讲解</strong></h2><h3 id="3-1-读取环境变量（API-配置）"><a href="#3-1-读取环境变量（API-配置）" class="headerlink" title="3.1 读取环境变量（API 配置）"></a><strong>3.1 读取环境变量（API 配置）</strong></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line"><span class="comment"># 读取 .env 文件</span></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line">CHAT_API_URL = os.getenv(<span class="string">&quot;CHAT_API_URL&quot;</span>)</span><br><span class="line">API_KEY = os.getenv(<span class="string">&quot;API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> <span class="keyword">not</span> CHAT_API_URL <span class="keyword">or</span> <span class="keyword">not</span> API_KEY:</span><br><span class="line">    <span class="keyword">raise</span> ValueError(<span class="string">&quot;请在 .env 文件中正确配置 CHAT_API_URL 和 API_KEY&quot;</span>)</span><br></pre></td></tr></table></figure>
-<h4 id="作用："><a href="#作用：" class="headerlink" title="作用："></a><strong>作用：</strong></h4><ul>
-<li><strong>读取 API 地址</strong> 和 <strong>密钥</strong>，让代码知道如何访问大模型。</li>
-<li><strong>如果没有配置 API</strong>，就会报错，提醒用户。</li>
+</li>
 </ul>
-<p>🔹 <strong>什么是 .env 文件？</strong></p>
-<p><code>.env</code> 文件用于存放 <strong>API 密钥</strong>，这样我们就不用在代码里写明白，保证安全，你可以在项目目录中新建一个<code>.env</code> 文件，本文使用的是siliconflow平台提供的API服务，你可以在siliconflow平台进行注册申请API KEY填入下方的<code>API_KEY</code>变量中。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CHAT_API_URL=https://api.siliconflow.cn/v1/chat/completions</span><br><span class="line">API_KEY=sk-***************************</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</blockquote>
+<hr>
+<blockquote>
+<p><strong>问题 #1：GPU显存不足 (预检失败)</strong></p>
+<ul>
+<li><strong>错误日志</strong>: <code>ValueError: Free memory on device (...) is less than desired GPU memory utilization (0.9, ...)</code></li>
+<li><strong>问题分析</strong>: vLLM默认尝试在第一块显卡（GPU 0）上预留90%的显存，运行命令 <code>nvidia-smi</code> 发现，GPU 0 上有多个其他进程占用了约5.7GB显存，导致剩余可用显存不足。</li>
+<li><strong>解决方案</strong>: 我们发现服务器的第二块显卡（GPU 1）完全空闲。因此，我们需要明确告诉vLLM去使用这块空闲的GPU。</li>
+</ul>
+</blockquote>
+<h4 id="第2轮：修正显卡选择"><a href="#第2轮：修正显卡选择" class="headerlink" title="第2轮：修正显卡选择"></a>第2轮：修正显卡选择</h4><p>我们通过添加 <code>CUDA_VISIBLE_DEVICES</code> 环境变量来指定GPU，让vLLM在空闲的GPU 1上运行。</p>
+<ul>
+<li><p><strong>修正后的指令</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CUDA_VISIBLE_DEVICES=1 python -m vllm.entrypoints.openai.api_server </span><br><span class="line">    --model /path/to/models/Qwen2.5-VL-7B-Instruct </span><br><span class="line">    --port 8000 </span><br><span class="line">    --trust-remote-code</span><br></pre></td></tr></table></figure></li>
+</ul>
+<hr>
+<blockquote>
+<p><strong>问题 #2：KV缓存空间不足</strong></p>
+<ul>
+<li><strong>错误日志</strong>: <code>ValueError: ... GiB KV cache is needed, which is larger than the available KV cache memory ...</code></li>
+<li><strong>问题分析</strong>: 模型加载成功后，vLLM需要为上下文（KV缓存）分配空间。Qwen模型的理论最大长度（128k tokens）非常大，导致计算出的所需KV缓存空间超过了24GB显卡上加载完模型后剩余的空间。</li>
+<li><strong>解决方案</strong>: 使用 <code>--max-model-len</code> 参数告诉vLLM，不需要为理论最大长度做准备，只需为一个更实际、更小的长度分配空间即可。</li>
+</ul>
+</blockquote>
+<h4 id="第3轮：解决KV缓存空间问题"><a href="#第3轮：解决KV缓存空间问题" class="headerlink" title="第3轮：解决KV缓存空间问题"></a>第3轮：解决KV缓存空间问题</h4><p>我们在命令中加入 <code>--max-model-len</code> 参数，限制上下文长度，使其KV缓存能被装入剩余显存。</p>
+<ul>
+<li><p><strong>修正后的指令</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">CUDA_VISIBLE_DEVICES=1 python -m vllm.entrypoints.openai.api_server </span><br><span class="line">    --model /path/to/models/Qwen2.5-VL-7B-Instruct  </span><br><span class="line">    --port 8000 </span><br><span class="line">    --trust-remote-code </span><br><span class="line">    --max-model-len 32768</span><br></pre></td></tr></table></figure></li>
+</ul>
+<hr>
+<blockquote>
+<p><strong>问题 ##3：模型名称不匹配 (404 Not Found)</strong></p>
+<ul>
+<li><strong>错误日志</strong>: 服务成功启动，但客户端（<code>test_client.py</code>）调用时，服务器返回 <code>Error: The model &#39;Qwen/Qwen2.5-VL-7B-Instruct&#39; does not exist.</code></li>
+<li><strong>问题分析</strong>: 当vLLM从本地路径加载模型时，它默认使用<strong>完整的文件路径</strong>作为模型名。而客户端请求的是模型的Hugging Face官方名称，两者不匹配。</li>
+<li><strong>解决方案</strong>: 使用 <code>--served-model-name</code> 参数为本地加载的模型指定一个对外的“别名”，使其与客户端请求的名称一致。同时，既然我们已经在使用一块专用的空闲GPU，我们可以把显存利用率调回到一个较高的值以获得最佳性能。</li>
+</ul>
+</blockquote>
+<h4 id="第5轮：最终成功的命令"><a href="#第5轮：最终成功的命令" class="headerlink" title="第5轮：最终成功的命令"></a>第5轮：最终成功的命令</h4><p>成功启动一个稳定、高性能、且能被客户端正确识别的服务。</p>
+<ul>
+<li><p><strong>最终指令</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">CUDA_VISIBLE_DEVICES=1 python -m vllm.entrypoints.openai.api_server </span><br><span class="line">    ---model /path/to/models/Qwen2.5-VL-7B-Instruct </span><br><span class="line">    --served-model-name Qwen/Qwen2.5-VL-7B-Instruct </span><br><span class="line">    --port 8000 </span><br><span class="line">    --trust-remote-code </span><br><span class="line">    --gpu-memory-utilization 0.95 </span><br><span class="line">    --max-model-len 32768</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>若多行命令报错，可直接使用以下单行命令</strong></p>
+</li>
+</ul>
+<pre><code><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CUDA_VISIBLE_DEVICES=1 python -m vllm.entrypoints.openai.api_server ---model /path/to/models/Qwen2.5-VL-7B-Instruc --served-model-name Qwen/Qwen2.5-VL-7B-Instruct --port 8000 --trust-remote-code --gpu-memory-utilization 0.95 --max-model-len 32768</span><br></pre></td></tr></table></figure>
+</code></pre>
+<p><strong>参数详解</strong>:</p>
+<ul>
+<li><code>CUDA_VISIBLE_DEVICES=1</code>: 指定程序仅使用编号为<code>1</code>的GPU。</li>
+<li><code>--model /path/...</code>: 指定从本地文件夹加载模型，实现离线部署。</li>
+<li><code>--served-model-name Qwen/...</code>: 为本地模型设置一个对外服务的别名，以匹配客户端请求。</li>
+<li><code>--port 8000</code>: 在8000端口上提供服务。</li>
+<li><code>--trust-remote-code</code>: 允许执行模型自带的自定义Python代码，Qwen模型必需。</li>
+<li><code>--gpu-memory-utilization 0.95</code>: 设置GPU显存使用率，因为GPU 1是空闲的，可以设置高一些。</li>
+<li><code>--max-model-len 32768</code>: 限制最大上下文长度为32k，以解决KV缓存空间不足的问题。</li>
+</ul>
+<hr>
+<h2 id="3-使用Cloudflare-Tunnel发布到公网"><a href="#3-使用Cloudflare-Tunnel发布到公网" class="headerlink" title="3. 使用Cloudflare Tunnel发布到公网"></a>3. 使用Cloudflare Tunnel发布到公网</h2><p>现在我们有了一个本地运行的服务，接下来将它发布到公网。</p>
+<h3 id="3-1-安装cloudflared"><a href="#3-1-安装cloudflared" class="headerlink" title="3.1 安装cloudflared"></a>3.1 安装cloudflared</h3><p>添加Cloudflare GPG密钥和软件源</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloudflare-main.gpg</span><br><span class="line">echo &#x27;deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared jammy main&#x27; | sudo tee /etc/apt/sources.list.d/cloudflared.list</span><br></pre></td></tr></table></figure>
+<p>安装 cloudflared:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo apt update</span><br><span class="line">sudo apt install cloudflared</span><br></pre></td></tr></table></figure>
+
+
+
+
+<h3 id="3-2-授权cloudflared"><a href="#3-2-授权cloudflared" class="headerlink" title="3.2 授权cloudflared"></a>3.2 授权cloudflared</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cloudflared tunnel login</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="3-3-创建并配置隧道"><a href="#3-3-创建并配置隧道" class="headerlink" title="3.3 创建并配置隧道"></a>3.3 创建并配置隧道</h3><ol>
+<li><p><strong>创建隧道</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cloudflared tunnel create vllm-service</span><br></pre></td></tr></table></figure>
+
+<p>记下输出的隧道UUID和凭证文件路径。</p>
+</li>
+</ol>
+<p><img src="https://github.com/user-attachments/assets/db4888d8-6254-4a7f-831c-873030ae8dd6%3E" alt="image"><br>2.  <strong>创建并编辑配置文件</strong>:</p>
+<pre><code><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> -p /home/path/.cloudflared</span><br><span class="line">nano ~/.cloudflared/config.yml</span><br></pre></td></tr></table></figure>
+
+根据你的隧道信息和域名，填入以下内容：
+
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">tunnel:</span> <span class="string">&lt;你的隧道UUID&gt;</span></span><br><span class="line"><span class="attr">credentials-file:</span> <span class="string">/home/path/.cloudflared/&lt;你的隧道UUID&gt;.json</span></span><br><span class="line"></span><br><span class="line"><span class="attr">ingress:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">hostname:</span> <span class="string">qwen-vl.你的域名</span> <span class="comment"># 你的公共访问域名</span></span><br><span class="line">    <span class="attr">service:</span> <span class="string">http://localhost:8000</span> <span class="comment"># 指向本地vLLM服务</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">service:</span> <span class="string">http_status:404</span> <span class="comment"># 对于其他所有未匹配的请求，返回 404</span></span><br></pre></td></tr></table></figure>
+</code></pre>
+<ol start="3">
+<li><p><strong>创建DNS路由</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cloudflared tunnel route dns vllm-service qwen-vl.你的域名</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="3-4-启动隧道服务"><a href="#3-4-启动隧道服务" class="headerlink" title="3.4 启动隧道服务"></a>3.4 启动隧道服务</h3><p>临时测试运行</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cloudflared tunnel run vllm-service</span><br></pre></td></tr></table></figure>
+
+<p>作为后台服务永久运行</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 将cloudflared安装为systemd服务</span></span><br><span class="line"><span class="built_in">sudo</span> cloudflared service install</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动服务</span></span><br><span class="line"><span class="built_in">sudo</span> systemctl start cloudflared</span><br><span class="line"></span><br><span class="line"><span class="comment"># （推荐）设置开机自启</span></span><br><span class="line"><span class="built_in">sudo</span> systemctl <span class="built_in">enable</span> cloudflared</span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查服务状态</span></span><br><span class="line"><span class="built_in">sudo</span> systemctl status cloudflared</span><br></pre></td></tr></table></figure>
+
 
 <hr>
-<h3 id="3-2-调用-LLM-API"><a href="#3-2-调用-LLM-API" class="headerlink" title="3.2 调用 LLM API"></a><strong>3.2 调用 LLM API</strong></h3><h4 id="代码："><a href="#代码：" class="headerlink" title="代码："></a><strong>代码：</strong></h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">call_chat_api</span>(<span class="params">prompt</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    调用 LLM API 生成 Cypher 查询</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        response = requests.post(</span><br><span class="line">            CHAT_API_URL,</span><br><span class="line">            headers=&#123;<span class="string">&quot;Authorization&quot;</span>: <span class="string">f&quot;Bearer <span class="subst">&#123;API_KEY&#125;</span>&quot;</span>&#125;,</span><br><span class="line">            json=&#123;</span><br><span class="line">                <span class="string">&quot;model&quot;</span>: <span class="string">&quot;deepseek-ai/DeepSeek-V3&quot;</span>,  <span class="comment"># 选择模型</span></span><br><span class="line">                <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: prompt&#125;]</span><br><span class="line">            &#125;</span><br><span class="line">        )</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> response.status_code == <span class="number">200</span>:</span><br><span class="line">            data = response.json()</span><br><span class="line">            result = data[<span class="string">&quot;choices&quot;</span>][<span class="number">0</span>][<span class="string">&quot;message&quot;</span>][<span class="string">&quot;content&quot;</span>]</span><br><span class="line">            </span><br><span class="line">            <span class="comment"># 处理 Markdown 代码块</span></span><br><span class="line">            <span class="keyword">if</span> result.startswith(<span class="string">&quot;```nebula&quot;</span>) <span class="keyword">and</span> result.endswith(<span class="string">&quot;```&quot;</span>):</span><br><span class="line">                result = result[<span class="built_in">len</span>(<span class="string">&quot;```nebula&quot;</span>):-<span class="built_in">len</span>(<span class="string">&quot;```&quot;</span>)].strip()</span><br><span class="line">            <span class="keyword">elif</span> result.startswith(<span class="string">&quot;```cypher&quot;</span>) <span class="keyword">and</span> result.endswith(<span class="string">&quot;```&quot;</span>):</span><br><span class="line">                result = result[<span class="built_in">len</span>(<span class="string">&quot;```cypher&quot;</span>):-<span class="built_in">len</span>(<span class="string">&quot;```&quot;</span>)].strip()</span><br><span class="line">            <span class="keyword">elif</span> result.startswith(<span class="string">&quot;```sql&quot;</span>) <span class="keyword">and</span> result.endswith(<span class="string">&quot;```&quot;</span>):</span><br><span class="line">                result = result[<span class="built_in">len</span>(<span class="string">&quot;```sql&quot;</span>):-<span class="built_in">len</span>(<span class="string">&quot;```&quot;</span>)].strip()</span><br><span class="line">            <span class="keyword">elif</span> result.startswith(<span class="string">&quot;```&quot;</span>) <span class="keyword">and</span> result.endswith(<span class="string">&quot;```&quot;</span>):</span><br><span class="line">                result = result[<span class="built_in">len</span>(<span class="string">&quot;```&quot;</span>):-<span class="built_in">len</span>(<span class="string">&quot;```&quot;</span>)].strip()</span><br><span class="line">            </span><br><span class="line">            <span class="keyword">return</span> result</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;API 调用失败: <span class="subst">&#123;response.status_code&#125;</span> <span class="subst">&#123;response.text&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;API 调用出错: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
-<h4 id="作用：-1"><a href="#作用：-1" class="headerlink" title="作用："></a><strong>作用：</strong></h4><ol>
-<li><strong>发送请求</strong> 给 LLM（大模型），让它把用户问题翻译成 <strong>数据库查询语句</strong>。</li>
-<li><strong>解析返回结果</strong>，提取真正的数据库查询语句。</li>
-<li><strong>如果出错</strong>，就打印错误信息。</li>
-</ol>
-<ul>
-<li>代码中的以下部分用于处理大模型输出含有代码标记块的情况，如果你的大模型输出含有代码标记块则查询语句会出现失败，在下方代码中添加代码标记块名称，避免查询出错.<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">if result.startswith(&quot;```代码标记块内容&quot;) and result.endswith(&quot;```&quot;):</span><br><span class="line">  result = result[len(&quot;```&quot;):-len(&quot;```&quot;)].strip()</span><br></pre></td></tr></table></figure></li>
-</ul>
-<p> <strong>示例：</strong></p>
-<ul>
-<li>你输入：“列出某个电子器件的所有相关参数”</li>
-<li>LLM 可能返回：<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MATCH (n:Component) RETURN n.parameters</span><br></pre></td></tr></table></figure>
-这个就是 <strong>Cypher 查询语句</strong>，可以直接在图数据库执行。</li>
-</ul>
-<hr>
-<h3 id="3-3-自定义-LLM-处理类生成查询语句"><a href="#3-3-自定义-LLM-处理类生成查询语句" class="headerlink" title="3.3 自定义 LLM 处理类生成查询语句"></a><strong>3.3 自定义 LLM 处理类生成查询语句</strong></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> Runnable</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompt_values <span class="keyword">import</span> StringPromptValue</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomChatModel</span>(<span class="title class_ inherited__">Runnable</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">invoke</span>(<span class="params">self, <span class="built_in">input</span>, config: <span class="built_in">dict</span> = <span class="literal">None</span>, **kwargs</span>):</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">isinstance</span>(<span class="built_in">input</span>, StringPromptValue):</span><br><span class="line">            <span class="built_in">input</span> = <span class="built_in">input</span>.to_string()</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> <span class="built_in">isinstance</span>(<span class="built_in">input</span>, <span class="built_in">str</span>):</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">f&quot;Expected input to be a string, got <span class="subst">&#123;<span class="built_in">type</span>(<span class="built_in">input</span>)&#125;</span> instead.&quot;</span>)</span><br><span class="line">        </span><br><span class="line">        result = call_chat_api(<span class="built_in">input</span>)</span><br><span class="line">        <span class="keyword">if</span> result <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">&quot;API 调用未返回有效响应&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
-<h4 id="作用：-2"><a href="#作用：-2" class="headerlink" title="作用："></a><strong>作用：</strong></h4><ul>
-<li>让 <strong>LangChain 框架</strong> 知道如何调用 LLM。</li>
-<li>处理输入数据，确保 LLM <strong>可以正确理解问题</strong>。</li>
-<li>调用 <code>call_chat_api()</code>，获取 LLM 生成的数据库查询语句。</li>
-</ul>
-<hr>
-<h3 id="3-4-连接-NebulaGraph"><a href="#3-4-连接-NebulaGraph" class="headerlink" title="3.4 连接 NebulaGraph"></a><strong>3.4 连接 NebulaGraph</strong></h3><h4 id="代码：-1"><a href="#代码：-1" class="headerlink" title="代码："></a><strong>代码：</strong></h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.graphs <span class="keyword">import</span> NebulaGraph</span><br><span class="line"></span><br><span class="line">graph = NebulaGraph(</span><br><span class="line">    space=<span class="string">&quot;SPACE&quot;</span>,  <span class="comment">#将SPACE修改为自己的图空间名称</span></span><br><span class="line">    username=<span class="string">&quot;root&quot;</span>,</span><br><span class="line">    password=<span class="string">&quot;nebula&quot;</span>,</span><br><span class="line">    address=<span class="string">&quot;127.0.0.1&quot;</span>,</span><br><span class="line">    port=<span class="number">9669</span>,</span><br><span class="line">    session_pool_size=<span class="number">30</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<h4 id="作用：-3"><a href="#作用：-3" class="headerlink" title="作用："></a><strong>作用：</strong></h4><ul>
-<li>连接 <strong>NebulaGraph 图数据库</strong>，让代码可以查询数据。</li>
-<li>配置 <strong>数据库地址、用户名、密码</strong>。</li>
-</ul>
-<hr>
-<h3 id="3-5-运行查询示例"><a href="#3-5-运行查询示例" class="headerlink" title="3.5 运行查询示例"></a><strong>3.5 运行查询示例</strong></h3><h4 id="代码：-2"><a href="#代码：-2" class="headerlink" title="代码："></a><strong>代码：</strong></h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">query_graph</span>(<span class="params">question</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    运行 NebulaGraph QAChain，处理自然语言查询</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        answer = chain.run(question)</span><br><span class="line">        <span class="keyword">return</span> answer</span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;查询执行出错: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    test_question = <span class="built_in">input</span>(<span class="string">&quot;请输入您的查询问题: &quot;</span>)  <span class="comment"># 让用户在终端输入问题</span></span><br><span class="line">    response = query_graph(test_question)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;查询结果:&quot;</span>, response)</span><br></pre></td></tr></table></figure>
-<h4 id="作用：-4"><a href="#作用：-4" class="headerlink" title="作用："></a><strong>作用：</strong></h4><ul>
-<li>让用户输入问题。</li>
-<li>调用 <code>chain.run(question)</code> 处理查询。</li>
-<li><strong>返回查询语句和结果</strong>。</li>
-</ul>
-<p>📌 <strong>示例：</strong></p>
-<ol>
-<li>用户输入：<strong>“1N4736AT-D的应用有什么”</strong></li>
-<li>代码调用 LLM，获取 Cypher 语句</li>
-<li>执行数据库查询，返回结果。<br><img src="https://github.com/user-attachments/assets/fefb7d40-9737-4dc1-a3d0-266445ccc65a" alt="Query Execution"></li>
-<li>我们可以在图数据库中进行验证。<br><img src="https://github.com/user-attachments/assets/72b07b88-740e-4210-aaaf-823e29bfb3d1" alt="Nebula Graph Query"></li>
-<li>这里制作了一个简易的前端页面，可以查看效果和后端日志，详细代码可在本文开头的项目地址中获取。<br><img src="https://github.com/user-attachments/assets/8a1613eb-ec9a-4e2f-bce9-3876ebc80191" alt="image"></li>
-</ol>
-<hr>
-<p>该项目代码参考 <a target="_blank" rel="noopener" href="https://github.com/hwchase17/langchain">LangChain</a> 和 <a target="_blank" rel="noopener" href="http://doc.cnlangchain.com/modules/chains/examples/graph_nebula_qa.html">NebulaGraphQAChain</a>。</p>
+<h2 id="4-如何从公网调用API"><a href="#4-如何从公网调用API" class="headerlink" title="4. 如何从公网调用API"></a>4. 如何从公网调用API</h2><p>现在，您的模型已经成功部署并通过 <code>https://qwen-vl.你的域名</code> 向公网提供服务。任何人都可以通过OPENAI接口进行调用。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># --- 需要提供给用户的信息 ---</span></span><br><span class="line">API_BASE_URL = <span class="string">&quot;https://qwen-vl.你的域名/v1&quot;</span></span><br><span class="line">MODEL_NAME = <span class="string">&quot;Qwen/Qwen2.5-VL-7B-Instruct&quot;</span></span><br><span class="line">API_KEY = <span class="string">&quot;not-needed&quot;</span> <span class="comment"># API Key可以是任意字符串</span></span><br></pre></td></tr></table></figure>
+<p>测试脚本：<a target="_blank" rel="noopener" href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
 
         </div>
 
@@ -422,7 +488,7 @@
                 
                     <p class="copyright-item">
                         <span>Permalink:</span>
-                        <span><a href="https://evannzhongg.github.io/2025/03/20/NebulaGraphQAChain/">https://evannzhongg.github.io/2025/03/20/NebulaGraphQAChain/</a></span>
+                        <span><a href="https://evannzhongg.github.io/2025/09/01/Run-vLLM-Locally-and-Expose-with-Cloudflare-Tunnel/">https://evannzhongg.github.io/2025/09/01/Run-vLLM-Locally-and-Expose-with-Cloudflare-Tunnel/</a></span>
                     </p>
                 
                 
@@ -445,23 +511,11 @@
                     
                         <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"># 大模型</a>
                     
+                        <a href="/tags/Qwen/"># Qwen</a>
+                    
                         <a href="/tags/AI/"># AI</a>
                     
-                        <a href="/tags/Python/"># Python</a>
-                    
-                        <a href="/tags/RAG/"># RAG</a>
-                    
-                        <a href="/tags/flask/"># flask</a>
-                    
-                        <a href="/tags/Knowledge-Graph/"># Knowledge Graph</a>
-                    
-                        <a href="/tags/GraphRAG/"># GraphRAG</a>
-                    
-                        <a href="/tags/%E5%9B%BE%E6%95%B0%E6%8D%AE%E5%BA%93/"># 图数据库</a>
-                    
-                        <a href="/tags/LangChain/"># LangChain</a>
-                    
-                        <a href="/tags/NebulaGraph/"># NebulaGraph</a>
+                        <a href="/tags/vLLM/"># vLLM</a>
                     
                         
                 </span>
@@ -474,8 +528,8 @@
         </section>
         <section class="post-nav">
             
-                <a class="prev" rel="prev" href="/2025/03/21/Function-Calling/">Function Calling</a>
             
+            <a class="next" rel="next" href="/2025/06/13/Securely-Rendering-LLM-Generated-Local-Image-Paths-in-Flask/">Securely Rendering LLM-Generated Local Image Paths in Flask</a>
             
         </section>
 
