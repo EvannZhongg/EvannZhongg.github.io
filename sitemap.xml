@@ -173,34 +173,6 @@
 
   
   <url>
-    <loc>https://evannzhongg.github.io/tags/OCR/</loc>
-    <lastmod>2025-09-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://evannzhongg.github.io/tags/PaddleOCR/</loc>
-    <lastmod>2025-09-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://evannzhongg.github.io/tags/PDF/</loc>
-    <lastmod>2025-09-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://evannzhongg.github.io/tags/AI/</loc>
-    <lastmod>2025-09-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
     <loc>https://evannzhongg.github.io/tags/Hexo/</loc>
     <lastmod>2025-09-01</lastmod>
     <changefreq>weekly</changefreq>
@@ -229,6 +201,41 @@
   </url>
   
   <url>
+    <loc>https://evannzhongg.github.io/tags/OCR/</loc>
+    <lastmod>2025-09-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://evannzhongg.github.io/tags/PaddleOCR/</loc>
+    <lastmod>2025-09-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://evannzhongg.github.io/tags/PDF/</loc>
+    <lastmod>2025-09-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://evannzhongg.github.io/tags/AI/</loc>
+    <lastmod>2025-09-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://evannzhongg.github.io/tags/GraphRAG/</loc>
+    <lastmod>2025-09-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
     <loc>https://evannzhongg.github.io/tags/LLM/</loc>
     <lastmod>2025-09-01</lastmod>
     <changefreq>weekly</changefreq>
@@ -237,6 +244,34 @@
   
   <url>
     <loc>https://evannzhongg.github.io/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/</loc>
+    <lastmod>2025-09-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://evannzhongg.github.io/tags/RAG/</loc>
+    <lastmod>2025-09-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://evannzhongg.github.io/tags/Python/</loc>
+    <lastmod>2025-09-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://evannzhongg.github.io/tags/Gephi/</loc>
+    <lastmod>2025-09-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://evannzhongg.github.io/tags/Knowledge-Graph/</loc>
     <lastmod>2025-09-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -264,7 +299,7 @@
   </url>
   
   <url>
-    <loc>https://evannzhongg.github.io/tags/Python/</loc>
+    <loc>https://evannzhongg.github.io/tags/flask/</loc>
     <lastmod>2025-09-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -272,41 +307,6 @@
   
   <url>
     <loc>https://evannzhongg.github.io/tags/Markdown/</loc>
-    <lastmod>2025-09-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://evannzhongg.github.io/tags/Docling/</loc>
-    <lastmod>2025-09-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://evannzhongg.github.io/tags/Knowledge-Graph/</loc>
-    <lastmod>2025-09-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://evannzhongg.github.io/tags/GraphRAG/</loc>
-    <lastmod>2025-09-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://evannzhongg.github.io/tags/RAG/</loc>
-    <lastmod>2025-09-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://evannzhongg.github.io/tags/Gephi/</loc>
     <lastmod>2025-09-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -327,28 +327,7 @@
   </url>
   
   <url>
-    <loc>https://evannzhongg.github.io/tags/flask/</loc>
-    <lastmod>2025-09-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://evannzhongg.github.io/tags/%E5%9B%BE%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
-    <lastmod>2025-09-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://evannzhongg.github.io/tags/LangChain/</loc>
-    <lastmod>2025-09-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://evannzhongg.github.io/tags/NebulaGraph/</loc>
+    <loc>https://evannzhongg.github.io/tags/Docling/</loc>
     <lastmod>2025-09-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -382,14 +361,28 @@
     <priority>0.2</priority>
   </url>
   
-
-  
   <url>
-    <loc>https://evannzhongg.github.io/categories/OCR/</loc>
+    <loc>https://evannzhongg.github.io/tags/%E5%9B%BE%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
     <lastmod>2025-09-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
+  
+  <url>
+    <loc>https://evannzhongg.github.io/tags/LangChain/</loc>
+    <lastmod>2025-09-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://evannzhongg.github.io/tags/NebulaGraph/</loc>
+    <lastmod>2025-09-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+
   
   <url>
     <loc>https://evannzhongg.github.io/categories/Hexo/</loc>
@@ -399,7 +392,7 @@
   </url>
   
   <url>
-    <loc>https://evannzhongg.github.io/categories/LLM%E5%AD%A6%E4%B9%A0%E4%B9%8B%E8%B7%AF/</loc>
+    <loc>https://evannzhongg.github.io/categories/OCR/</loc>
     <lastmod>2025-09-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -407,6 +400,13 @@
   
   <url>
     <loc>https://evannzhongg.github.io/categories/Knowledge-Graph/</loc>
+    <lastmod>2025-09-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://evannzhongg.github.io/categories/LLM%E5%AD%A6%E4%B9%A0%E4%B9%8B%E8%B7%AF/</loc>
     <lastmod>2025-09-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
