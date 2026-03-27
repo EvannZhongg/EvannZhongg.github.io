@@ -1,10 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('figure.highlight').forEach((figure) => {
-    if (figure.querySelector('.copy-btn')) return;
+    let wrapper = figure.parentElement;
+    if (!wrapper || !wrapper.classList.contains('code-copy-wrapper')) {
+      wrapper = document.createElement('div');
+      wrapper.className = 'code-copy-wrapper';
+      figure.parentNode.insertBefore(wrapper, figure);
+      wrapper.appendChild(figure);
+    }
+
+    if (wrapper.querySelector('.copy-btn')) return;
 
     const copyBtn = document.createElement('button');
     copyBtn.className = 'copy-btn';
     copyBtn.title = '复制';
+    copyBtn.type = 'button';
+    copyBtn.setAttribute('aria-label', '复制代码');
 
     // 缩小后的复制图标（14*15）
     const copyIcon = `
@@ -22,37 +32,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     copyBtn.innerHTML = copyIcon;
 
-    // 按钮样式（浅灰底、缩小）
-    Object.assign(copyBtn.style, {
-      position: 'absolute',
-      top: '8px',
-      right: '8px',
-      padding: '4px',
-      background: '#aaa', // 浅灰背景 ✅
-      border: 'none',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      opacity: '0.85',
-      zIndex: 1000,
-      transition: 'opacity 0.2s ease',
-      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.15)'
-    });
-
-    copyBtn.addEventListener('mouseover', () => copyBtn.style.opacity = '1');
-    copyBtn.addEventListener('mouseout', () => copyBtn.style.opacity = '0.85');
-
     copyBtn.addEventListener('click', () => {
-      const code = figure.querySelector('td.code');
+      const code = figure.querySelector('td.code') || figure.querySelector('pre code') || figure.querySelector('pre');
       const text = code ? code.innerText : '';
       navigator.clipboard.writeText(text).then(() => {
         copyBtn.innerHTML = checkIcon;
+        copyBtn.classList.add('copied');
         setTimeout(() => {
           copyBtn.innerHTML = copyIcon;
+          copyBtn.classList.remove('copied');
         }, 1000);
       });
     });
 
-    figure.style.position = 'relative';
-    figure.appendChild(copyBtn);
+    wrapper.appendChild(copyBtn);
   });
 });

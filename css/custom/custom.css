@@ -24,3 +24,38 @@ body.dark-theme pre::-webkit-scrollbar-track,
 body.dark-theme code::-webkit-scrollbar-track {
     background: #0d1117 !important;
 }
+
+.post-content .code-copy-wrapper {
+    position: relative;
+    margin: 2em 0;
+}
+
+.post-content .code-copy-wrapper > figure.highlight {
+    margin: 0 !important;
+}
+
+.post-content .code-copy-wrapper > .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    background: #aaa;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.85;
+    z-index: 2;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.post-content .code-copy-wrapper > .copy-btn:hover {
+    opacity: 1;
+}
+
+.post-content .code-copy-wrapper > .copy-btn.copied {
+    background: #8c8c8c;
+}
