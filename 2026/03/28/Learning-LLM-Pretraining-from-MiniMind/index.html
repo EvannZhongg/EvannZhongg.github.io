@@ -605,6 +605,108 @@
 <li><code>num_hidden_layers = 8</code></li>
 </ul>
 <p>就表示每个 token 的表示会被连续加工 8 层。</p>
+<p>这里的“层”不是简单的一层线性层，而是一整个 Transformer block。</p>
+<p>在 MiniMind 里，一层 block 的定义可以参考：</p>
+<ul>
+<li><a href="/f:/minimind/model/model_minimind.py#L352">model&#x2F;model_minimind.py</a></li>
+</ul>
+<p>它主要包含这几个部分：</p>
+<ul>
+<li><code>input_layernorm</code></li>
+<li><code>self_attn</code></li>
+<li>第一条残差连接</li>
+<li><code>post_attention_layernorm</code></li>
+<li><code>mlp</code> 或 <code>moe-mlp</code></li>
+<li>第二条残差连接</li>
+</ul>
+<p>可以画成：</p>
+<pre class="mermaid">flowchart TD
+    A[hidden_states输入] --> B[RMSNorm]
+    B --> C[Self-Attention]
+    C --> D[残差相加]
+    D --> E[RMSNorm]
+    E --> F[MLP 或 MoE-MLP]
+    F --> G[残差相加]
+    G --> H[hidden_states输出]</pre>
+
+<p>如果用更贴近代码的方式理解：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">输入 hidden_states</span><br><span class="line">-&gt; 先做一次归一化</span><br><span class="line">-&gt; 做 self-attention，让每个 token 看见前文</span><br><span class="line">-&gt; 和原输入做残差相加</span><br><span class="line">-&gt; 再做一次归一化</span><br><span class="line">-&gt; 送进前馈网络 MLP</span><br><span class="line">-&gt; 再和上一阶段结果做一次残差相加</span><br><span class="line">-&gt; 得到这一层 block 的输出</span><br></pre></td></tr></table></figure>
+
+<h3 id="一层里的每个部分分别做什么"><a href="#一层里的每个部分分别做什么" class="headerlink" title="一层里的每个部分分别做什么"></a>一层里的每个部分分别做什么</h3><h4 id="1-input-layernorm"><a href="#1-input-layernorm" class="headerlink" title="1. input_layernorm"></a>1. <code>input_layernorm</code></h4><p>作用是把进入 attention 前的表示做归一化，让数值更稳定。</p>
+<p>MiniMind 这里用的是 <code>RMSNorm</code>，不是传统的 <code>LayerNorm</code>。</p>
+<p>你可以先把它理解成：</p>
+<ul>
+<li>在做 attention 之前，先把向量尺度整理得更稳定一些</li>
+</ul>
+<h4 id="2-self-attn"><a href="#2-self-attn" class="headerlink" title="2. self_attn"></a>2. <code>self_attn</code></h4><p>这是最核心的部分，它让每个 token 能根据上下文重新理解自己。</p>
+<p>直觉上：</p>
+<ul>
+<li>token 不再只看自己的 embedding</li>
+<li>而是会参考序列中前面的 token</li>
+<li>从而形成“带上下文的表示”</li>
+</ul>
+<p>例如句子：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">苹果很好吃</span><br></pre></td></tr></table></figure>
+
+<p>和：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">苹果发布新手机</span><br></pre></td></tr></table></figure>
+
+<p>虽然“苹果”这个 token 一样，但经过 self-attention 后，它会结合上下文变成不同的 hidden state。</p>
+<p>在预训练里，这一步特别重要，因为模型需要靠上下文来判断“下一个 token 最可能是什么”。</p>
+<h4 id="3-第一条残差连接"><a href="#3-第一条残差连接" class="headerlink" title="3. 第一条残差连接"></a>3. 第一条残差连接</h4><p>代码里是：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hidden_states += residual</span><br></pre></td></tr></table></figure>
+
+<p>残差连接的作用可以先简单理解成：</p>
+<ul>
+<li>不让新计算结果完全覆盖旧信息</li>
+<li>保留输入信息</li>
+<li>让深层网络更容易训练</li>
+</ul>
+<p>它是 Transformer 能堆很多层仍然稳定训练的重要原因之一。</p>
+<h4 id="4-post-attention-layernorm"><a href="#4-post-attention-layernorm" class="headerlink" title="4. post_attention_layernorm"></a>4. <code>post_attention_layernorm</code></h4><p>这是 attention 之后、MLP 之前再做一次归一化。</p>
+<p>作用还是：</p>
+<ul>
+<li>稳定数值</li>
+<li>让后面的 MLP 更容易处理输入</li>
+</ul>
+<h4 id="5-mlp"><a href="#5-mlp" class="headerlink" title="5. mlp"></a>5. <code>mlp</code></h4><p>这部分是前馈网络，默认情况下是普通 <code>FeedForward</code>。</p>
+<p>可以把它理解成：</p>
+<ul>
+<li>对每个 token 的表示单独做一轮更强的非线性变换</li>
+<li>补充 attention 不擅长的特征变换能力</li>
+</ul>
+<p>如果把 attention 理解成“让 token 彼此交流信息”，那么 MLP 更像是：</p>
+<ul>
+<li>token 自己在拿到上下文之后，重新加工自己</li>
+</ul>
+<h4 id="6-第二条残差连接"><a href="#6-第二条残差连接" class="headerlink" title="6. 第二条残差连接"></a>6. 第二条残差连接</h4><p>代码里是：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hidden_states = hidden_states + <span class="variable language_">self</span>.mlp(...)</span><br></pre></td></tr></table></figure>
+
+<p>作用和前面的残差连接类似：</p>
+<ul>
+<li>保留前一阶段结果</li>
+<li>让 MLP 的更新是“增量式”的</li>
+<li>避免深层训练时信息退化</li>
+</ul>
+<h3 id="为什么要堆很多层"><a href="#为什么要堆很多层" class="headerlink" title="为什么要堆很多层"></a>为什么要堆很多层</h3><p>一层 block 能做的事情有限。</p>
+<p>堆多层的意义在于：</p>
+<ul>
+<li>第 1 层学到比较浅层的局部模式</li>
+<li>后面的层逐渐整合更长范围、更抽象的上下文信息</li>
+</ul>
+<p>可以把它粗略理解成：</p>
+<ul>
+<li>前几层更像“看字词和短语”</li>
+<li>中间层更像“看句子结构”</li>
+<li>更后面的层更像“看更复杂的语义和上下文关系”</li>
+</ul>
+<p>这不是绝对划分，但作为学习阶段的直觉是有帮助的。</p>
+<p>所以：</p>
+<ul>
+<li><code>num_hidden_layers</code> 越大</li>
+<li>模型可加工上下文的深度通常越强</li>
+<li>参数量和计算量也会随之上升</li>
+</ul>
 <h3 id="use-moe-是什么"><a href="#use-moe-是什么" class="headerlink" title="use_moe 是什么"></a><code>use_moe</code> 是什么</h3><p>表示是否启用 MoE（Mixture of Experts）结构。</p>
 <ul>
 <li><code>use_moe = 0</code><ul>
@@ -992,11 +1094,11 @@
                     
                         <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"># 大模型</a>
                     
-                        <a href="/tags/Python/"># Python</a>
-                    
                         <a href="/tags/%E9%A2%84%E8%AE%AD%E7%BB%83/"># 预训练</a>
                     
                         <a href="/tags/MiniMind/"># MiniMind</a>
+                    
+                        <a href="/tags/Python/"># Python</a>
                     
                         
                 </span>
