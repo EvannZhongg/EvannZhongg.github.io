@@ -639,6 +639,46 @@
 <li>在做 attention 之前，先把向量尺度整理得更稳定一些</li>
 </ul>
 <h4 id="2-self-attn"><a href="#2-self-attn" class="headerlink" title="2. self_attn"></a>2. <code>self_attn</code></h4><p>这是最核心的部分，它让每个 token 能根据上下文重新理解自己。</p>
+<p>如果你想把“self-attention”具体落到 MiniMind 源码里看，最关键的代码就在：</p>
+<ul>
+<li><code>model/model_minimind.py</code></li>
+</ul>
+<p>其中 Q &#x2F; K &#x2F; V 对应关系非常直接：</p>
+<ul>
+<li><code>Q</code> 对应 <code>q_proj</code></li>
+<li><code>K</code> 对应 <code>k_proj</code></li>
+<li><code>V</code> 对应 <code>v_proj</code></li>
+</ul>
+<p>它们在前向传播里真正生成 Q &#x2F; K &#x2F; V 的位置是：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xq, xk, xv = <span class="variable language_">self</span>.q_proj(x), <span class="variable language_">self</span>.k_proj(x), <span class="variable language_">self</span>.v_proj(x)</span><br></pre></td></tr></table></figure>
+
+<p>这里：</p>
+<ul>
+<li><code>x</code> 是当前层输入的 <code>hidden_states</code></li>
+<li><code>xq</code> 就是 Query</li>
+<li><code>xk</code> 就是 Key</li>
+<li><code>xv</code> 就是 Value</li>
+</ul>
+<p>接着，MiniMind 会把它们 reshape 成多头 attention 需要的形状：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">xq = xq.view(bsz, seq_len, <span class="variable language_">self</span>.n_local_heads, <span class="variable language_">self</span>.head_dim)</span><br><span class="line">xk = xk.view(bsz, seq_len, <span class="variable language_">self</span>.n_local_kv_heads, <span class="variable language_">self</span>.head_dim)</span><br><span class="line">xv = xv.view(bsz, seq_len, <span class="variable language_">self</span>.n_local_kv_heads, <span class="variable language_">self</span>.head_dim)</span><br></pre></td></tr></table></figure>
+
+<p>然后对 <code>Q</code> 和 <code>K</code> 应用 RoPE 位置编码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cos, sin = position_embeddings</span><br><span class="line">xq, xk = apply_rotary_pos_emb(xq, xk, cos, sin)</span><br></pre></td></tr></table></figure>
+
+<p>再之后，attention 的计算主干分两种情况：</p>
+<ul>
+<li>如果环境满足条件，直接走 PyTorch 的 <code>scaled_dot_product_attention</code></li>
+<li>否则走手写的显式计算流程</li>
+</ul>
+<p>手写流程最关键的几行是：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">scores = (xq @ xk.transpose(-<span class="number">2</span>, -<span class="number">1</span>)) / math.sqrt(<span class="variable language_">self</span>.head_dim)</span><br><span class="line">scores = F.softmax(scores.<span class="built_in">float</span>(), dim=-<span class="number">1</span>).type_as(xq)</span><br><span class="line">output = scores @ xv</span><br></pre></td></tr></table></figure>
+
+<p>这三行就对应了最经典的 attention 公式：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Attention(Q, K, V) = softmax(QK^T / sqrt(d)) V</span><br></pre></td></tr></table></figure>
+
+<p>最后再通过输出投影把多头结果合并回隐藏维度：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">output = <span class="variable language_">self</span>.resid_dropout(<span class="variable language_">self</span>.o_proj(output))</span><br></pre></td></tr></table></figure>
+
 <p>直觉上：</p>
 <ul>
 <li>token 不再只看自己的 embedding</li>
@@ -653,6 +693,31 @@
 
 <p>虽然“苹果”这个 token 一样，但经过 self-attention 后，它会结合上下文变成不同的 hidden state。</p>
 <p>在预训练里，这一步特别重要，因为模型需要靠上下文来判断“下一个 token 最可能是什么”。</p>
+<p>你也可以把 MiniMind 里的 Q &#x2F; K &#x2F; V 流程简化记成：</p>
+<pre class="mermaid">flowchart LR
+    A[hidden_states] --> B[q_proj]
+    A --> C[k_proj]
+    A --> D[v_proj]
+    B --> E[Q]
+    C --> F[K]
+    D --> G[V]
+    E --> H[QK^T / sqrt(d)]
+    F --> H
+    H --> I[softmax]
+    I --> J[attention weights]
+    J --> K[加权求和 V]
+    G --> K
+    K --> L[o_proj]
+    L --> M[新的hidden_states]</pre>
+
+<p>在训练时，这整套 Q &#x2F; K &#x2F; V 计算都属于前向传播的一部分。<br>loss 算出来之后，反向传播会更新：</p>
+<ul>
+<li><code>q_proj</code></li>
+<li><code>k_proj</code></li>
+<li><code>v_proj</code></li>
+<li><code>o_proj</code></li>
+</ul>
+<p>这些线性层的参数。</p>
 <h4 id="3-第一条残差连接"><a href="#3-第一条残差连接" class="headerlink" title="3. 第一条残差连接"></a>3. 第一条残差连接</h4><p>代码里是：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hidden_states += residual</span><br></pre></td></tr></table></figure>
 
