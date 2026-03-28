@@ -718,6 +718,96 @@
 <li><code>o_proj</code></li>
 </ul>
 <p>这些线性层的参数。</p>
+<h3 id="一个单头-attention-的手算例子"><a href="#一个单头-attention-的手算例子" class="headerlink" title="一个单头 attention 的手算例子"></a>一个单头 attention 的手算例子</h3><p>如果你已经知道 Q &#x2F; K &#x2F; V 的名字，但对：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">QK^T -&gt; softmax -&gt; 加权 V</span><br></pre></td></tr></table></figure>
+
+<p>这条链路还是感觉抽象，可以先看一个极简例子。</p>
+<p>我们假设：</p>
+<ul>
+<li>只有 2 个 token</li>
+<li>每个向量维度是 2</li>
+<li>只看单头 attention</li>
+</ul>
+<p>设这两个 token 的 Q &#x2F; K &#x2F; V 分别是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">Q =</span><br><span class="line">[</span><br><span class="line">  [1, 0],   # token1 的 query</span><br><span class="line">  [0, 1]    # token2 的 query</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">K =</span><br><span class="line">[</span><br><span class="line">  [1, 0],   # token1 的 key</span><br><span class="line">  [1, 1]    # token2 的 key</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">V =</span><br><span class="line">[</span><br><span class="line">  [10, 0],  # token1 的 value</span><br><span class="line">  [0, 20]   # token2 的 value</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<p>这里的目标是：</p>
+<ul>
+<li>看 token1 最终会从两个 token 身上拿到什么信息</li>
+<li>看 token2 最终会从两个 token 身上拿到什么信息</li>
+</ul>
+<h4 id="第一步：计算-QK-T"><a href="#第一步：计算-QK-T" class="headerlink" title="第一步：计算 QK^T"></a>第一步：计算 <code>QK^T</code></h4><p>先把 <code>K</code> 转置：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">K^T =</span><br><span class="line">[</span><br><span class="line">  [1, 1],</span><br><span class="line">  [0, 1]</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<p>然后做矩阵乘法：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">QK^T =</span><br><span class="line">[</span><br><span class="line">  [1, 0],</span><br><span class="line">  [0, 1]</span><br><span class="line">]</span><br><span class="line">×</span><br><span class="line">[</span><br><span class="line">  [1, 1],</span><br><span class="line">  [0, 1]</span><br><span class="line">]</span><br><span class="line">=</span><br><span class="line">[</span><br><span class="line">  [1, 1],</span><br><span class="line">  [0, 1]</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<p>这个结果的含义是：</p>
+<ul>
+<li>第一行：token1 对 token1、token2 的相关性分数</li>
+<li>第二行：token2 对 token1、token2 的相关性分数</li>
+</ul>
+<p>也就是说：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">scores =</span><br><span class="line">[</span><br><span class="line">  [1, 1],   # token1 看自己和 token2</span><br><span class="line">  [0, 1]    # token2 看 token1 和自己</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<h4 id="第二步：除以-sqrt-d"><a href="#第二步：除以-sqrt-d" class="headerlink" title="第二步：除以 sqrt(d)"></a>第二步：除以 <code>sqrt(d)</code></h4><p>这里向量维度 <code>d = 2</code>，所以：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqrt(d) = sqrt(2) ≈ 1.414</span><br></pre></td></tr></table></figure>
+
+<p>所以缩放后的分数约为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[</span><br><span class="line">  [1/1.414, 1/1.414],</span><br><span class="line">  [0/1.414, 1/1.414]</span><br><span class="line">]</span><br><span class="line">=</span><br><span class="line">[</span><br><span class="line">  [0.707, 0.707],</span><br><span class="line">  [0.000, 0.707]</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<h4 id="第三步：对每一行做-softmax"><a href="#第三步：对每一行做-softmax" class="headerlink" title="第三步：对每一行做 softmax"></a>第三步：对每一行做 softmax</h4><p>第一行：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">softmax([0.707, 0.707]) = [0.5, 0.5]</span><br></pre></td></tr></table></figure>
+
+<p>第二行：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">softmax([0.000, 0.707])</span><br></pre></td></tr></table></figure>
+
+<p>先取指数：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[e^0, e^0.707] ≈ [1.0, 2.028]</span><br></pre></td></tr></table></figure>
+
+<p>归一化后：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[1.0 / 3.028, 2.028 / 3.028] ≈ [0.33, 0.67]</span><br></pre></td></tr></table></figure>
+
+<p>所以注意力权重大约是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">attention_weights =</span><br><span class="line">[</span><br><span class="line">  [0.50, 0.50],</span><br><span class="line">  [0.33, 0.67]</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<p>含义是：</p>
+<ul>
+<li>token1 平均关注自己和 token2</li>
+<li>token2 更关注 token2 自己</li>
+</ul>
+<h4 id="第四步：用注意力权重去加权-V"><a href="#第四步：用注意力权重去加权-V" class="headerlink" title="第四步：用注意力权重去加权 V"></a>第四步：用注意力权重去加权 <code>V</code></h4><p>现在计算：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">output = attention_weights × V</span><br></pre></td></tr></table></figure>
+
+<p>也就是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[</span><br><span class="line">  [0.50, 0.50],</span><br><span class="line">  [0.33, 0.67]</span><br><span class="line">]</span><br><span class="line">×</span><br><span class="line">[</span><br><span class="line">  [10, 0],</span><br><span class="line">  [0, 20]</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<p>先看第一行：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">0.50 * [10, 0] + 0.50 * [0, 20]</span><br><span class="line">= [5, 0] + [0, 10]</span><br><span class="line">= [5, 10]</span><br></pre></td></tr></table></figure>
+
+<p>再看第二行：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">0.33 * [10, 0] + 0.67 * [0, 20]</span><br><span class="line">= [3.3, 0] + [0, 13.4]</span><br><span class="line">= [3.3, 13.4]</span><br></pre></td></tr></table></figure>
+
+<p>所以最终输出约为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">output =</span><br><span class="line">[</span><br><span class="line">  [5.0, 10.0],</span><br><span class="line">  [3.3, 13.4]</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<h4 id="这个结果怎么理解"><a href="#这个结果怎么理解" class="headerlink" title="这个结果怎么理解"></a>这个结果怎么理解</h4><p>原来两个 token 的 <code>V</code> 是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">token1: [10, 0]</span><br><span class="line">token2: [0, 20]</span><br></pre></td></tr></table></figure>
+
+<p>经过 attention 之后，得到的新表示是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">token1 -&gt; [5.0, 10.0]</span><br><span class="line">token2 -&gt; [3.3, 13.4]</span><br></pre></td></tr></table></figure>
+
+<p>也就是说，每个 token 的新表示不再只是“自己的值”，而是：</p>
+<ul>
+<li>根据自己对别人的关注程度</li>
+<li>从所有 token 身上收集信息</li>
+<li>形成新的上下文表示</li>
+</ul>
+<p>这就是 attention 最核心的直觉：</p>
+<ul>
+<li>不是孤立地处理每个 token</li>
+<li>而是让每个 token 根据相关性，从上下文中动态取信息</li>
+</ul>
 <h4 id="3-第一条残差连接"><a href="#3-第一条残差连接" class="headerlink" title="3. 第一条残差连接"></a>3. 第一条残差连接</h4><p>代码里是：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hidden_states += residual</span><br></pre></td></tr></table></figure>
 
