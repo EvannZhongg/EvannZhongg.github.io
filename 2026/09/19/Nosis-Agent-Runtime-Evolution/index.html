@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="Evan Zhong">
+
+
+
+
+<!-- oogle Search Console 验证标签 -->
+<meta name="google-site-verification" content="0hjafUT-HANjK2izAW9bOEq2iQG3VWXZTPPKl5pVMyc" />
+
+<title>Nosis Agent Runtime 架构演进学习笔记 | Hexo</title>
+
+
+
+    <link rel="icon" href="/favicon.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <link rel="stylesheet" href="/css/search.css">
+    
+
+<link rel="stylesheet" href="/css/custom/custom.css">
+<!-- ✅ highlight.js 亮暗主题样式切换 -->
+<link id="hljs-theme" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.css">
+
+<!-- ✅ highlight.js 主库 -->
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const currentTheme = window.localStorage && window.localStorage.getItem('theme') || '';
+            const isDark = currentTheme === 'dark';
+            const pagebody = document.getElementsByTagName('body')[0]
+            if (isDark) {
+                pagebody.classList.add('dark-theme');
+                // mobile
+                document.getElementById("mobile-toggle-theme").innerText = "· Dark"
+            } else {
+                pagebody.classList.remove('dark-theme');
+                // mobile
+                document.getElementById("mobile-toggle-theme").innerText = "· Light"
+            }
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+  <nav class="navbar">
+    <div class="container">
+      <div class="navbar-header header-logo"><a href="/">Evan Zhong&#39;s Blog</a></div>
+      <div class="menu navbar-right">
+        
+          <a class="menu-item" href="/archives">Posts</a>
+        
+          <a class="menu-item" href="/category">Categories</a>
+        
+          <a class="menu-item" href="/tag">Tags</a>
+        
+          <a class="menu-item" href="/about">About</a>
+        
+
+        <!-- 搜索图标与输入框 -->
+        <div class="search-container">
+          <a href="javascript:;" onclick="toggleSearchInput()">🔍</a>
+          <input type="text" id="nav-search-input" class="nav-search-input" placeholder="Search..." oninput="navSearch(this)">
+          <div id="nav-search-result" class="nav-search-result"></div>
+        </div>
+
+        <!-- 主题切换按钮 -->
+        <input id="switch_default" type="checkbox" class="switch_default">
+        <label for="switch_default" class="toggleBtn"></label>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 移动端 -->
+  <nav class="navbar-mobile" id="nav-mobile">
+    <div class="container">
+      <div class="navbar-header">
+        <div>
+          <a href="/">Evan Zhong&#39;s Blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+        </div>
+        <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+      </div>
+      <div class="menu" id="mobile-menu">
+        
+          <a class="menu-item" href="/archives">Posts</a>
+        
+          <a class="menu-item" href="/category">Categories</a>
+        
+          <a class="menu-item" href="/tag">Tags</a>
+        
+          <a class="menu-item" href="/about">About</a>
+        
+        <a class="menu-item" href="javascript:;" onclick="toggleSearchInput()">🔍 Search</a>
+        <input type="text" id="nav-search-input-mobile" class="nav-search-input" placeholder="Search..." oninput="navSearch(this)">
+        <div id="nav-search-result" class="nav-search-result"></div>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<script>
+  var mobileBtn = function f() {
+    var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+    var mobileMenu = document.getElementById("mobile-menu");
+    if (toggleMenu.classList.contains("active")) {
+      toggleMenu.classList.remove("active");
+      mobileMenu.classList.remove("active");
+    } else {
+      toggleMenu.classList.add("active");
+      mobileMenu.classList.add("active");
+    }
+  }
+
+  let searchData = [];
+
+  function toggleSearchInput() {
+    const inputs = document.querySelectorAll('.nav-search-input');
+    const results = document.querySelectorAll('.nav-search-result');
+
+    inputs.forEach(input => {
+      input.classList.toggle('active');
+      if (input.classList.contains('active')) input.focus();
+    });
+
+    results.forEach(r => r.style.display = 'none');
+  }
+
+  function navSearch(inputElem) {
+    const keyword = inputElem.value.trim().toLowerCase();
+    const resultContainer = inputElem.nextElementSibling;
+    resultContainer.innerHTML = '';
+
+    if (!keyword) {
+      resultContainer.style.display = 'none';
+      return;
+    }
+
+    const results = searchData.filter(data =>
+      data.title.toLowerCase().includes(keyword) ||
+      data.content.toLowerCase().includes(keyword)
+    ).slice(0, 8);
+
+    if (results.length === 0) {
+      resultContainer.innerHTML = '<p>No results found.</p>';
+    } else {
+      resultContainer.innerHTML = results.map(item => {
+        const snippet = item.content.replace(/<[^>]+>/g, '').slice(0, 200);
+        return `
+          <div class="search-card">
+            <a class="search-card-title" href="${item.url}" target="_blank">${item.title}</a>
+            <div class="search-card-snippet">${snippet}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    resultContainer.style.display = 'block';
+  }
+
+  // 点击空白关闭搜索框并清空
+  document.addEventListener('click', function (e) {
+    const searchAreas = document.querySelectorAll('.search-container');
+    let clickedInsideSearch = false;
+
+    searchAreas.forEach(area => {
+      if (area.contains(e.target)) {
+        clickedInsideSearch = true;
+      }
+    });
+
+    if (!clickedInsideSearch) {
+      document.querySelectorAll('.nav-search-input').forEach(input => {
+        input.classList.remove('active');
+        input.value = ''; // 清空
+      });
+      document.querySelectorAll('.nav-search-result').forEach(result => {
+        result.style.display = 'none';
+      });
+    }
+  });
+
+  // 页面加载时预加载 search.xml
+  document.addEventListener('DOMContentLoaded', function () {
+    if (searchData.length === 0) {
+      fetch('/search.xml')
+        .then(res => res.text())
+        .then(xmlText => {
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(xmlText, 'text/xml');
+          const entries = xml.getElementsByTagName('entry');
+          for (let entry of entries) {
+            searchData.push({
+              title: entry.getElementsByTagName('title')[0]?.textContent || '',
+              content: entry.getElementsByTagName('content')[0]?.textContent || '',
+              url: entry.getElementsByTagName('url')[0]?.textContent || ''
+            });
+          }
+        });
+    }
+  });
+</script>
+
+        <div class="main">
+            <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">Nosis Agent Runtime 架构演进学习笔记</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">Evan Zhong</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">September 19, 2026&nbsp;&nbsp;2:10:23</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    Category:
+                            
+                                <a href="/categories/LLM%E5%AD%A6%E4%B9%A0%E4%B9%8B%E8%B7%AF/">LLM学习之路</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <h1 id="由浅入深看懂-Nosis-Agent-Runtime-的七天演进"><a href="#由浅入深看懂-Nosis-Agent-Runtime-的七天演进" class="headerlink" title="由浅入深看懂 Nosis Agent Runtime 的七天演进"></a>由浅入深看懂 Nosis Agent Runtime 的七天演进</h1><p>这份笔记是我在学习 Nosis 项目 Agent Runtime 演进史时的整理稿。</p>
+<p>素材来自项目自身的 Git 历史：从最初提交 <code>e1d15a4</code>（2026-09-09）到当前提交 <code>8f7f019</code>（2026-09-16），一共七天、131 个提交，其中 93 个触及了 <code>agent_core</code> 或 <code>interfaces/bridge</code>。</p>
+<p>第一次读原版演进史，读完之后的状态是：每个字都认识，但说不出“为什么第五天要重构成那样”。于是我按时间顺序重抄了一遍。这篇笔记的叙述顺序就是我的理解顺序，由浅入深分三层：</p>
+<ol>
+<li>先看懂<strong>形态</strong>：这个阶段的 Runtime 长什么样；</li>
+<li>再看懂<strong>边界</strong>：哪些职责从谁手里交给了谁；</li>
+<li>最后才看懂<strong>原因</strong>：为什么它非改不可。</li>
+</ol>
+<p>具体到每一个阶段，我固定回答三个问题：</p>
+<ol>
+<li><strong>当时到底被什么问题卡住了？</strong></li>
+<li><strong>Runtime 的职责和边界发生了什么变化？</strong></li>
+<li><strong>我的理解比上一阶段多了哪一层？</strong></li>
+</ol>
+<p>下面的记录，就是这三问一层层推进的过程。涉及的“Runtime”不只是 <code>Agent.run()</code>，还包括驱动一次执行所必需的上下文管理、Tool 系统、Session、持久化、授权、取消、子 Agent、MCP 和前端适配语义。</p>
+<hr>
+<h2 id="0-先记住四句话"><a href="#0-先记住四句话" class="headerlink" title="0. 先记住四句话"></a>0. 先记住四句话</h2><p>原版演进史的最后给了四条“架构不变量”，我第一次读完全无感，等把七个阶段抄完，才发现前面所有剧情都在往这四句话上收。一开始读不懂也没关系，可以先跳过，读完再回头对照：</p>
+<ol>
+<li><strong>执行语义只在 Agent Core 实现一次；</strong></li>
+<li><strong>Runtime 只在 Bridge 装配一次；</strong></li>
+<li><strong>真实执行历史只写入 append-only Journal，其他表现形式都从中投影；</strong></li>
+<li><strong>Tool 是无状态能力，角色差异和环境依赖由 Runtime 在调用时绑定。</strong></li>
+</ol>
+<p>如果读完全文只记住一句话，我选这句：</p>
+<blockquote>
+<p>Nosis 从一个“把聊天记录发给模型”的同步包装器，逐步演化成一个“记录事实、投影视图、装配能力、协调并发并接受实时控制”的持久化执行引擎。</p>
+</blockquote>
+<hr>
+<h2 id="1-总览：七天，七种-Runtime-形态"><a href="#1-总览：七天，七种-Runtime-形态" class="headerlink" title="1. 总览：七天，七种 Runtime 形态"></a>1. 总览：七天，七种 Runtime 形态</h2><table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>时间</th>
+<th>Runtime 的主要形态</th>
+<th>核心变化</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0. 最小对话内核</td>
+<td>09-09</td>
+<td>单次 Provider 调用</td>
+<td>建立 <code>Agent + Session + Provider</code> 最小闭环</td>
+</tr>
+<tr>
+<td>1. Agent Loop 成形</td>
+<td>09-09～09-10</td>
+<td>模型与 Tool 循环执行</td>
+<td>Tool、Workspace、限制、事件、授权进入 Core</td>
+</tr>
+<tr>
+<td>2. 多前端统一 Runtime</td>
+<td>09-11</td>
+<td>Bridge 驱动的独立 Runtime 进程</td>
+<td>TUI&#x2F;GUI 不再各自承担执行语义</td>
+</tr>
+<tr>
+<td>3. 长上下文 Runtime</td>
+<td>09-12～09-13</td>
+<td>可流式输出、可压缩上下文</td>
+<td>从“超限失败”变为“归档后继续执行”</td>
+</tr>
+<tr>
+<td>4. 可装配的多 Agent Runtime</td>
+<td>09-13～09-14</td>
+<td>MCP、子 Agent、共享 Tool Catalog</td>
+<td>能力从对象内依赖改为 Runtime 装配和调用时注入</td>
+</tr>
+<tr>
+<td>5. 持久化执行状态机</td>
+<td>09-14～09-16</td>
+<td>append-only Journal + 多种投影</td>
+<td>真实执行历史与 Provider 对话正式分离</td>
+</tr>
+<tr>
+<td>6. 长生命周期交互 Runtime</td>
+<td>09-16</td>
+<td>可恢复、可接管、可询问、可 steering</td>
+<td>Runtime 不再等同于一次请求，而是 Session 级活动实体</td>
+</tr>
+</tbody></table>
+<p>七个阶段里，真正改变职责边界或状态模型的只有几次（原版把它们叫“转折点”），其余提交都是在补能力、补约束、补语义。我按这个节奏画了张时间线，方便自己回看：</p>
+<pre class="mermaid">flowchart LR
+    A["阶段0<br/>最小对话内核<br/>09-09"] --> B["阶段1<br/>Agent Loop<br/>09-09~10"]
+    B --> C["阶段2<br/>Bridge 统一 Runtime<br/>09-11"]
+    C --> D["阶段3<br/>长上下文 + 流式<br/>09-12~13"]
+    D --> E["阶段4<br/>MCP / 子 Agent / Catalog<br/>09-13~14"]
+    E --> F["阶段5<br/>append-only Journal<br/>09-14~16"]
+    F --> G["阶段6<br/>长生命周期交互<br/>09-16"]</pre>
+
+<p>下面逐个阶段抄笔记。</p>
+<hr>
+<h2 id="2-阶段-0：最小对话内核"><a href="#2-阶段-0：最小对话内核" class="headerlink" title="2. 阶段 0：最小对话内核"></a>2. 阶段 0：最小对话内核</h2><h3 id="2-1-一次输入，一次模型调用"><a href="#2-1-一次输入，一次模型调用" class="headerlink" title="2.1 一次输入，一次模型调用"></a>2.1 一次输入，一次模型调用</h3><p>初始提交 <code>e1d15a4</code> 的调用链短得可爱：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">CLI</span><br><span class="line"> └─ Agent.run(user_input)</span><br><span class="line">     ├─ Session.add_message(user)</span><br><span class="line">     ├─ Provider.complete(system + history)</span><br><span class="line">     └─ Session.add_message(assistant)</span><br></pre></td></tr></table></figure>
+
+<p>此时 <code>Agent</code> 只有三个依赖：<code>LLMProvider</code>、<code>Session</code> 和 system prompt。<code>run()</code> 也只做四件事：追加用户消息、构造请求、调用 Provider、保存助手回复。它还不是循环——模型不能调 Tool，也没有中途事件、取消、授权和上下文压缩。</p>
+<h3 id="2-2-这一层读懂了什么"><a href="#2-2-这一层读懂了什么" class="headerlink" title="2.2 这一层读懂了什么"></a>2.2 这一层读懂了什么</h3><p>我一开始以为“最小版本”没什么可看的，回头看它其实已经埋好了四根桩：</p>
+<ul>
+<li>Provider 通过抽象接口隔离，Agent 不直接依赖某家 SDK；</li>
+<li>Session 是独立对象，而不是 CLI 里的一组临时变量；</li>
+<li>system prompt 从执行代码中分离（后来还被单独命名为 Soul）；</li>
+<li>Agent Core 与入口代码分目录，为后续拆分留了空间。</li>
+</ul>
+<p>紧接着的 <code>42e9b60</code> 加入时间戳、Session Record 和 token usage。它的意义不是“多显示了几个字段”，而是<strong>第一次把一次模型调用的执行记录当成可持久化数据</strong>，而不是一堆聊天文本。</p>
+<h3 id="2-3-卡住的地方"><a href="#2-3-卡住的地方" class="headerlink" title="2.3 卡住的地方"></a>2.3 卡住的地方</h3><ul>
+<li>Agent 只能回答，不能行动；</li>
+<li>Session 本质还是 Provider 历史的容器，没有表达真实执行状态；</li>
+<li>CLI 同时负责配置、运行和展示——一旦出现第二个前端，语义必然被复制。</li>
+</ul>
+<p>这三条限制，直接引出了后面的三条主线：Tool Loop、结构化执行事件、Bridge。</p>
+<hr>
+<h2 id="3-阶段-1：从单次补全到-Agent-Loop"><a href="#3-阶段-1：从单次补全到-Agent-Loop" class="headerlink" title="3. 阶段 1：从单次补全到 Agent Loop"></a>3. 阶段 1：从单次补全到 Agent Loop</h2><h3 id="3-1-7f22d93：run-变成循环"><a href="#3-1-7f22d93：run-变成循环" class="headerlink" title="3.1 7f22d93：run() 变成循环"></a>3.1 <code>7f22d93</code>：<code>run()</code> 变成循环</h3><p>这是第一次根本性变化。模型响应开始带 <code>tool_calls</code>，Agent 必须反复执行：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">构造请求 → 调用模型</span><br><span class="line">               ├─ 最终答案 → 结束</span><br><span class="line">               └─ Tool Calls</span><br><span class="line">                    ├─ 执行 Tool</span><br><span class="line">                    ├─ 写入 Tool Result</span><br><span class="line">                    └─ 再次调用模型</span><br></pre></td></tr></table></figure>
+
+<p>这次提交加了统一的 Tool 抽象、Tool Definition、Tool Call、Tool Result 和第一个内置 Tool，Session 也必须保存 assistant tool-call message 与 tool result message，才能满足 Provider 的消息协议。</p>
+<p><strong>我的理解</strong>：从这一刻开始，Runtime 的核心不再是 <code>complete()</code>，而是显式的 Agent Loop。后面所有的上下文压缩、并发、取消、steering，都是在这个循环的安全边界上继续长出来的。</p>
+<h3 id="3-2-防止失控循环：终止条件第一次被显式化"><a href="#3-2-防止失控循环：终止条件第一次被显式化" class="headerlink" title="3.2 防止失控循环：终止条件第一次被显式化"></a>3.2 防止失控循环：终止条件第一次被显式化</h3><p>Tool Loop 一出现，模型重复调用同一个工具的问题马上就来了：</p>
+<ul>
+<li><code>a361c72</code> 增加可配置的 Tool Call 上限；</li>
+<li><code>2b1d008</code> 把判断收敛为“相同工具名 + 相同参数的连续重复”，避免把合理的多次调用误判成死循环。</li>
+</ul>
+<p>这里的重点不是“限制调用总数”，而是<strong>识别没有产生新进展的调用模式</strong>。</p>
+<h3 id="3-3-Workspace-成为执行边界"><a href="#3-3-Workspace-成为执行边界" class="headerlink" title="3.3 Workspace 成为执行边界"></a>3.3 Workspace 成为执行边界</h3><p><code>eb7b43f</code> 引入 Workspace 感知的入口，<code>03812fc</code> 加入读取、编辑、搜索和目录浏览工具。Workspace 从一个启动路径，变成了 Tool 能力的边界：</p>
+<ul>
+<li>system prompt 能描述当前工作区；</li>
+<li>文件 Tool 通过统一路径解析限制访问范围；</li>
+<li>后来的 shell、附件、Session 分组、子 Agent 都以 Workspace 为装配基础。</li>
+</ul>
+<p>这一步把项目从“普通聊天 Agent”推向了“coding &#x2F; working Agent”。</p>
+<h3 id="3-4-上下文、事件与授权"><a href="#3-4-上下文、事件与授权" class="headerlink" title="3.4 上下文、事件与授权"></a>3.4 上下文、事件与授权</h3><p>同一天还发生了三件后来影响很大的事：</p>
+<ul>
+<li><code>7689f21</code> 首次加入上下文窗口验证。当时策略仍是“超过 hard limit 就失败”，但 Runtime 开始主动掌握上下文预算，而不是把错误完全交给 Provider。</li>
+<li><code>4444b41</code> 加入结构化 <code>AgentEvent</code>。此前 CLI 只能在 <code>run()</code> 返回后展示结果，此后界面可以观察执行中的状态。</li>
+<li><code>29ebad8</code> 引入需要人工批准的 shell Tool，<code>69bb062</code> 把“是否允许执行”和“如何执行命令”拆开：</li>
+</ul>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Shell Tool</span><br><span class="line"> ├─ ToolPolicy：这次调用能否执行</span><br><span class="line"> └─ CommandExecutor：批准后怎样启动进程</span><br></pre></td></tr></table></figure>
+
+<p>这是一个很早、但非常关键的职责分离：Bridge 后来才能负责交互式审批，而 Core 只依赖授权接口；MCP Tool 也复用了同一类政策层。</p>
+<h3 id="3-5-Tool-从散落实例走向配置化工厂"><a href="#3-5-Tool-从散落实例走向配置化工厂" class="headerlink" title="3.5 Tool 从散落实例走向配置化工厂"></a>3.5 Tool 从散落实例走向配置化工厂</h3><p><code>3bdfd5f</code> 给文件读取加入范围和行号，<code>6b34054</code> 把内置 Tool 收口到统一工厂与配置开关。这个工厂后来被共享 Tool Catalog 取代，但它完成了必要的中间步骤。</p>
+<p>阶段结束时，架构大致是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">CLI</span><br><span class="line"> ├─ 组装 Provider / Session / Tools / Policy / Executor</span><br><span class="line"> └─ Agent Loop</span><br><span class="line">     ├─ Context 检查</span><br><span class="line">     ├─ Provider 调用</span><br><span class="line">     ├─ Tool 执行</span><br><span class="line">     ├─ Session 写入</span><br><span class="line">     └─ AgentEvent 输出</span><br></pre></td></tr></table></figure>
+
+<p><strong>问题也在这里埋下</strong>：CLI 已经承担了过多 Runtime 装配职责，而 GUI 马上就要成为第二个调用方。</p>
+<hr>
+<h2 id="4-阶段-2：Bridge-成为唯一-Runtime-装配点"><a href="#4-阶段-2：Bridge-成为唯一-Runtime-装配点" class="headerlink" title="4. 阶段 2：Bridge 成为唯一 Runtime 装配点"></a>4. 阶段 2：Bridge 成为唯一 Runtime 装配点</h2><h3 id="4-1-GUI-逼出了“双-Runtime”风险"><a href="#4-1-GUI-逼出了“双-Runtime”风险" class="headerlink" title="4.1 GUI 逼出了“双 Runtime”风险"></a>4.1 GUI 逼出了“双 Runtime”风险</h3><p>09-11 先补齐产品化基础：</p>
+<ul>
+<li><code>e873500</code>：初始化用户配置，并按 Session 存储；</li>
+<li><code>d341306</code>：加入最小 GUI、Session 列表和模型选择；</li>
+<li><code>8039345</code>：大 Tool Result 不再全塞进上下文，而是保存为 Session Artifact；</li>
+<li><code>725fd3b</code>、<code>831319f</code>：限制文件搜索、读取和 shell 输出规模。</li>
+</ul>
+<p>GUI 一出现，一个架构问题就无法回避了：<strong>如果 TUI 和 GUI 都各自创建 Agent、读配置、执行 Tool、处理授权，项目就会长出两套 Runtime 语义。</strong></p>
+<h3 id="4-2-abdfc6a：从-CLI-重构为-Bridge-TUI"><a href="#4-2-abdfc6a：从-CLI-重构为-Bridge-TUI" class="headerlink" title="4.2 abdfc6a：从 CLI 重构为 Bridge + TUI"></a>4.2 <code>abdfc6a</code>：从 CLI 重构为 Bridge + TUI</h3><p>这次提交删掉了原 <code>agent_cli</code> 的执行入口，建立独立进程 <code>python -m interfaces.bridge</code>，用 newline-delimited JSON 与前端通信：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">TUI ───────────────┐</span><br><span class="line">                   ├─ NDJSON ─ Bridge ─ Agent Core</span><br><span class="line">GUI ─ FastAPI/WS ──┘</span><br></pre></td></tr></table></figure>
+
+<p>Bridge 开始负责：读 Provider 与 Agent 配置、创建 Provider&#x2F;Session&#x2F;Tool&#x2F;执行器、把 <code>AgentEvent</code> 翻译成协议消息、转发 Tool 审批和取消、控制 Runtime 进程生命周期。随后 <code>bf907c6</code> 让 GUI 也适配同一个 Bridge——“两个界面共用同一执行语义”从目标变成了代码结构上的事实。</p>
+<p>由此形成了当前最重要的依赖方向：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">interfaces/*  ──&gt;  agent_core</span><br><span class="line">agent_core    -X-&gt; interfaces/*</span><br></pre></td></tr></table></figure>
+
+<p>Core 提供机制，Bridge 决定装配，前端只处理协议和呈现。后面的 MCP 生命周期、子 Agent 角色、权限 preset、Skills、Session 恢复，全都照着这个边界走。</p>
+<h3 id="4-3-这一层读懂了什么"><a href="#4-3-这一层读懂了什么" class="headerlink" title="4.3 这一层读懂了什么"></a>4.3 这一层读懂了什么</h3><p>我以前会把 Bridge 理解成“一层 API 转发”，这次才看明白它解决的是<strong>运行时拥有者</strong>问题：</p>
+<ul>
+<li>Provider 的选择属于装配，不属于 Agent Loop；</li>
+<li>Shell &#x2F; MCP 的用户确认需要前端交互，但不能进入 Core；</li>
+<li>TUI 与 GUI 必须共享取消和 Session 语义；</li>
+<li>Runtime 需要独立于页面或终端组件存在。</li>
+</ul>
+<p>所以 Bridge 是前端与 Core 之间的<strong>唯一执行通道</strong>，不是可绕开的辅助层。</p>
+<hr>
+<h2 id="5-阶段-3：从上下文超限失败到可持续运行"><a href="#5-阶段-3：从上下文超限失败到可持续运行" class="headerlink" title="5. 阶段 3：从上下文超限失败到可持续运行"></a>5. 阶段 3：从上下文超限失败到可持续运行</h2><h3 id="5-1-第一个归档模型"><a href="#5-1-第一个归档模型" class="headerlink" title="5.1 第一个归档模型"></a>5.1 第一个归档模型</h3><p><code>73b01c5</code> 把上下文策略从“超过窗口就报错”改成“把旧历史总结成 checkpoint 再继续运行”，同时新增 Consolidator prompt、归档摘要和 Session 持久化字段。</p>
+<p>这一步把 Agent 从短对话程序变成了可以长期运行的 Runtime，但第一版归档和 Agent Loop 耦合太紧，于是后面跟着一串语义修正：</p>
+<ul>
+<li><code>7606a39</code>：向 UI 报告上下文压缩事件；</li>
+<li><code>7dee8ff</code>：禁止归档仍在执行的 turn，避免丢失当前工具链；</li>
+<li><code>07feec6</code>：压缩阈值和目标可配置；</li>
+<li><code>6324769</code>：拒绝无法合理划分预算的过小上下文窗口；</li>
+<li><code>2cb3b3a</code>：把历史时间戳合并成单个 timeline system message，减少对原消息的污染；</li>
+<li><code>f59b856</code>：历史 Tool 链不携带时间戳和 reasoning，保持 Provider 格式稳定。</li>
+</ul>
+<h3 id="5-2-流式输出让-Runtime-变成持续事件源"><a href="#5-2-流式输出让-Runtime-变成持续事件源" class="headerlink" title="5.2 流式输出让 Runtime 变成持续事件源"></a>5.2 流式输出让 Runtime 变成持续事件源</h3><p><code>563d111</code> 把 reasoning delta 从 Provider 经 Agent 和 Bridge 流到两个 UI，<code>ca6a8a5</code> 统一了 Provider 回调契约。此前结构化事件主要描述离散状态，此后 Runtime 同时输出文本增量、推理增量和离散执行事件。</p>
+<p>这就要求 UI 不能再把一次 turn 当作“一个最终响应”，而必须根据结构化事件逐步构建界面状态。</p>
+<h3 id="5-3-dfb610d：抽出-ContextManager"><a href="#5-3-dfb610d：抽出-ContextManager" class="headerlink" title="5.3 dfb610d：抽出 ContextManager"></a>5.3 <code>dfb610d</code>：抽出 ContextManager</h3><p>随着构造请求、计数、阈值判断、归档、历史格式化不断变多，<code>Agent</code> 已经同时承担执行循环和上下文策略。<code>dfb610d</code> 把这些职责抽到 <code>ContextManager</code>，一次性从 Agent 移走约两百行上下文逻辑：</p>
+<ul>
+<li><code>Agent</code> 决定什么时候调用模型、什么时候执行 Tool、什么时候继续或结束；</li>
+<li><code>ContextManager</code> 决定发给模型什么、是否需要压缩、如何产生 checkpoint；</li>
+<li><code>Session</code> 保存对话与归档状态；</li>
+<li>Provider 负责模型调用和 token 计数。</li>
+</ul>
+<p><strong>这是我这一阶段最想记住的一点</strong>：这是 Core 内部第一次形成清晰的“执行控制面”和“上下文数据面”分离，后面的 Journal 重构能落地，很大程度上就是因为先有了它。</p>
+<hr>
+<h2 id="6-阶段-4：MCP、子-Agent-与可装配-Tool-Runtime"><a href="#6-阶段-4：MCP、子-Agent-与可装配-Tool-Runtime" class="headerlink" title="6. 阶段 4：MCP、子 Agent 与可装配 Tool Runtime"></a>6. 阶段 4：MCP、子 Agent 与可装配 Tool Runtime</h2><h3 id="6-1-MCP：远程-Tool-进入统一-Tool-系统"><a href="#6-1-MCP：远程-Tool-进入统一-Tool-系统" class="headerlink" title="6.1 MCP：远程 Tool 进入统一 Tool 系统"></a>6.1 MCP：远程 Tool 进入统一 Tool 系统</h3><p><code>0063af8</code> 加入 MCP Client：Server 配置、生命周期管理、动态 Tool 发现、命名空间和审批，全部进入既有 Tool 体系。远程工具以 <code>mcp__server__tool</code> 命名，Agent 不需要知道它来自本地类还是 MCP Server。</p>
+<p>职责依旧按层划分：Core 提供 MCP 配置模型、客户端机制和 Tool 适配；Bridge 启停 Server、把远程 Tool 加入 Runtime、把审批转发给前端；前端只显示启动状态和审批请求。随后 <code>651c648</code> 把“单个 MCP Server 启动失败”从“终止整个 Bridge”改成可报告状态，<code>563133c</code> 把审批粒度从 Server 级细化到 Tool 级。</p>
+<h3 id="6-2-子-Agent-第一版：把委派做成-Tool"><a href="#6-2-子-Agent-第一版：把委派做成-Tool" class="headerlink" title="6.2 子 Agent 第一版：把委派做成 Tool"></a>6.2 子 Agent 第一版：把委派做成 Tool</h3><p><code>0563453</code> 引入 <code>subagent</code> Tool：父 Agent 通过普通 Tool Call 委派任务，子 Agent 使用独立 Provider、Tool 配置和 Session，最后只把最终报告作为 Tool Result 返回。</p>
+<p>这个设计我现在觉得很妙：<strong>子 Agent 没有进入主 Agent Loop 的特殊分支，而是复用了 Tool 协议</strong>，因此天然获得了 Tool Call&#x2F;Result 的上下文回灌、授权和事件边界、并行 Tool Batch 的可能性、Artifact 与 Session 存储能力。</p>
+<p>后面 <code>e4226b2</code> 把子 Agent Tool 收进 Registry 并给它们 Workspace，<code>ae5cd63</code> 把子 Session 重新嵌套回父 Session，<code>6611261</code> 允许子 Agent 继承触发它的用户图片。</p>
+<h3 id="6-3-b401880：共享-Tool-Catalog-配置化角色"><a href="#6-3-b401880：共享-Tool-Catalog-配置化角色" class="headerlink" title="6.3 b401880：共享 Tool Catalog + 配置化角色"></a>6.3 <code>b401880</code>：共享 Tool Catalog + 配置化角色</h3><p>子 Agent 第一版很快暴露出新的重复：不同 Agent 各自创建 Tool 实例、各自持有依赖，角色和 Tool 对象绑死。<code>b401880</code> 对 Tool Runtime 做了大规模重构：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Runtime</span><br><span class="line"> ├─ ToolCatalog：共享、无状态的 Tool 实例</span><br><span class="line"> ├─ ToolExecutionContext：调用时依赖</span><br><span class="line"> ├─ ToolSet(main)：按名称筛选 + 绑定 context/policy</span><br><span class="line"> └─ SubagentRuntime</span><br><span class="line">     ├─ role A → ToolSet A + Provider A</span><br><span class="line">     └─ role B → ToolSet B + Provider B</span><br></pre></td></tr></table></figure>
+
+<p>这次重构确立了当前 Tool 系统的三条原则：</p>
+<ol>
+<li>Tool 实例必须无调用状态，可以被多个 Agent 和并行线程共享；</li>
+<li>Workspace、Session、Executor、MCP、视觉 Provider、子 Agent Runtime 等依赖，通过 <code>ToolExecutionContext</code> 在调用时传入；</li>
+<li>一个角色能看到哪些 Tool，由 Catalog 按名称选择形成 <code>ToolSet</code>，而不是重新实例化一套工具。</li>
+</ol>
+<p>子 Agent 也从单一配置变成角色注册表，<code>subagent(role, task)</code> 成为唯一委派入口。</p>
+<h3 id="6-4-多模态同样遵循装配原则"><a href="#6-4-多模态同样遵循装配原则" class="headerlink" title="6.4 多模态同样遵循装配原则"></a>6.4 多模态同样遵循装配原则</h3><ul>
+<li><code>32871d2</code>：用户附件作为多模态内容进入 Session；</li>
+<li><code>bb7abe1</code>：视觉模型可以通过 <code>read_image</code> 直接查看 Workspace 图片；</li>
+<li><code>5534775</code>：文本模型在显式配置视觉 Provider 后可以使用 <code>analyze_image</code>；</li>
+<li><code>e29aafb</code>：图片 token 按计费模型上界估算，并在路径解析后去重；</li>
+<li><code>4c6b7f9</code>：按文件 magic bytes 而不是声明类型识别附件。</li>
+</ul>
+<p>最终并没有增加一个通用的“视觉模式”开关，而是<strong>根据 Runtime 已解析出的 Provider 能力决定 Tool 是否存在</strong>：缺少依赖时 Tool 不进入 ToolSet，而不是等模型调用后再失败。</p>
+<h3 id="6-5-并发-Tool-的四种顺序"><a href="#6-5-并发-Tool-的四种顺序" class="headerlink" title="6.5 并发 Tool 的四种顺序"></a>6.5 并发 Tool 的四种顺序</h3><p><code>803b5ea</code> 允许并发 Tool 完成后立即向 UI 发出结果，但给 Provider 的 Tool Result 仍按模型调用顺序排列。后续 Journal 又保存了真实完成顺序，于是系统明确区分四种顺序：</p>
+<table>
+<thead>
+<tr>
+<th>顺序</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Invocation order</td>
+<td>模型发出调用的顺序</td>
+</tr>
+<tr>
+<td>Completion order</td>
+<td>工具实际完成、UI 收到结果的顺序</td>
+</tr>
+<tr>
+<td>Journal order</td>
+<td>事实实际发生并落盘的顺序</td>
+</tr>
+<tr>
+<td>Provider projection order</td>
+<td>为满足 Provider 协议而重排后的顺序</td>
+</tr>
+</tbody></table>
+<p><strong>从“并发实现细节”升级为“Runtime 明确定义的执行语义”</strong>，这是我在这一阶段印象最深的变化。</p>
+<hr>
+<h2 id="7-阶段-5：从保存聊天记录到保存执行事实"><a href="#7-阶段-5：从保存聊天记录到保存执行事实" class="headerlink" title="7. 阶段 5：从保存聊天记录到保存执行事实"></a>7. 阶段 5：从保存聊天记录到保存执行事实</h2><h3 id="7-1-Session-先成为-Workspace-级持久实体"><a href="#7-1-Session-先成为-Workspace-级持久实体" class="headerlink" title="7.1 Session 先成为 Workspace 级持久实体"></a>7.1 Session 先成为 Workspace 级持久实体</h3><p><code>cf447b0</code> 把 Session 移入用户配置目录，并让媒体路径相对 Workspace 解析；<code>492fd90</code> 让每个 Session 与 Workspace 绑定；<code>975b794</code> 再按 Workspace 分组 Session，并保留被中断 turn 已经产生的内容。</p>
+<p>此时 Session 已经不只是聊天历史：它决定 Artifact 路径、附件解析、子 Agent Transcript、恢复入口和并发隔离。</p>
+<h3 id="7-2-a31d0b7：执行结果随发生随保存"><a href="#7-2-a31d0b7：执行结果随发生随保存" class="headerlink" title="7.2 a31d0b7：执行结果随发生随保存"></a>7.2 <code>a31d0b7</code>：执行结果随发生随保存</h3><p>早期实现倾向于等一整个 turn 完成后才保存。<code>a31d0b7</code> 改成 Agent 每 settle 一个 item 就立即持久化，使断线、取消或进程异常时，已经发生的消息和 Tool Result 不会全部丢失。</p>
+<p>但这仍然是在“保存消息”：Tool 是否已开始执行、是否完成、turn 为什么结束，这些事实还没有统一的数据模型。</p>
+<h3 id="7-3-b01e999：append-only-Journal，最大的一次状态模型重构"><a href="#7-3-b01e999：append-only-Journal，最大的一次状态模型重构" class="headerlink" title="7.3 b01e999：append-only Journal，最大的一次状态模型重构"></a>7.3 <code>b01e999</code>：append-only Journal，最大的一次状态模型重构</h3><p><code>b01e999</code> 把 Session 重构为 append-only Runtime Journal。每个事件包含单调递增的 <code>seq</code>、唯一 <code>event_id</code>、<code>turn_id</code>，Tool 事件还带 <code>tool_call_id</code>。典型事实包括：</p>
+<ul>
+<li><code>turn_started</code> &#x2F; <code>turn_completed</code> &#x2F; <code>turn_failed</code> &#x2F; <code>turn_cancelled</code>；</li>
+<li><code>message_appended</code>；</li>
+<li><code>model_completed</code>；</li>
+<li><code>tool_started</code> &#x2F; <code>tool_completed</code> &#x2F; <code>tool_failed</code> &#x2F; <code>tool_cancelled</code>；</li>
+<li><code>context_archived</code>。</li>
+</ul>
+<p>关键变化不是“文件格式从 JSON 变成 JSONL”，而是<strong>建立三个不同视图</strong>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">         append-only Journal</span><br><span class="line">            /      |      \</span><br><span class="line">           /       |       \</span><br><span class="line">Session 当前状态  执行历史  Provider Context</span><br><span class="line">  （replay）       （事实）    （projection）</span><br></pre></td></tr></table></figure>
+
+<p>Journal 保存“实际发生了什么”，Provider Context 只投影“下一次请求允许看到什么”。比如一个 Tool 已经 started 但进程退出、没有可靠结果：</p>
+<ul>
+<li>真实历史中保留 started，并在恢复时标为 unknown；</li>
+<li>Runtime 不会自动重放，因为 Tool 可能已经产生副作用；</li>
+<li>Provider 投影会排除不完整的 Tool Batch，避免构造非法消息链。</li>
+</ul>
+<p>这一下就把此前最难缠的一组问题解开了：崩溃恢复、取消、中断副作用、并发完成顺序、Provider 格式约束，不再互相冲突。</p>
+<h3 id="7-4-上下文压缩改用-Cursor-和-ContextUnit"><a href="#7-4-上下文压缩改用-Cursor-和-ContextUnit" class="headerlink" title="7.4 上下文压缩改用 Cursor 和 ContextUnit"></a>7.4 上下文压缩改用 Cursor 和 ContextUnit</h3><p>Journal 重构之后，按“已归档 turn 数”记录压缩位置就不够了，因为一个 turn 内可能有多次模型调用、多个 Tool Batch 和 steering。于是陆续：</p>
+<ul>
+<li><code>4506832</code>：归档位置改为原始 item cursor，不再保留 archived turns 作为第二套索引；</li>
+<li><code>7672710</code>：移除旧 provider-message wrapper，并要求明确 archive cursor；</li>
+<li><code>82262b5</code>：以 <code>ContextUnit</code> 为不可拆分边界，并原样保留最近若干单元；</li>
+<li><code>50cf2fb</code>：删除 Runtime 已不再使用的旧 Provider Message 投影。</li>
+</ul>
+<p>当前 <code>ContextUnit</code> 的核心规则是：普通消息各自构成一个单元；带 Tool Calls 的 assistant message、该批全部 Tool Results 和尾随 Tool Media 共同构成一个单元。<strong>压缩游标不能落在 Tool Batch 中间</strong>，因此不会生成 Provider 无法接受的残缺工具链。</p>
+<p>同一批提交还校正了预算语义：<code>output_reserve_tokens</code> 只为下一次输出预留输入空间；<code>max_generation_tokens</code> 是可选的生成策略，不再和上下文预算混为一谈；压缩到 trigger 前的边界，不再同时维护一个容易造成过度压缩的 target。</p>
+<hr>
+<h2 id="8-阶段-6：Runtime-成为可接管的长生命周期实体"><a href="#8-阶段-6：Runtime-成为可接管的长生命周期实体" class="headerlink" title="8. 阶段 6：Runtime 成为可接管的长生命周期实体"></a>8. 阶段 6：Runtime 成为可接管的长生命周期实体</h2><h3 id="8-1-GUI-Server-开始拥有-Runtime"><a href="#8-1-GUI-Server-开始拥有-Runtime" class="headerlink" title="8.1 GUI Server 开始拥有 Runtime"></a>8.1 GUI Server 开始拥有 Runtime</h3><p><code>7d3db87</code> 改变了 GUI 的所有权模型：Bridge 进程由 GUI Server 按 Session 持有，浏览器页面只是 attach &#x2F; detach。页面断开不再等价于 Runtime 结束，运行中的 turn 可以继续，重连后恢复事件和待审批状态。<code>ced07a7</code> 又明确同一 Session 的 live attachment 只由一个页面拥有，避免多个页面同时发控制消息。</p>
+<p>Runtime 的生命周期，就此从“一个 WebSocket 连接”变成“一个活动 Session”。</p>
+<h3 id="8-2-Skills-采用渐进加载"><a href="#8-2-Skills-采用渐进加载" class="headerlink" title="8.2 Skills 采用渐进加载"></a>8.2 Skills 采用渐进加载</h3><p><code>b331969</code> 增加 Skills，但没有把所有 <code>SKILL.md</code> 全文塞进 system prompt。Runtime 启动时只注册名称和描述，模型需要时调用 <code>read_skill</code> 分段读取完整指令和引用文件。</p>
+<p>这延续了上下文管理一贯的方向：<strong>能力可以很多，但常驻上下文只保留“发现能力”所需的最小信息。</strong></p>
+<h3 id="8-3-Agent-主动询问用户"><a href="#8-3-Agent-主动询问用户" class="headerlink" title="8.3 Agent 主动询问用户"></a>8.3 Agent 主动询问用户</h3><p><code>9f3f91c</code> 增加 <code>ask_user</code> Tool，由 Bridge 注入交互回调，且只提供给 main Agent：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Agent Tool Call</span><br><span class="line">  → Bridge 发出 user_question</span><br><span class="line">  → TUI/GUI 展示选项或自由输入</span><br><span class="line">  → Bridge 等待 user_question_response</span><br><span class="line">  → 结构化 Tool Result 回灌 Agent</span><br></pre></td></tr></table></figure>
+
+<p>这里依然没有让 Core 依赖 UI：Core 只知道 Tool Context 里存在一个询问回调，问题怎么展示、怎么回答，全由 Bridge 协议处理。</p>
+<h3 id="8-4-运行中-steering-与安全点"><a href="#8-4-运行中-steering-与安全点" class="headerlink" title="8.4 运行中 steering 与安全点"></a>8.4 运行中 steering 与安全点</h3><p><code>1edc4f0</code> 允许用户在 turn 运行期间追加指令。Bridge 的唯一输入 Reader 把 <code>user_steer</code> 路由到当前 <code>TurnControl</code>，Agent 只在安全点接收：</p>
+<ul>
+<li>一次模型调用结束后；</li>
+<li>完整 Tool Batch 已写回后；</li>
+<li>准备返回最终答案前。</li>
+</ul>
+<p>Steering 最终作为普通 user message 写入 Session，因此自动获得 Journal、token 统计、上下文压缩和恢复语义，<strong>不需要一套平行状态</strong>。“只在安全点应用”则避免了两件事：不会在 Provider 流中间修改请求，也不会把新消息插进 assistant tool_calls 与 Tool Results 之间。</p>
+<h3 id="8-5-取消与权限成为-Session-级控制"><a href="#8-5-取消与权限成为-Session-级控制" class="headerlink" title="8.5 取消与权限成为 Session 级控制"></a>8.5 取消与权限成为 Session 级控制</h3><p><code>5b6b8e6</code> 让停止发送 chunk 的 Provider stream 也能被取消，取消不再依赖 Provider 继续产出 chunk。<code>2041f70</code> 增加 Session 级权限 preset：</p>
+<ul>
+<li><code>ask_for_approval</code>：Shell 和配置要求确认的 MCP Tool 继续询问用户；</li>
+<li><code>full_access</code>：跳过这层人工确认，但不改变 ToolSet，也不额外引入 Sandbox。</li>
+</ul>
+<p>权限状态随后写入独立 Session metadata；<code>60e6554</code> 把 metadata 统一为 <code>session.json</code>；<code>8f7f019</code> 从 Session 所在目录反推 Workspace，删掉重复存储的信息。</p>
+<p><strong>项目后期有一个很一致的设计倾向：状态只保留一个真实来源，能从结构推导出来的字段就不再重复保存。</strong></p>
+<hr>
+<h2 id="9-当前架构：一次看懂的分层、装配与执行"><a href="#9-当前架构：一次看懂的分层、装配与执行" class="headerlink" title="9. 当前架构：一次看懂的分层、装配与执行"></a>9. 当前架构：一次看懂的分层、装配与执行</h2><h3 id="9-1-分层和职责"><a href="#9-1-分层和职责" class="headerlink" title="9.1 分层和职责"></a>9.1 分层和职责</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">TUI (Ink + React) ─────────┐</span><br><span class="line">                           ├── NDJSON Protocol ── Bridge ── Agent Core</span><br><span class="line">GUI (React) ── FastAPI ────┘</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>层</th>
+<th>当前职责</th>
+<th>不应承担的职责</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TUI &#x2F; GUI</td>
+<td>渲染事件、采集输入、展示授权与问题</td>
+<td>Agent Loop、Tool 执行、上下文压缩</td>
+</tr>
+<tr>
+<td>Bridge</td>
+<td>配置解析、Runtime 装配、进程与协议、MCP 生命周期、交互路由</td>
+<td>模型决策、Tool Result 回灌、归档算法</td>
+</tr>
+<tr>
+<td>Agent Core</td>
+<td>Agent Loop、上下文、Session、事件、Tool 抽象、子 Agent、Provider&#x2F;MCP 机制</td>
+<td>UI、浏览器、终端和协议消息</td>
+</tr>
+</tbody></table>
+<h3 id="9-2-Bridge-的装配顺序"><a href="#9-2-Bridge-的装配顺序" class="headerlink" title="9.2 Bridge 的装配顺序"></a>9.2 Bridge 的装配顺序</h3><p>当前 <code>Bridge.start()</code> 大致按以下顺序建立 Runtime：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">读取配置与 .env</span><br><span class="line">  → 解析 Workspace</span><br><span class="line">  → 发现 Skills</span><br><span class="line">  → 创建/恢复 Session，并挂接 Journal Sink</span><br><span class="line">  → 创建主 Provider 与视觉 Provider</span><br><span class="line">  → 创建内置 Tool Catalog</span><br><span class="line">  → 启动 MCP，扩展 Catalog</span><br><span class="line">  → 创建审批 Policy / PermissionController</span><br><span class="line">  → 创建 SubagentRoleRegistry / SubagentRuntime</span><br><span class="line">  → 创建主 Agent 的 ToolExecutionContext</span><br><span class="line">  → 从 Catalog 选择主 Agent ToolSet</span><br><span class="line">  → 创建 Agent</span><br><span class="line">  → 发出 ready</span><br></pre></td></tr></table></figure>
+
+<p>“机制在 Core，组合在 Bridge”在这段流程里体现得最清楚：Core 提供所有构件，但只有 Bridge 知道配置文件、当前 Workspace、前端交互和进程生命周期。</p>
+<h3 id="9-3-一次-turn-的当前执行时序"><a href="#9-3-一次-turn-的当前执行时序" class="headerlink" title="9.3 一次 turn 的当前执行时序"></a>9.3 一次 turn 的当前执行时序</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">begin_turn，立即写 Journal</span><br><span class="line">  → 追加 user message</span><br><span class="line">  → 构造 Provider request</span><br><span class="line">  → token 计数</span><br><span class="line">      ├─ 达到压缩阈值：生成 checkpoint，推进 cursor，重新构造请求</span><br><span class="line">      └─ 超过 hard limit：失败</span><br><span class="line">  → 流式调用 Provider</span><br><span class="line">  → 记录 model_completed</span><br><span class="line">      ├─ 返回 Tool Calls</span><br><span class="line">      │    → 记录 assistant/tool_calls</span><br><span class="line">      │    → Tool started 立即写 Journal</span><br><span class="line">      │    → 串行或并行执行</span><br><span class="line">      │    → Tool finished 与 result 随完成立即写入</span><br><span class="line">      │    → 如有图片，在整批 Tool Results 后追加 tool_media</span><br><span class="line">      │    → 应用 pending steering</span><br><span class="line">      │    → 回到下一次模型调用</span><br><span class="line">      └─ 返回最终文本</span><br><span class="line">           → 追加 assistant message</span><br><span class="line">           → 返回前再次检查 steering</span><br><span class="line">           → finish_turn</span><br></pre></td></tr></table></figure>
+
+<p>异常、取消和进程中断都会映射为明确的 turn &#x2F; tool 状态；已经发生的副作用，不会因为缺少 Tool Result 就被假定为“没有执行”。</p>
+<h3 id="9-4-核心对象关系"><a href="#9-4-核心对象关系" class="headerlink" title="9.4 核心对象关系"></a>9.4 核心对象关系</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">Bridge</span><br><span class="line"> ├─ Session + JsonlSessionStore</span><br><span class="line"> ├─ Provider(s)</span><br><span class="line"> ├─ SkillRegistry</span><br><span class="line"> ├─ McpClientManager</span><br><span class="line"> ├─ PermissionController</span><br><span class="line"> ├─ ToolCatalog</span><br><span class="line"> ├─ SubagentRuntime</span><br><span class="line"> └─ Agent</span><br><span class="line">     ├─ ContextManager</span><br><span class="line">     ├─ ToolSet</span><br><span class="line">     │   ├─ ToolExecutionContext</span><br><span class="line">     │   └─ ToolPolicy</span><br><span class="line">     └─ TurnControl</span><br></pre></td></tr></table></figure>
+
+<p>最关键的所有权规则：</p>
+<ul>
+<li>Agent 只拥有一次对话循环所需的引用，不拥有共享 Tool 实例；</li>
+<li>ToolCatalog 持有无状态 Tool，ToolSet 只是按角色绑定上下文后的视图；</li>
+<li>Session 是运行事实的内存状态，JsonlSessionStore 是它的 append-only 持久化；</li>
+<li>ContextManager 只负责 Provider 上下文，不负责执行 Tool；</li>
+<li>TurnControl 只承载当前 turn 的取消与 steering；</li>
+<li>Bridge 拥有 Runtime 级资源，以及所有需要前端参与的交互。</li>
+</ul>
+<hr>
+<h2 id="10-贯穿整个过程的五个设计变化"><a href="#10-贯穿整个过程的五个设计变化" class="headerlink" title="10. 贯穿整个过程的五个设计变化"></a>10. 贯穿整个过程的五个设计变化</h2><h3 id="10-1-从“先抽象”转为“第二个消费者出现时抽象”"><a href="#10-1-从“先抽象”转为“第二个消费者出现时抽象”" class="headerlink" title="10.1 从“先抽象”转为“第二个消费者出现时抽象”"></a>10.1 从“先抽象”转为“第二个消费者出现时抽象”</h3><p>早期先用最小 Agent 和 CLI 验证闭环；Tool 多起来才加工厂；GUI 出现才建 Bridge；子 Agent 出现才重构共享 Catalog。<strong>大部分抽象都有明确的第二个消费者，而不是预先设计。</strong> 于是每个层次都对应真实的压力：</p>
+<ul>
+<li>Provider 抽象 → 模型实现可替换；</li>
+<li>Bridge → TUI 与 GUI；</li>
+<li>Tool Catalog → main Agent 与多个 subagent role；</li>
+<li>Journal projection → 执行历史与 Provider 对话的不同要求。</li>
+</ul>
+<h3 id="10-2-从“保存结果”转为“记录事实，再生成结果视图”"><a href="#10-2-从“保存结果”转为“记录事实，再生成结果视图”" class="headerlink" title="10.2 从“保存结果”转为“记录事实，再生成结果视图”"></a>10.2 从“保存结果”转为“记录事实，再生成结果视图”</h3><p>Session 的演进最能体现这一点：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">消息列表</span><br><span class="line">  → 带时间和 usage 的 Session Record</span><br><span class="line">  → 每个 turn 的持久化 items</span><br><span class="line">  → append-only execution Journal</span><br><span class="line">  → replay 得到状态，projection 得到 Provider Context</span><br></pre></td></tr></table></figure>
+
+<p>最终模型不是把持久化结构直接发出去，而是从真实执行历史中投影出合法请求。持久化因此不再被某家模型 API 的消息格式绑架。</p>
+<h3 id="10-3-从“Tool-持有能力”转为“Runtime-注入能力”"><a href="#10-3-从“Tool-持有能力”转为“Runtime-注入能力”" class="headerlink" title="10.3 从“Tool 持有能力”转为“Runtime 注入能力”"></a>10.3 从“Tool 持有能力”转为“Runtime 注入能力”</h3><p>早期 Tool 可以在构造时拿到 Workspace 或 Executor；共享 Catalog 重构后，Tool 只描述自身能力，具体依赖由 <code>ToolExecutionContext</code> 提供。结果是：同一 Tool 实例可以服务多个 Agent；Tool 可用性由当前 Runtime 是否提供依赖决定；并行执行不共享调用状态。</p>
+<h3 id="10-4-从“前端生命周期”转为“Session-生命周期”"><a href="#10-4-从“前端生命周期”转为“Session-生命周期”" class="headerlink" title="10.4 从“前端生命周期”转为“Session 生命周期”"></a>10.4 从“前端生命周期”转为“Session 生命周期”</h3><p>Bridge 独立进程、GUI Server 持有 Runtime、页面 attach&#x2F;detach、append-only Journal 和恢复逻辑共同完成了这一变化。当前 Session 可以跨页面、跨连接，甚至跨异常退出保留真实进度。</p>
+<h3 id="10-5-不断删除过渡结构"><a href="#10-5-不断删除过渡结构" class="headerlink" title="10.5 不断删除过渡结构"></a>10.5 不断删除过渡结构</h3><p>演进中有多次主动删除：旧 Agent archive wrapper、<code>create_tools</code> alias、可配置 shell timeout、重复 Provider projection、兼容 fallback、Bridge 侧取消清理、重复 Workspace metadata。</p>
+<p><strong>项目并不是只在叠加能力，而是在新职责边界稳定后及时移除旧路径。</strong> 当前架构的清晰度，很大程度上来自这些删除。</p>
+<hr>
+<h2 id="11-我抄下来的八条开发方法"><a href="#11-我抄下来的八条开发方法" class="headerlink" title="11. 我抄下来的八条开发方法"></a>11. 我抄下来的八条开发方法</h2><ol>
+<li>先建立最小可运行闭环，用真实需求暴露边界，而不是预设完整框架；</li>
+<li>每加入一种执行能力，都同时补齐终止条件、错误语义、持久化和 UI 事件；</li>
+<li>第二个调用方出现时统一执行入口，避免复制 Runtime；</li>
+<li>当一个对象同时承担“流程”和“策略”时再拆分，例如 Agent 与 ContextManager；</li>
+<li>并发和恢复以“实际发生的事实”为准，外部协议格式通过 projection 适配；</li>
+<li>Runtime 依赖统一在装配层解析，通过显式 Context 注入；</li>
+<li>新状态尽量复用现有语义，例如 steering 直接成为普通 user message；</li>
+<li>新结构稳定后删除旧 wrapper、fallback 和重复数据源。</li>
+</ol>
+<hr>
+<h2 id="12-附录：Runtime-相关提交索引（按时间）"><a href="#12-附录：Runtime-相关提交索引（按时间）" class="headerlink" title="12. 附录：Runtime 相关提交索引（按时间）"></a>12. 附录：Runtime 相关提交索引（按时间）</h2><p>标记为 <strong>里程碑</strong> 的提交改变了职责边界或状态模型；其余提交主要补齐能力、约束或语义。</p>
+<h3 id="2026-09-09：最小内核与-Tool-Loop"><a href="#2026-09-09：最小内核与-Tool-Loop" class="headerlink" title="2026-09-09：最小内核与 Tool Loop"></a>2026-09-09：最小内核与 Tool Loop</h3><ul>
+<li><code>e1d15a4</code> Initial commit：建立 Agent、Provider、Session 和 CLI 的最小闭环。（<strong>里程碑</strong>）</li>
+<li><code>42e9b60</code> Add timestamped session records and token usage：执行记录开始携带时间和 usage。</li>
+<li><code>95eb231</code> Rename system prompt to Soul：将 Agent 身份提示独立命名。</li>
+<li><code>7f22d93</code> Add tool calling support：单次补全变为可迭代 Tool Loop。（<strong>里程碑</strong>）</li>
+</ul>
+<h3 id="2026-09-10：Workspace、事件、安全和-Tool-装配"><a href="#2026-09-10：Workspace、事件、安全和-Tool-装配" class="headerlink" title="2026-09-10：Workspace、事件、安全和 Tool 装配"></a>2026-09-10：Workspace、事件、安全和 Tool 装配</h3><ul>
+<li><code>a361c72</code> Add configurable tool call limit：加入 Tool 循环终止条件。</li>
+<li><code>2b1d008</code> Refine repeated tool call detection：按连续相同调用检测无进展循环。</li>
+<li><code>eb7b43f</code> Add workspace-aware CLI entry point：Workspace 进入 Runtime 上下文。</li>
+<li><code>03812fc</code> Add workspace file tools：加入文件读取、编辑、搜索和目录浏览。</li>
+<li><code>7689f21</code> Add context window validation：Runtime 主动验证上下文 hard limit。</li>
+<li><code>4444b41</code> Add structured agent execution events：执行过程变为结构化事件流。（<strong>里程碑</strong>）</li>
+<li><code>29ebad8</code> Add approved shell tool and grouped event output：Shell 引入人工审批。</li>
+<li><code>69bb062</code> Separate shell policy from command execution：授权策略与命令执行解耦。（<strong>里程碑</strong>）</li>
+<li><code>3bdfd5f</code> Add ranged file reading with line numbers：文件读取获得有界范围语义。</li>
+<li><code>6b34054</code> Add configurable built-in tool factory：Tool 创建从 CLI 收口到统一工厂。</li>
+</ul>
+<h3 id="2026-09-11：持久化产品化与-Bridge"><a href="#2026-09-11：持久化产品化与-Bridge" class="headerlink" title="2026-09-11：持久化产品化与 Bridge"></a>2026-09-11：持久化产品化与 Bridge</h3><ul>
+<li><code>e873500</code> Add user configuration initialization and per-session storage：建立用户级配置和独立 Session 存储。</li>
+<li><code>d341306</code> Add minimal assistant-ui GUI with sessions and model selection：第二前端出现，暴露统一 Runtime 的需求。</li>
+<li><code>8039345</code> Store large tool results as session artifacts：大结果转为可分段读取的 Artifact。</li>
+<li><code>725fd3b</code> Bound file reading and search results：限制文件工具的上下文占用。</li>
+<li><code>831319f</code> Add configurable shell timeout and bounded command output：限制命令执行时间和输出。</li>
+<li><code>a4443a2</code> Increase maximum shell timeout to 15 minutes：放宽长任务执行上限。</li>
+<li><code>abdfc6a</code> Restructure interfaces: replace agent_cli with bridge + TUI：Bridge 成为唯一 Runtime 装配与协议入口。（<strong>里程碑</strong>）</li>
+<li><code>bf907c6</code> Merge PR #1: adapt the GUI to the bridge architecture：GUI 接入同一 Bridge，完成双前端统一。</li>
+</ul>
+<h3 id="2026-09-12：长上下文与流式-Runtime"><a href="#2026-09-12：长上下文与流式-Runtime" class="headerlink" title="2026-09-12：长上下文与流式 Runtime"></a>2026-09-12：长上下文与流式 Runtime</h3><ul>
+<li><code>5035553</code> Make shell execution work on Windows：补齐跨平台命令执行。</li>
+<li><code>526b11a</code> Run shell commands in a POSIX shell on every platform：统一 Shell 语法和执行语义。</li>
+<li><code>24db70e</code> Add a web_search Tool backed by Exa：外部检索进入统一 Tool 系统。</li>
+<li><code>43ee630</code> Rename the project to Nosis：统一项目身份和配置目录命名。</li>
+<li><code>73b01c5</code> Archive context into a summary instead of failing at the window limit：上下文从超限失败改为 checkpoint 压缩。（<strong>里程碑</strong>）</li>
+<li><code>7606a39</code> Report context compression to the UIs：压缩成为可观察 Runtime 事件。</li>
+<li><code>7dee8ff</code> Never archive the turn that is still running：归档不破坏活动 Tool 链。</li>
+<li><code>07feec6</code> Make context compression configurable：压缩策略进入 Agent 配置。</li>
+<li><code>6324769</code> Reject a context window too small to divide：明确无可用预算时的启动失败。</li>
+<li><code>2cb3b3a</code> Move message timestamps into a single timeline system message：历史时间信息与原消息内容分离。</li>
+<li><code>563d111</code> Stream model reasoning deltas through the agent and interfaces：Runtime 输出连续 reasoning 事件。（<strong>里程碑</strong>）</li>
+</ul>
+<h3 id="2026-09-13：ContextManager、MCP、子-Agent-和多模态"><a href="#2026-09-13：ContextManager、MCP、子-Agent-和多模态" class="headerlink" title="2026-09-13：ContextManager、MCP、子 Agent 和多模态"></a>2026-09-13：ContextManager、MCP、子 Agent 和多模态</h3><ul>
+<li><code>0063af8</code> Add MCP client support with namespaced tools and approvals：远程 Tool 进入统一 Runtime。（<strong>里程碑</strong>）</li>
+<li><code>651c648</code> Report MCP server startup failures instead of aborting the bridge：MCP 局部失败可观察、不中止全部 Runtime。</li>
+<li><code>f59b856</code> Keep historical tool chains without timestamps or reasoning：历史 Tool 链保持 Provider 合法格式。</li>
+<li><code>ca6a8a5</code> Always pass the reasoning delta callback to providers：统一 Provider 流式回调契约。</li>
+<li><code>dfb610d</code> Extract context building and archiving into ContextManager：上下文策略从 Agent Loop 中独立。（<strong>里程碑</strong>）</li>
+<li><code>2ace3d2</code> Drop the leftover Agent archive wrapper：删除抽取后的过渡 wrapper。</li>
+<li><code>c6d9476</code> Fail archiving when no turn is active：归档要求明确活动 turn。</li>
+<li><code>c5e66f6</code> Show MCP startup progress as transient status instead of transcript：运行状态与对话历史分离。</li>
+<li><code>0563453</code> Add a subagent tool with its own provider and tool config：委派能力作为 Tool 进入 Runtime。（<strong>里程碑</strong>）</li>
+<li><code>e4226b2</code> Collect subagent tools through the registry and give them a workspace：子 Agent 获得注册表和 Workspace。</li>
+<li><code>32871d2</code> Accept image attachments as multimodal message content：Session 和 Provider 请求支持多模态内容。</li>
+<li><code>cf447b0</code> Move session storage to the user config directory and resolve media paths against the workspace：Session 与 Workspace 媒体路径形成稳定关系。</li>
+<li><code>ae5cd63</code> Nest subagent transcripts under the parent session again：子 Agent 历史归属父 Session。</li>
+<li><code>644bd3c</code> Reject a subagent without either a sessions directory or a parent session：明确子 Session 存储不变量。</li>
+<li><code>fb389fc</code> Drop the create_tools alias and correct a misleading test name：删除 Tool 工厂过渡别名。</li>
+<li><code>6611261</code> Let subagents see the images of the turn that spawned them：子 Agent 继承触发 turn 的用户附件。</li>
+<li><code>7a2b2cd</code> Resolve provider names from the config load that already reads the file：消除 Provider 配置重复读取。</li>
+<li><code>492fd90</code> Bind each session to its workspace and keep GUI sessions running side by side：Session 与 Workspace 绑定，并支持 GUI 并行 Session。</li>
+</ul>
+<h3 id="2026-09-14：共享能力、角色化和并发语义"><a href="#2026-09-14：共享能力、角色化和并发语义" class="headerlink" title="2026-09-14：共享能力、角色化和并发语义"></a>2026-09-14：共享能力、角色化和并发语义</h3><ul>
+<li><code>975b794</code> Group sessions by workspace and keep what an interrupted turn produced：Session 按 Workspace 分组，并保留中断进度。（<strong>里程碑</strong>）</li>
+<li><code>563133c</code> Decide MCP approval per tool and infer the transport：MCP 审批细化到 Tool。</li>
+<li><code>b401880</code> Share one Tool catalog across agents and turn sub-agents into configured roles：共享无状态 Tool Catalog，子 Agent 角色化。（<strong>里程碑</strong>）</li>
+<li><code>5534775</code> Give each subagent role its own provider and derive analyze_image from capability：角色级 Provider 与能力派生 Tool。</li>
+<li><code>446b598</code> Order enabled tools by the canonical list so the schema order is stable：Tool Schema 顺序稳定化。</li>
+<li><code>bb7abe1</code> Let a vision model read a workspace image itself：视觉模型获得直接读图通道。</li>
+<li><code>e29aafb</code> Price an image at the highest billing model and dedup after resolution：图片 token 估算与路径去重语义稳定化。</li>
+<li><code>803b5ea</code> Emit tool completions as they finish and commit them in call order：区分完成顺序和 Provider 顺序。（<strong>里程碑</strong>）</li>
+<li><code>08ac1ae</code> Shut a starting bridge and its MCP servers down without orphanage：Bridge 启动期取消不会遗留 MCP 进程。</li>
+<li><code>b325a88</code> Keep large shell output on disk and clean up its spool：Shell 大输出以 spool + Artifact 管理。</li>
+</ul>
+<h3 id="2026-09-15：预算语义与输出边界"><a href="#2026-09-15：预算语义与输出边界" class="headerlink" title="2026-09-15：预算语义与输出边界"></a>2026-09-15：预算语义与输出边界</h3><ul>
+<li><code>e9dd06b</code> Add write_file for replacing a whole file atomically：加入原子整文件写入能力。</li>
+<li><code>15d9527</code> Accept streamed text blocks and let the GUI drop a session：Provider 流兼容文本块，Session 可删除。</li>
+<li><code>86f3d3d</code> Split the output reserve from the per-call generation limit：上下文预留与生成上限分离。（<strong>里程碑</strong>）</li>
+<li><code>6eab91f</code> Only cap generation when a policy asks for it：默认不主动限制 Provider 输出。</li>
+<li><code>ee76bd2</code> Compress to a trigger, not a target size：简化压缩模型，删除 target 语义。</li>
+<li><code>9de8b73</code> Tell the consolidator to shrink the checkpoint：防止 checkpoint 自身持续膨胀。</li>
+<li><code>4c6b7f9</code> Accept an attachment by its bytes, not its declared type：媒体类型由真实字节决定。</li>
+<li><code>b914ab6</code> Write down the layer contract the code already keeps：将 Core、Bridge、前端的既有边界正式写入项目约束。</li>
+</ul>
+<h3 id="2026-09-16：Journal、可恢复执行与实时交互"><a href="#2026-09-16：Journal、可恢复执行与实时交互" class="headerlink" title="2026-09-16：Journal、可恢复执行与实时交互"></a>2026-09-16：Journal、可恢复执行与实时交互</h3><ul>
+<li><code>a31d0b7</code> Store a turn’s items as the agent settles them：执行项随发生立即持久化。</li>
+<li><code>c1dfbd3</code> Let the shell take a timeout longer than the default：单次调用可覆盖默认 timeout。</li>
+<li><code>119b3a7</code> Drop the configurable shell timeout：删除 Agent 配置中的执行器细节。</li>
+<li><code>b621a55</code> Take the shell’s timeout bounds from the executor：timeout 能力边界归 Command Executor 所有。</li>
+<li><code>b01e999</code> Record execution as an append-only journal and project it for the provider：真实执行 Journal 与 Provider 投影分离。（<strong>核心里程碑</strong>）</li>
+<li><code>af50c76</code> Give every turn a durable identity and drop the dead journal plumbing：turn 获得稳定身份，删除旧持久化路径。</li>
+<li><code>f343d57</code> Drop the cancel cleanup the agent already performs：取消清理只保留 Core 实现。</li>
+<li><code>4506832</code> Archive context by raw item cursor and drop archived turns：压缩位置改为 item cursor。</li>
+<li><code>7672710</code> Drop the provider-message wrapper and require the archive cursor：删除旧消息 wrapper 和隐式归档位置。</li>
+<li><code>b331969</code> Load skills progressively through a read_skill tool：Skills 采用发现信息常驻、完整内容按需读取。（<strong>里程碑</strong>）</li>
+<li><code>7d3db87</code> Let the GUI server own runtimes so pages attach to a running turn：GUI Runtime 生命周期独立于页面连接。（<strong>里程碑</strong>）</li>
+<li><code>82262b5</code> Keep a verbatim context-unit tail when compressing：压缩以完整 ContextUnit 为边界。（<strong>里程碑</strong>）</li>
+<li><code>50cf2fb</code> Drop the provider-message projection the runtime no longer uses：删除已被 ContextUnit 投影取代的旧实现。</li>
+<li><code>21bcc37</code> Drop the compatibility fallbacks the current pins rule out：删除依赖版本已不需要的兼容路径。</li>
+<li><code>ced07a7</code> Let one page own a session’s live attachment：明确活动 Session 的页面控制权。</li>
+<li><code>9f3f91c</code> Let the agent ask the user to pick an answer：Agent 可通过结构化 Tool 暂停并询问用户。（<strong>里程碑</strong>）</li>
+<li><code>1edc4f0</code> Let the user steer a turn that is already running：运行中指令通过安全点进入同一 turn。（<strong>里程碑</strong>）</li>
+<li><code>5b6b8e6</code> Cancel a provider stream that has stopped sending chunks：取消不再依赖 Provider 继续产出 chunk。</li>
+<li><code>2041f70</code> Let a session choose between asking for approval and full access：权限成为 Session 级 Runtime 状态。</li>
+<li><code>60e6554</code> Store a session’s metadata in a file named after it：Session metadata 收口到 <code>session.json</code>。</li>
+<li><code>8f7f019</code> Derive a session’s workspace from the directory that holds it：Workspace 从目录结构推导，删除重复状态。</li>
+</ul>
+<hr>
+<h2 id="13-结语与我还留在笔记最后的问题"><a href="#13-结语与我还留在笔记最后的问题" class="headerlink" title="13. 结语与我还留在笔记最后的问题"></a>13. 结语与我还留在笔记最后的问题</h2><p>七天的演进最后汇合成几条线：Tool Loop 让 Agent 从回答器变成执行器；结构化事件和 Bridge 让多个前端共享同一 Runtime；ContextManager 让长对话和压缩成为独立机制；Tool Catalog、Context 注入、MCP 和角色化子 Agent 让能力可组合；append-only Journal 让执行事实、恢复和 Provider 格式彻底解耦；Runtime ownership、<code>ask_user</code>、steering 和权限 preset 让 Session 成为可持续、可接管的活动实体。</p>
+<p>所以当前最值得保留的，不是某个具体类，而是开头那四条不变量：执行语义只在 Core 实现一次、Runtime 只在 Bridge 装配一次、真实历史只写 Journal 其余皆投影、Tool 无状态且依赖在调用时注入。它们解释了项目为什么能在快速加入 GUI、MCP、子 Agent、多模态、并发、恢复和实时交互之后，依赖方向依然干净。</p>
+<p>回头看，这三层理解是逐层加上去的：最早只能复述“哪个阶段加了什么”，接着才看清每次重构把职责从谁手里交给了谁，最后才认出这些取舍都来自同一条主线——把执行语义收紧到一处，把容易变化的部分推到装配层和投影层。写到这里，开头那句“每个字都认识但说不出为什么”，才算勉强有了答案。</p>
+<p>最后留几个我自己还没想透的问题，等下一轮再读代码：</p>
+<ol>
+<li>并发 Tool 的四种顺序里，UI 展示用 completion order、Provider 用 projection order，那如果用户想“按事实顺序回看一次执行”，最自然的入口应该是 replayed Session 还是 Journal 原文？</li>
+<li><code>ask_user</code> 和 steering 都让用户在 turn 中途介入，这两条通道未来会不会统一成一种“运行中交互”语义？</li>
+<li>当子 Agent 也能装配自己的子 Agent 时，Journal 的 <code>turn_id</code> 嵌套和 ContextUnit 边界还能不能保持现在的简洁？</li>
+</ol>
+<p>如果这篇笔记对同样在啃 Agent Runtime 的人有一点帮助，那它的目的就达到了。</p>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>Evan Zhong</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>Permalink:</span>
+                        <span><a href="https://evannzhongg.github.io/2026/09/19/Nosis-Agent-Runtime-Evolution/">https://evannzhongg.github.io/2026/09/19/Nosis-Agent-Runtime-Evolution/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>License:</span>
+                        <span>Copyright (c) 2019 <a target="_blank" rel="noopener" href="http://creativecommons.org/licenses/by-nc/4.0/">CC-BY-NC-4.0</a> LICENSE</span>
+                    </p>
+                
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/AI/"># AI</a>
+                    
+                        <a href="/tags/LLM/"># LLM</a>
+                    
+                        <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"># 大模型</a>
+                    
+                        <a href="/tags/Function-Calling/"># Function Calling</a>
+                    
+                        <a href="/tags/Agent/"># Agent</a>
+                    
+                        <a href="/tags/Python/"># Python</a>
+                    
+                        <a href="/tags/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/"># 架构设计</a>
+                    
+                        <a href="/tags/Agent-Runtime/"># Agent Runtime</a>
+                    
+                        <a href="/tags/Nosis/"># Nosis</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+            
+            <a class="next" rel="next" href="/2026/03/28/Learning-LLM-Pretraining-from-MiniMind/">Learning LLM Pretraining from MiniMind</a>
+            
+        </section>
+
+	<!-- Giscus 评论区挂载点 -->
+<div id="giscus-container" style="margin-top: 2.5rem;"></div>
+
+<!-- Giscus 动态加载脚本：初始加载 + 明暗主题切换 -->
+<script>
+  function createGiscus(theme) {
+    const giscusContainer = document.getElementById('giscus-container');
+    if (!giscusContainer) return;
+
+    // 清除旧的评论 iframe
+    giscusContainer.innerHTML = '';
+
+    const script = document.createElement('script');
+    script.src = 'https://giscus.app/client.js';
+    script.setAttribute('data-repo', 'EvannZhongg/EvannZhongg.github.io');
+    script.setAttribute('data-repo-id', 'R_kgDOOLqMyg');
+    script.setAttribute('data-category', 'Announcements');
+    script.setAttribute('data-category-id', 'DIC_kwDOOLqMys4CoYM2');
+    script.setAttribute('data-mapping', 'pathname');
+    script.setAttribute('data-strict', '0');
+    script.setAttribute('data-reactions-enabled', '0');
+    script.setAttribute('data-emit-metadata', '0');
+    script.setAttribute('data-input-position', 'top');
+    script.setAttribute('data-theme', theme);
+    script.setAttribute('data-lang', 'zh-CN');
+    script.setAttribute('crossorigin', 'anonymous');
+    script.async = true;
+
+    giscusContainer.appendChild(script);
+  }
+
+  function getCurrentTheme() {
+    return document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // 页面首次加载，根据当前主题挂载评论
+    createGiscus(getCurrentTheme());
+
+    // 监听按钮点击切换主题 → 重载评论区
+    const buttons = [
+      document.querySelector('.toggleBtn'),
+      document.getElementById('mobile-toggle-theme')
+    ];
+    buttons.forEach(btn => {
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        setTimeout(() => {
+          createGiscus(getCurrentTheme());
+        }, 400); // 稍作延迟，确保 class 切换完毕
+      });
+    });
+
+    // 监听 body class 改变（保险方案）
+    const observer = new MutationObserver(() => {
+      createGiscus(getCurrentTheme());
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  });
+</script>
+
+
+    </article>
+</div>
+
+        </div>
+        <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© Evan Zhong | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+<script src="/js/code-copy.js"></script>
+
+<link rel="stylesheet" href="/css/mermaid-enhance.css">
+<script src="/js/mermaid-enhance.js"></script>
+
+    </div>
+
+    <!-- 引入搜索弹窗 -->
+    <div class="search-popup">
+  <div class="search-overlay" onclick="closeSearchPopup()"></div>
+  <div class="search-box">
+    <input type="text" id="search-input" placeholder="Search..." autofocus>
+    <div id="search-result" class="search-result-list"></div>
+  </div>
+</div>
+
+<!-- 加载本地 search.xml 数据 -->
+<script>
+function closeSearchPopup() {
+  document.querySelector('.search-popup').classList.remove('active');
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const input = document.getElementById('search-input');
+  const resultContainer = document.getElementById('search-result');
+  let searchData = [];
+
+  // 加载 search.xml 并解析数据
+  fetch('/search.xml')
+    .then(res => res.text())
+    .then(xmlText => {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(xmlText, 'text/xml');
+      const entries = xml.getElementsByTagName('entry');
+      for (let entry of entries) {
+        searchData.push({
+          title: entry.getElementsByTagName('title')[0]?.textContent || '',
+          content: entry.getElementsByTagName('content')[0]?.textContent || '',
+          url: entry.getElementsByTagName('url')[0]?.textContent || ''
+        });
+      }
+    });
+
+  // 搜索逻辑绑定
+  input.addEventListener('input', function () {
+    const keyword = this.value.trim().toLowerCase();
+    resultContainer.innerHTML = '';
+    if (!keyword) return;
+
+    const results = searchData.filter(data =>
+      data.title.toLowerCase().includes(keyword) ||
+      data.content.toLowerCase().includes(keyword)
+    );
+
+    if (results.length === 0) {
+      resultContainer.innerHTML = '<p>No results found.</p>';
+      return;
+    }
+
+    const html = results.map(item => {
+      return `<p><a href="${item.url}">${item.title}</a></p>`;
+    }).join('');
+    resultContainer.innerHTML = html;
+  });
+});
+</script>
+
+<style>
+.search-popup {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+.search-popup.active {
+  display: block;
+}
+.search-overlay {
+  position: absolute;
+  inset: 0;
+}
+.search-box {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  padding: 2em;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 600px;
+}
+#search-input {
+  width: 100%;
+  padding: 0.8em;
+  font-size: 1.1em;
+  margin-bottom: 1em;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.search-result-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+.search-result-list p {
+  margin: 0.5em 0;
+}
+</style>
+
+
+</body>
+
+</html>

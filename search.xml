@@ -132,6 +132,333 @@
       </tags>
   </entry>
   <entry>
+    <title>Convert PDF Tables to Readable Text</title>
+    <url>/2025/03/28/Convert-PDF-Tables-to-Readable-Text/</url>
+    <content><![CDATA[<h1 id="PDF-表格提取转为纯文本结构数据"><a href="#PDF-表格提取转为纯文本结构数据" class="headerlink" title="PDF 表格提取转为纯文本结构数据"></a>PDF 表格提取转为纯文本结构数据</h1><p>本文详细记录了如何使用读光的  Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Table_Extraction.git">https://github.com/EvannZhongg/Table_Extraction.git</a></p>
+<hr>
+<h2 id="项目概览"><a href="#项目概览" class="headerlink" title="项目概览"></a><strong>项目概览</strong></h2><p>本项目的主要目标是将 PDF 文件中存在的表格，作为图片提取参数信息，尤其是结构化表格。整个流程分为两个阶段：</p>
+<ol>
+<li><strong>表格结构识别</strong> —— 使用 Cycle-CenterNet 模型识别表格中每个单元格的位置（多边形坐标）。</li>
+<li><strong>OCR 文本识别</strong> —— 使用 PaddleOCR 识别图像中所有文字及其位置坐标。</li>
+</ol>
+<hr>
+<h2 id="环境与设置"><a href="#环境与设置" class="headerlink" title="环境与设置"></a><strong>环境与设置</strong></h2><h3 id="1-表格识别模型配置"><a href="#1-表格识别模型配置" class="headerlink" title="1. 表格识别模型配置"></a><strong>1. 表格识别模型配置</strong></h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git lfs install</span><br><span class="line">git <span class="built_in">clone</span> https://www.modelscope.cn/iic/cv_dla34_table-structure-recognition_cycle-centernet.git</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">model_path = <span class="string">&quot;your_absolute_path_to_cv_dla34_table-structure-recognition_cycle-centernet&quot;</span></span><br></pre></td></tr></table></figure>
+<p>建议自定义路径使用绝对路径</p>
+<p>例如：<code>model_path = &quot;D:/Table_Extraction/cv_dla34_table-structure-recognition_cycle-centernet&quot;</code></p>
+<h3 id="2-PaddleOCR-配置"><a href="#2-PaddleOCR-配置" class="headerlink" title="2. PaddleOCR 配置"></a><strong>2. PaddleOCR 配置</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">ocr = PaddleOCR(</span><br><span class="line">    use_gpu=<span class="literal">True</span>,</span><br><span class="line">    lang=<span class="string">&#x27;ch&#x27;</span>,</span><br><span class="line">    det_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_det_infer&#x27;</span>,</span><br><span class="line">    rec_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_rec_infer&#x27;</span>,</span><br><span class="line">    cls_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_ppocr_mobile_v2.0_cls_infer&#x27;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>建议自定义路径使用绝对路径</p>
+<p>例如： <code>det_model_dir=&#39;D:/Table_Extraction/PaddleOCR/models/ch_PP-OCRv4_det_infer/&#39;</code></p>
+<hr>
+<h2 id="核心函数详解"><a href="#核心函数详解" class="headerlink" title="核心函数详解"></a><strong>核心函数详解</strong></h2><h3 id="1-函数-calculate-iot-cell-text"><a href="#1-函数-calculate-iot-cell-text" class="headerlink" title="1. 函数 calculate_iot(cell, text)"></a><strong>1. 函数 <code>calculate_iot(cell, text)</code></strong></h3><p><strong>功能</strong>：计算 OCR 文本框与表格单元格的交并比（IoT, Intersection over Text）。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>利用两组矩形坐标，计算它们重叠区域的面积。</li>
+<li>然后用重叠面积 &#x2F; 文本框面积作为 IoT 值。</li>
+<li>若值越大，表示文本越“贴合”单元格。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">calculate_iot</span>(<span class="params">cell, text</span>):</span><br><span class="line">    intersection_x1 = <span class="built_in">max</span>(cell[<span class="number">0</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>])</span><br><span class="line">    intersection_y1 = <span class="built_in">max</span>(cell[<span class="number">1</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    intersection_x2 = <span class="built_in">min</span>(cell[<span class="number">2</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>])</span><br><span class="line">    intersection_y2 = <span class="built_in">min</span>(cell[<span class="number">3</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> intersection_x1 &gt;= intersection_x2 <span class="keyword">or</span> intersection_y1 &gt;= intersection_y2:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.0</span></span><br><span class="line"></span><br><span class="line">    intersection_area = (intersection_x2 - intersection_x1) * (intersection_y2 - intersection_y1)</span><br><span class="line">    text_area = (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>]) * (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    <span class="keyword">return</span> intersection_area / text_area</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="2-函数-merge-text-into-cells-cell-coords-ocr-results"><a href="#2-函数-merge-text-into-cells-cell-coords-ocr-results" class="headerlink" title="2. 函数 merge_text_into_cells(cell_coords, ocr_results)"></a><strong>2. 函数 <code>merge_text_into_cells(cell_coords, ocr_results)</code></strong></h3><p><strong>功能</strong>：将 OCR 识别到的文字分配到表格对应单元格中。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>对每个单元格遍历所有 OCR 文本框，计算 IoT。</li>
+<li>若 IoT &gt; 0.5，则认为该文字属于该单元格。</li>
+<li>同时记录那些与所有单元格 IoT &lt; 0.1 的文字（非表格内容）。</li>
+<li>将属于单元格的文字合并为一个字符串。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">merge_text_into_cells</span>(<span class="params">cell_coords, ocr_results</span>):</span><br><span class="line">    cell_text_dict = &#123;cell: [] <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords&#125;</span><br><span class="line">    noncell_text_dict = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords:</span><br><span class="line">        <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">            <span class="keyword">if</span> calculate_iot(cell, result) &gt; <span class="number">0.5</span>:</span><br><span class="line">                cell_text_dict[cell].append(result[<span class="string">&#x27;text&#x27;</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">all</span>(calculate_iot(cell, result) &lt; <span class="number">0.1</span> <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords):</span><br><span class="line">            noncell_text_dict[result[<span class="string">&#x27;coords&#x27;</span>]] = result[<span class="string">&#x27;text&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    merged_text = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> cell, texts <span class="keyword">in</span> cell_text_dict.items():</span><br><span class="line">        merged_text[cell] = <span class="string">&#x27;&#x27;</span>.join(texts).strip()</span><br><span class="line">    <span class="keyword">for</span> coords, text <span class="keyword">in</span> noncell_text_dict.items():</span><br><span class="line">        merged_text[coords] = <span class="string">&#x27;&#x27;</span>.join(text).strip()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> merged_text</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="3-函数-adjust-coordinates-merged-text-image-path"><a href="#3-函数-adjust-coordinates-merged-text-image-path" class="headerlink" title="3. 函数 adjust_coordinates(merged_text, image_path)"></a><strong>3. 函数 <code>adjust_coordinates(merged_text, image_path)</code></strong></h3><p><strong>功能</strong>：将 y 坐标相近的单元格进行聚类并统一化，方便后续行级别排序。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>图像越高，容许的 y 偏差越大，使用 height &#x2F; 100 作为容差。</li>
+<li>将 y 值差距小于阈值的单元格归为一组。</li>
+<li>每组内统一 y 值为该组的平均 y 值，确保在同一“水平行”内。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">adjust_coordinates</span>(<span class="params">merged_text, image_path</span>):</span><br><span class="line">    image = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    width, height = image.size</span><br><span class="line">    threshold = height / <span class="number">100</span></span><br><span class="line">    groups = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> coordinates, text <span class="keyword">in</span> merged_text.items():</span><br><span class="line">        found_group = <span class="literal">False</span></span><br><span class="line">        <span class="keyword">for</span> group_y <span class="keyword">in</span> groups.keys():</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">abs</span>(coordinates[<span class="number">1</span>] - group_y) &lt;= threshold:</span><br><span class="line">                groups[group_y].append((coordinates, text))</span><br><span class="line">                found_group = <span class="literal">True</span></span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> found_group:</span><br><span class="line">            groups[coordinates[<span class="number">1</span>]] = [(coordinates, text)]</span><br><span class="line"></span><br><span class="line">    adjusted_coordinates = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> group_y, group_coords <span class="keyword">in</span> groups.items():</span><br><span class="line">        avg_y = <span class="built_in">sum</span>(coord[<span class="number">0</span>][<span class="number">1</span>] <span class="keyword">for</span> coord <span class="keyword">in</span> group_coords) / <span class="built_in">len</span>(group_coords)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> group_coords:</span><br><span class="line">            adjusted_coordinates[(i[<span class="number">0</span>][<span class="number">0</span>], avg_y, i[<span class="number">0</span>][<span class="number">2</span>], i[<span class="number">0</span>][<span class="number">3</span>])] = i[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> adjusted_coordinates</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="4-函数-draw-text-boxes-image-path-boxes-texts"><a href="#4-函数-draw-text-boxes-image-path-boxes-texts" class="headerlink" title="4.函数 draw_text_boxes(image_path, boxes, texts)"></a><strong>4.函数 <code>draw_text_boxes(image_path, boxes, texts)</code></strong></h3><p><strong>功能</strong>：在图像上绘制表格框与文字内容，进行可视化标注。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>利用 PIL 创建空白图层，绘制框线与文字。</li>
+<li>若文字宽度超出单元格宽度，则使用 textwrap 进行自动换行。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">draw_text_boxes</span>(<span class="params">image_path, boxes, texts</span>):</span><br><span class="line">    img = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    img = Image.new(<span class="string">&#x27;RGB&#x27;</span>, img.size, (<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>))</span><br><span class="line">    draw = ImageDraw.Draw(img)</span><br><span class="line">    font = ImageFont.truetype(<span class="string">&quot;./chinese_cht.ttf&quot;</span>, size=<span class="number">15</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> box, text <span class="keyword">in</span> <span class="built_in">zip</span>(boxes, texts):</span><br><span class="line">        x0, y0, x1, y1 = box</span><br><span class="line">        x0, x1 = <span class="built_in">sorted</span>([x0, x1])</span><br><span class="line">        y0, y1 = <span class="built_in">sorted</span>([y0, y1])</span><br><span class="line">        normalized_box = (x0, y0, x1, y1)</span><br><span class="line">        draw.rectangle(normalized_box, outline=<span class="string">&#x27;red&#x27;</span>, width=<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        text_len = draw.textbbox((x0, y0), text, font=font)</span><br><span class="line">        <span class="keyword">if</span> (text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) &gt; (x1 - x0):</span><br><span class="line">            text = <span class="string">&#x27;\n&#x27;</span>.join(textwrap.wrap(text, width=<span class="built_in">int</span>(</span><br><span class="line">                np.ceil(<span class="built_in">len</span>(text) / np.ceil((text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) / (x1 - x0))))))</span><br><span class="line"></span><br><span class="line">        draw.text((x0, y0), text, font=font, fill=<span class="string">&#x27;black&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    img.save(<span class="string">&#x27;your_image_storage_path/output.png&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="5-最终文本输出（结构化行）"><a href="#5-最终文本输出（结构化行）" class="headerlink" title="5. 最终文本输出（结构化行）"></a><strong>5. 最终文本输出（结构化行）</strong></h2><p><strong>功能</strong>：将所有坐标按 y → x 排序，按行归组输出结构化文本。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">adjusted_merged_text_sorted = <span class="built_in">sorted</span>(adjusted_merged_text.items(), key=<span class="keyword">lambda</span> x: (x[<span class="number">0</span>][<span class="number">1</span>], x[<span class="number">0</span>][<span class="number">0</span>]))</span><br><span class="line">adjusted_merged_text_sorted_group = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> coordinates, text <span class="keyword">in</span> adjusted_merged_text_sorted:</span><br><span class="line">    <span class="keyword">if</span> coordinates[<span class="number">1</span>] <span class="keyword">not</span> <span class="keyword">in</span> adjusted_merged_text_sorted_group:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]] = [text]</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]].append(text)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> text_list <span class="keyword">in</span> adjusted_merged_text_sorted_group.values():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27; | &#x27;</span>.join(text_list))</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a><strong>使用方法</strong></h2><ol>
+<li>运行脚本选择表格图片：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python Table_Extraction.py</span><br></pre></td></tr></table></figure>
+<p>或</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python main.py</span><br></pre></td></tr></table></figure>
+
+<p>在项目目录会输出效果图片，终端会输出文本结果</p>
+<ol start="2">
+<li>效果展示<br><img src="https://github.com/user-attachments/assets/8e0f21d8-af6c-4da2-beb7-dcc7f5f73115" alt="image"><br><img src="https://github.com/user-attachments/assets/45ad3906-09df-431e-a4ec-4f0779137195" alt="image"><br>输出结果如下，你可以用这组结果测试大模型是否能读懂这组表格： <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PartNumber | TotalCapacitance(Ct) @ 50 V,(pF) | TotalCapacitance(Ct) @ 0 V,(pF) | SeriesResistance (Rs),@10 mA,(②) | MinorityCarrierLifetime (TL)@ 10 mA(ns) | VoltageRating2(M) | I-RegionThickness(μm) | ThermalResistance(0JC)(°C/W)</span><br><span class="line">Maximum | Typical | Maximum | Typical | Minimum | Nominal | Maximum</span><br><span class="line"></span><br><span class="line">Switching Applications(continued)</span><br><span class="line">| APD0810-203 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 174</span><br><span class="line">| APD0810-210 | 0.40 | 0.45 | 1.5 | 160 | 100 | 8 | 75</span><br><span class="line">| APD0810-219 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 143</span><br><span class="line">| APD0810-240 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 155</span><br><span class="line">| APD1505-203 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 172</span><br><span class="line">| APD1505-210 | 0.40 | 0.45@10 V | 2.5 | 350 | 200 | 15 | 74</span><br><span class="line">| APD1505-219 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 142</span><br><span class="line">| APD1505-240 | 0.40 | 0.45 @ 10 V | 2.5 | 350 | 200 | 15 | 150</span><br><span class="line">| APD1510-203 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 168</span><br><span class="line">| APD1510-210 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 70</span><br><span class="line">| APD1510-219 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 137</span><br><span class="line">| APD1510-240 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 149</span><br><span class="line">| APD1520-203 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 155</span><br><span class="line">| APD1520-210 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 57</span><br><span class="line">| APD1520-219 | 0.45 | 0.50 | 1.2 | 900 | 200 | 15 | 124</span><br><span class="line">| APD1520-240 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 136</span><br><span class="line"></span><br><span class="line">AttenuatorApplications</span><br><span class="line">| APD2220-203 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 132</span><br><span class="line">| APD2220-210 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 32</span><br><span class="line">| APD2220-219 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 104</span><br><span class="line">| APD2220-240 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 115</span><br></pre></td></tr></table></figure></li>
+</ol>
+<hr>
+<h2 id="补充说明"><a href="#补充说明" class="headerlink" title="补充说明"></a><strong>补充说明</strong></h2><ul>
+<li>字体文件 <code>chinese_cht.ttf</code> 必须存在，或替换为系统可识别的中文字体。</li>
+<li>对于复杂结构表格，当前模型仍然无法很好的处理。</li>
+</ul>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/wyf3/llm_related/tree/main">wyf3</a> 和 <a href="https://github.com/PaddlePaddle/PaddleOCR">PaddleOCR</a></p>
+]]></content>
+      <categories>
+        <category>OCR</category>
+      </categories>
+      <tags>
+        <tag>OCR</tag>
+        <tag>PaddleOCR</tag>
+        <tag>PDF</tag>
+        <tag>AI</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Function Calling</title>
+    <url>/2025/03/21/Function-Calling/</url>
+    <content><![CDATA[<h1 id="Qwen-Function-Calling-详细解析"><a href="#Qwen-Function-Calling-详细解析" class="headerlink" title="Qwen Function Calling 详细解析"></a>Qwen Function Calling 详细解析</h1><hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="1-Function-Calling-简介"><a href="#1-Function-Calling-简介" class="headerlink" title="1. Function Calling 简介"></a><strong>1. Function Calling 简介</strong></h2><p>Function Calling 允许 LLM（大语言模型）在回答问题时调用外部工具，如 Python 函数、API 或数据库查询。</p>
+<p><strong>核心流程：</strong></p>
+<ol>
+<li><strong>用户输入问题</strong></li>
+<li><strong>AI 判断是否需要调用工具</strong></li>
+<li><strong>如果需要，AI 返回 <code>tool_calls</code>，请求调用特定函数</strong></li>
+<li><strong>开发者执行对应的 Python 函数，并返回执行结果</strong></li>
+<li><strong>AI 读取工具返回值，继续推理并生成最终回答</strong></li>
+</ol>
+<h2 id="2-代码拆解：Function-Calling-功能实现"><a href="#2-代码拆解：Function-Calling-功能实现" class="headerlink" title="2. 代码拆解：Function Calling 功能实现"></a><strong>2. 代码拆解：Function Calling 功能实现</strong></h2><p>本文定义了一个read_markdown函数，用于通过提问让大模型自主调用函数阅读markdown文本内容，回答问题。</p>
+<h3 id="（1）初始化-Qwen-客户端"><a href="#（1）初始化-Qwen-客户端" class="headerlink" title="（1）初始化 Qwen 客户端"></a><strong>（1）初始化 Qwen 客户端</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">client = OpenAI(</span><br><span class="line">    api_key=<span class="string">&quot;your_api_key&quot;</span>,</span><br><span class="line">    base_url=<span class="string">&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>连接 Qwen API 进行请求。</li>
+<li><code>api_key</code> 必须正确，否则请求会失败。</li>
+</ul>
+<hr>
+<h3 id="（2）定义工具（Function-Calling）"><a href="#（2）定义工具（Function-Calling）" class="headerlink" title="（2）定义工具（Function Calling）"></a><strong>（2）定义工具（Function Calling）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>告诉 Qwen 可调用的工具。</li>
+<li><code>name</code> 必须与 Python 函数名一致，否则无法正确调用。</li>
+<li><code>description</code> 用于让 AI 知道工具的用途。</li>
+<li>在 Qwen 的 Function Calling 中，工具的<code>parameters</code> 的 <code>type</code> 必须是 <code>object</code>。</li>
+<li><code>parameters</code> 为空 <code>&#123;&#125;</code>，表示此工具不需要参数。</li>
+<li><code>parameters</code> <strong>如果不为空</strong>，表示此工具需要<strong>传递参数</strong>。<ul>
+<li><code>properties</code> 定义了每个参数的名称、类型和描述。</li>
+<li><code>required</code> 指定了哪些参数是必填项。</li>
+</ul>
+</li>
+</ul>
+<p>如果代码中涉及到了多个工具的调用，可按照以下的格式进行多个工具的定义：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;fetch_weather&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;获取指定城市的天气信息。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                    <span class="string">&quot;city&quot;</span>: &#123;</span><br><span class="line">                        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;description&quot;</span>: <span class="string">&quot;要查询天气的城市名称&quot;</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;city&quot;</span>]</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>示例解释：</strong></p>
+<ul>
+<li><code>read_markdown</code> <strong>不需要参数</strong>，所以 <code>properties</code> 为空。</li>
+<li><code>fetch_weather</code> <strong>需要参数</strong>，它的 <code>parameters</code> 里包含 <code>city</code> 这个字符串参数。</li>
+<li>AI 在调用 <code>fetch_weather</code> 时，会传递 JSON 结构的 <code>arguments</code>，如：<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;city&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Shanghai&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<hr>
+<h3 id="（3）读取-Markdown-文件"><a href="#（3）读取-Markdown-文件" class="headerlink" title="（3）读取 Markdown 文件"></a><strong>（3）读取 Markdown 文件</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">read_markdown</span>():</span><br><span class="line">    doc_path = <span class="string">&quot;documents&quot;</span></span><br><span class="line">    md_file = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> file <span class="keyword">in</span> os.listdir(doc_path):</span><br><span class="line">        <span class="keyword">if</span> file.endswith(<span class="string">&quot;.md&quot;</span>):</span><br><span class="line">            md_file = os.path.join(doc_path, file)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> md_file:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;No markdown file found in the &#x27;documents&#x27; folder.&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(md_file, <span class="string">&quot;r&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        content = f.read()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> content[:<span class="number">5000</span>]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>读取 <code>documents/</code> 目录下后缀为 <code>.md</code> 文件。</li>
+<li>限制 5000 字符，防止超出 Token 限制。</li>
+<li>将<code>markdown</code>文本的前5000个字符传递给AI。</li>
+</ul>
+<hr>
+<h3 id="（4）获取天气信息（示例工具）"><a href="#（4）获取天气信息（示例工具）" class="headerlink" title="（4）获取天气信息（示例工具）"></a><strong>（4）获取天气信息（示例工具）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">fetch_weather</span>(<span class="params">city</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取指定城市的天气信息。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;当前 <span class="subst">&#123;city&#125;</span> 的天气：晴，25°C&quot;</span></span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>模拟获取天气信息，<strong>参数 <code>city</code> 必须传递</strong>。</li>
+<li>Qwen 在调用 <code>fetch_weather</code> 时，会自动提供 <code>city</code> 的值。</li>
+</ul>
+<h3 id="（5）主逻辑：工具调用的完整流程"><a href="#（5）主逻辑：工具调用的完整流程" class="headerlink" title="（5）主逻辑：工具调用的完整流程"></a><strong>（5）主逻辑：工具调用的完整流程</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    user_question = <span class="built_in">input</span>(<span class="string">&quot;请输入问题：&quot;</span>).strip()</span><br><span class="line">    messages = [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: user_question&#125;]</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>让用户输入问题，并存入 <code>messages</code> 作为对话历史。</li>
+</ul>
+<hr>
+<h3 id="（6）第一次请求：看看-AI-是否调用工具"><a href="#（6）第一次请求：看看-AI-是否调用工具" class="headerlink" title="（6）第一次请求：看看 AI 是否调用工具"></a><strong>（6）第一次请求：看看 AI 是否调用工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">completion = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>调用 Qwen，让其决定是否需要调用工具。</li>
+</ul>
+<hr>
+<h3 id="（7）检查-Qwen-是否调用了工具"><a href="#（7）检查-Qwen-是否调用了工具" class="headerlink" title="（7）检查 Qwen 是否调用了工具"></a><strong>（7）检查 Qwen 是否调用了工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> tool_calls:</span><br><span class="line">    tool_results = []</span><br><span class="line">    <span class="keyword">for</span> tool_call <span class="keyword">in</span> tool_calls:</span><br><span class="line">        tool_name = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;name&quot;</span>]</span><br><span class="line">        tool_id = tool_call[<span class="string">&quot;id&quot;</span>]</span><br><span class="line">        tool_args = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;arguments&quot;</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> tool_name == <span class="string">&quot;read_markdown&quot;</span>:</span><br><span class="line">            result_content = read_markdown()</span><br><span class="line">        <span class="keyword">elif</span> tool_name == <span class="string">&quot;fetch_weather&quot;</span>:</span><br><span class="line">            city = tool_args.get(<span class="string">&quot;city&quot;</span>, <span class="string">&quot;未知城市&quot;</span>)</span><br><span class="line">            result_content = fetch_weather(city)</span><br><span class="line">        </span><br><span class="line">        tool_results.append(&#123;</span><br><span class="line">            <span class="string">&quot;role&quot;</span>: <span class="string">&quot;tool&quot;</span>,</span><br><span class="line">            <span class="string">&quot;tool_call_id&quot;</span>: tool_id,</span><br><span class="line">            <span class="string">&quot;content&quot;</span>: result_content</span><br><span class="line">        &#125;)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>解析 Qwen 返回的 <code>tool_calls</code>。</li>
+<li><strong>调用不同的工具</strong>，如 <code>read_markdown()</code> 或 <code>fetch_weather(city)</code> ，并存入 <code>tool</code> 消息。</li>
+<li><strong>如果工具需要参数</strong>，就从 <code>tool_args</code> 里提取。</li>
+<li>若 <code>tool_calls</code> 为空，说明 AI <strong>不需要调用工具</strong>。</li>
+</ul>
+<hr>
+<h3 id="（8）让-Qwen-继续推理"><a href="#（8）让-Qwen-继续推理" class="headerlink" title="（8）让 Qwen 继续推理"></a><strong>（8）让 Qwen 继续推理</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tool_calls&quot;</span>: tool_calls</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)</span><br><span class="line"></span><br><span class="line">completion2 = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>作用：</strong></p>
+<ul>
+<li>让 Qwen <strong>读取工具返回值，并继续回答</strong>。</li>
+</ul>
+<hr>
+<p>效果测试：</p>
+<p align="center">
+  <img width="1198" alt="function_calling" src="https://github.com/user-attachments/assets/6da63b40-55b2-4eb0-b13c-b5f30225ff33" />
+</p>
+
+<hr>
+<h2 id="3-以下是我在测试的时候一些工具调用失败的原因"><a href="#3-以下是我在测试的时候一些工具调用失败的原因" class="headerlink" title="3. 以下是我在测试的时候一些工具调用失败的原因"></a><strong>3. 以下是我在测试的时候一些工具调用失败的原因</strong></h2><ol>
+<li><code>name</code> 和 Python 函数不匹配，导致 AI 无法正确调用工具。</li>
+<li><code>role=&quot;tool&quot;</code> 消息未紧跟 <code>assistant</code>，导致 AI 解析错误。</li>
+</ol>
+<ul>
+<li>解决方法是在调用完工具之后，向 messages 中手动插入一条 role&#x3D;”assistant” 的空消息，附带 tool_calls 字段，然后紧接着添加 role&#x3D;”tool” 的返回结果，这样就保证了正确的调用链路。<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    &quot;role&quot;: &quot;assistant&quot;,</span><br><span class="line">    &quot;content&quot;: &quot;&quot;,  # 一定为空</span><br><span class="line">    &quot;tool_calls&quot;: tool_calls  # 将 AI 最初返回的 tool_calls 原样放回</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)  # 马上接上 tool 返回值</span><br></pre></td></tr></table></figure></li>
+<li>因为 Qwen 模型的调用链规则如下：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">用户消息（role=&quot;user&quot;）</span><br><span class="line">→ AI 返回 tool_calls（role=&quot;assistant&quot;，tool_calls）</span><br><span class="line">→ 工具执行，返回结果（role=&quot;tool&quot;，tool_call_id）</span><br><span class="line">→ AI 接收到结果，继续推理</span><br></pre></td></tr></table></figure></li>
+<li>如果 role&#x3D;”tool” 的消息不紧跟在带有 tool_calls 的 assistant 消息后面，模型就无法对上“这个工具调用返回了这个值”，于是会报错或输出异常。</li>
+</ul>
+<ol start="3">
+<li><code>parameters</code> 设置错误，导致 AI 传递了错误的参数。</li>
+<li><code>messages</code> 结构错误，导致 AI 不能正确读取历史对话。</li>
+</ol>
+<hr>
+<p>该项目代码参考 <a href="https://help.aliyun.com/zh/model-studio/user-guide/qwen-function-calling?spm=0.0.0.i4#8c41d25020ipz">Qwen官方Function Calling</a>。</p>
+]]></content>
+      <categories>
+        <category>LLM学习之路</category>
+      </categories>
+      <tags>
+        <tag>AI</tag>
+        <tag>LLM</tag>
+        <tag>大模型</tag>
+        <tag>Function Calling</tag>
+        <tag>Agent</tag>
+        <tag>Qwen</tag>
+        <tag>Python</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hexo AI Assistant</title>
+    <url>/2025/03/29/Hexo-AI-Assistant/</url>
+    <content><![CDATA[<h1 id="Hexo-博客专属AI助手"><a href="#Hexo-博客专属AI助手" class="headerlink" title="Hexo 博客专属AI助手"></a>Hexo 博客专属AI助手</h1><p>本项目通过向量检索 + 大语言模型（RAG）结合本地 Hexo 博客内容，实现基于语义的智能问答接口。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/hexo-ai-assistant.git">https://github.com/EvannZhongg/hexo-ai-assistant.git</a></p>
+<hr>
+<h2 id="项目结构"><a href="#项目结构" class="headerlink" title="项目结构"></a>项目结构</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">📁 D:/YourProjects/</span><br><span class="line">├── 📁 Blog/                       # Hexo 博客项目目录</span><br><span class="line">│   ├── source/_posts/             # Markdown 博文文件目录</span><br><span class="line">│   ├── themes/hexo-theme-xxx/     # 自定义主题目录</span><br><span class="line">│   │   ├── layout/_partial/</span><br><span class="line">│   │   │   ├── footer.ejs         # 向量构建自动化脚本（Hexo 构建钩子）</span><br><span class="line">│   │   │   ├── chatbot.ejs        # ai助手UI</span><br><span class="line">│   │   │   └── ...</span><br><span class="line">│   │   └── ...  </span><br><span class="line">│   ├── scripts/auto_vector.js     # 向量构建自动化脚本（Hexo 构建钩子）</span><br><span class="line">│   └── ...                        # 其他 Hexo 文件</span><br><span class="line">│   </span><br><span class="line">├── 📁 hexo-ai-assistant/          # AI助手后端项目目录</span><br><span class="line">│   ├── build_vector_store.py      # 向量库和标题映射构建脚本</span><br><span class="line">│   ├── main.py                    # Flask 主服务入口（/ask 问答接口）</span><br><span class="line">│   ├── embedder.py                # 嵌入向量生成器（调用第三方 API）</span><br><span class="line">│   ├── chat.py                    # 通用 LLM 聊天模块（OpenAI / DeepSeek）</span><br><span class="line">│   ├── vector_store.json          # 本地语义向量数据库（自动生成）</span><br><span class="line">│   ├── title_mapping.json         # 博客标题与链接映射表（自动生成）</span><br><span class="line">│   ├── config.yml                 # 所有路径、模型、API Key 配置集中管理</span><br><span class="line">│   └── .venv/                     # 虚拟环境（可选）</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="执行原理（项目运行流程）"><a href="#执行原理（项目运行流程）" class="headerlink" title="执行原理（项目运行流程）"></a>执行原理（项目运行流程）</h2><ol>
+<li><p><strong>语义知识构建阶段</strong>（由 <code>build_vector_store.py</code> 执行）：</p>
+<ul>
+<li>扫描博客的 Markdown 源文件，提取文章正文内容。</li>
+<li>使用嵌入模型（如 BGE）生成语义向量。</li>
+<li>构建 <code>vector_store.json</code> 和 <code>title_mapping.json</code>，供问答使用。</li>
+</ul>
+</li>
+<li><p><strong>用户问答处理阶段</strong>（由 <code>main.py</code> 提供 API）：</p>
+<ul>
+<li>用户通过前端发送提问。</li>
+<li>后端提问向量化，与本地向量库匹配最相关文章。</li>
+<li>拼接问答上下文（包含语义内容和标题索引）发给大语言模型。</li>
+<li>模型生成带参考链接的回答，流式返回至前端。</li>
+</ul>
+</li>
+<li><p><strong>前端问答展示阶段</strong>（由 <code>chat.html</code> &#x2F; <code>chatbot.ejs</code> 负责）：</p>
+<ul>
+<li>用户界面加载聊天框，支持 Markdown 格式渲染和多轮对话。</li>
+<li>请求被代理转发至本地后端或公网中转地址。</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2 id="1-安装依赖"><a href="#1-安装依赖" class="headerlink" title="1. 安装依赖"></a>1. 安装依赖</h2><p>建议使用虚拟环境：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python -m venv .venv</span><br><span class="line">.venv\Scripts\activate</span><br><span class="line">pip install -r requirements.txt</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="2-配置项修改（hexo-ai-assistant-config-yml）"><a href="#2-配置项修改（hexo-ai-assistant-config-yml）" class="headerlink" title="2. 配置项修改（hexo-ai-assistant/config.yml）"></a>2. 配置项修改（<code>hexo-ai-assistant/config.yml</code>）</h2><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">paths:</span></span><br><span class="line">  <span class="attr">blog_post_dir:</span> <span class="string">/your/path/to/hexo/source/_posts</span>     <span class="comment"># 修改为你的博客 Markdown 路径</span></span><br><span class="line">  <span class="attr">vector_store:</span> <span class="string">vector_store.json</span>                     <span class="comment"># 向量库保存路径，建议使用绝对路径</span></span><br><span class="line">  <span class="attr">title_mapping:</span> <span class="string">title_mapping.json</span>                   <span class="comment"># 博客标题映射表路径，建议使用绝对路径</span></span><br><span class="line"></span><br><span class="line"><span class="attr">blog:</span></span><br><span class="line">  <span class="attr">base_url:</span> <span class="string">https://your-github-pages-url.github.io</span>   <span class="comment"># 修改为你的博客地址（不含末尾 /）</span></span><br><span class="line"></span><br><span class="line"><span class="attr">embedding:</span></span><br><span class="line">  <span class="attr">api_url:</span> <span class="string">https://api.siliconflow.cn/v1/embeddings</span>    <span class="comment"># 嵌入模型 API 地址</span></span><br><span class="line">  <span class="attr">model:</span> <span class="string">BAAI/bge-large-zh-v1.5</span>                         <span class="comment"># 使用的中文嵌入模型</span></span><br><span class="line">  <span class="attr">api_key:</span> <span class="string">&lt;YOUR_EMBEDDING_API_KEY&gt;</span>                    <span class="comment"># 替换为你的嵌入模型 API Key</span></span><br><span class="line">  <span class="attr">max_characters:</span> <span class="number">5000</span>                                 <span class="comment"># 每篇文章最大截取字符数</span></span><br><span class="line"></span><br><span class="line"><span class="attr">chat:</span></span><br><span class="line">  <span class="attr">api_url:</span> <span class="string">https://api.deepseek.com/v1</span>                 <span class="comment"># Chat 模型 API 地址（可替换为 OpenAI）</span></span><br><span class="line">  <span class="attr">model:</span> <span class="string">deepseek-chat</span>                                 <span class="comment"># 使用的模型名称</span></span><br><span class="line">  <span class="attr">api_key:</span> <span class="string">&lt;YOUR_CHAT_API_KEY&gt;</span>                         <span class="comment"># 替换为你的 LLM 接口 Key</span></span><br><span class="line"></span><br><span class="line"><span class="attr">server:</span></span><br><span class="line">  <span class="attr">port:</span> <span class="number">5000</span>                                           <span class="comment"># 后端服务运行端口（默认5000）</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="3-构建向量库-标题映射表"><a href="#3-构建向量库-标题映射表" class="headerlink" title="3. 构建向量库 &amp; 标题映射表"></a>3. 构建向量库 &amp; 标题映射表</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python build_vector_store.py</span><br></pre></td></tr></table></figure>
+
+<p>生成文件：</p>
+<ul>
+<li><code>vector_store.json</code>: 含每篇文章的文本和语义向量</li>
+<li><code>title_mapping.json</code>: 含每篇文章的标题 + 主标题 + 链接</li>
+</ul>
+<p>博客格式需遵循以下结构：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: Article Title</span><br><span class="line">date: YYYY-MM-DD HH:mm:ss</span><br><span class="line">tags: [...]  # No impact</span><br><span class="line">categories: ...  # No impact</span><br><span class="line">---</span><br><span class="line"># Main Title  # Must be a first level title</span><br><span class="line"></span><br><span class="line">正文内容...</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="4-启动后端问答服务"><a href="#4-启动后端问答服务" class="headerlink" title="4. 启动后端问答服务"></a>4. 启动后端问答服务</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python main.py</span><br></pre></td></tr></table></figure>
+
+<p>本地服务启动后默认监听：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://127.0.0.1:5000/ask</span><br></pre></td></tr></table></figure>
+<p>你可以在浏览器中打开 <code>chat.html</code> 进行测试，查看是否可以正确输出回答。</p>
+<hr>
+<h2 id="5-配置-Hexo-脚本"><a href="#5-配置-Hexo-脚本" class="headerlink" title="5. 配置 Hexo 脚本"></a>5. 配置 <code>Hexo</code> 脚本</h2><p>如果上述操作都正确执行后，将向量构建脚本接入 <code>Hexo</code> 构建流程</p>
+<h3 id="1-创建脚本文件-scripts-auto-vector-js："><a href="#1-创建脚本文件-scripts-auto-vector-js：" class="headerlink" title="1.创建脚本文件 scripts/auto_vector.js："></a>1.创建脚本文件 <code>scripts/auto_vector.js</code>：</h3><figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> &#123; exec &#125; = <span class="built_in">require</span>(<span class="string">&quot;child_process&quot;</span>);</span><br><span class="line"></span><br><span class="line">hexo.<span class="property">extend</span>.<span class="property">filter</span>.<span class="title function_">register</span>(<span class="string">&quot;before_generate&quot;</span>, <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&quot;构建博客向量中...&quot;</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Promise</span>(<span class="function">(<span class="params">resolve, reject</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="title function_">exec</span>(<span class="string">&quot;/your_project/.venv/Scripts/python build_vector_store.py&quot;</span>, &#123;</span><br><span class="line">      <span class="attr">cwd</span>: <span class="string">&quot;D:/your_project&quot;</span></span><br><span class="line">    &#125;, <span class="function">(<span class="params">err, stdout, stderr</span>) =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (err) &#123;</span><br><span class="line">        <span class="variable language_">console</span>.<span class="title function_">error</span>(<span class="string">&quot;构建失败:&quot;</span>, stderr);</span><br><span class="line">        <span class="title function_">reject</span>(err);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&quot;构建成功&quot;</span>);</span><br><span class="line">        <span class="title function_">resolve</span>();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<p>这个脚本的作用是在运行 <code>hexo g</code> 时，自动重构向量库保证所有博客均被项链化。</p>
+<h3 id="2-在页面底部引入-ejs-文件"><a href="#2-在页面底部引入-ejs-文件" class="headerlink" title="2. 在页面底部引入 ejs 文件"></a>2. 在页面底部引入 ejs 文件</h3><p>打开文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/footer.ejs</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>&lt;/footer&gt;</code> 标签之后添加以下代码：</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line">&lt;%- partial(&#x27;chatbot&#x27;) %&gt;</span><br></pre></td></tr></table></figure>
+
+<p>新建文件 <code>chatbot.ejs</code> 在路径 <code>themes\hexo-theme-Chic\layout\_partial\chatbot.ejs</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">将chatbot.ejs的代码拷贝至此处</span><br><span class="line">完整代码文件可见文章开头的项目地址中</span><br></pre></td></tr></table></figure>
+
+<p>运行以下命令，重新生成并启动本地预览：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+<p>效果如下：<br><img src="https://github.com/user-attachments/assets/40f5a3c5-74a6-453b-b83b-6152c5b40990" alt="image"></p>
+<hr>
+<h2 id="6-使用-Ngrok-暴露后端接口（可选）"><a href="#6-使用-Ngrok-暴露后端接口（可选）" class="headerlink" title="6. 使用 Ngrok 暴露后端接口（可选）"></a>6. 使用 Ngrok 暴露后端接口（可选）</h2><p>在本地测试都没问题后，可以使用 Ngrok 暴露本地服务至公网</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ngrok http 5000</span><br></pre></td></tr></table></figure>
+
+<p>将 <code>https://xxx.ngrok-free.app/ask</code> 地址填入前端请求 <code>chatbot.ejs</code> 中：</p>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> response = <span class="keyword">await</span> <span class="title function_">fetch</span>(<span class="string">&quot;https://xxx.ngrok-free.app/ask&quot;</span>, &#123;...&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>只使用 Ngrok 有网路安全问题，你可以自行设置代理保证你的端口不被暴露在公网中。</p>
+<hr>
+<h2 id="完整流程总结"><a href="#完整流程总结" class="headerlink" title="完整流程总结"></a>完整流程总结</h2><ol>
+<li>写好博客（Markdown 文件），保证格式符合要求</li>
+<li><code>build_vector_store.py</code> 提取文本并生成向量</li>
+<li><code>main.py</code> 启动问答服务并支持语义检索</li>
+<li>前端请求通过 Ngrok 访问服务</li>
+<li>模型结合语义内容和标题表生成参考明确的回答</li>
+</ol>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+]]></content>
+      <categories>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>Blog</tag>
+        <tag>前端</tag>
+        <tag>AI</tag>
+        <tag>LLM</tag>
+        <tag>大模型</tag>
+        <tag>Agent</tag>
+        <tag>后端</tag>
+        <tag>RAG</tag>
+        <tag>Ngrok</tag>
+        <tag>flask</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Docling2md</title>
     <url>/2025/05/01/Docling2md/</url>
     <content><![CDATA[<h1 id="基于Docling结合多模态大模型的的PDF转Markdown"><a href="#基于Docling结合多模态大模型的的PDF转Markdown" class="headerlink" title="基于Docling结合多模态大模型的的PDF转Markdown"></a>基于Docling结合多模态大模型的的PDF转Markdown</h1><hr>
@@ -316,13 +643,93 @@
       <tags>
         <tag>OCR</tag>
         <tag>PDF</tag>
-        <tag>Markdown</tag>
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
         <tag>Qwen</tag>
+        <tag>Markdown</tag>
         <tag>Docling</tag>
         <tag>Knowledge Graph</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hexo and Chic themes add Giscus comment system</title>
+    <url>/2025/03/24/Hexo-and-Chic-themes-add-Giscus-comment-system/</url>
+    <content><![CDATA[<h1 id="Hexo-Chic-主题集成-Giscus-评论系统详细教程"><a href="#Hexo-Chic-主题集成-Giscus-评论系统详细教程" class="headerlink" title="Hexo + Chic 主题集成 Giscus 评论系统详细教程"></a>Hexo + Chic 主题集成 Giscus 评论系统详细教程</h1><p>本教程将教你如何在 Hexo 博客（使用 Chic 主题）中添加 Giscus 评论系统，让你的博客拥有简洁现代的评论功能，并且支持明暗模式自动切换。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="一、准备工作"><a href="#一、准备工作" class="headerlink" title="一、准备工作"></a>一、准备工作</h2><h3 id="1-确保你已完成以下条件："><a href="#1-确保你已完成以下条件：" class="headerlink" title="1. 确保你已完成以下条件："></a>1. 确保你已完成以下条件：</h3><ul>
+<li>博客已搭建并使用 Hexo 框架</li>
+<li>正在使用 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 主题</li>
+<li>博客托管在 GitHub</li>
+</ul>
+<h3 id="2-启用-GitHub-Discussions-功能"><a href="#2-启用-GitHub-Discussions-功能" class="headerlink" title="2. 启用 GitHub Discussions 功能"></a>2. 启用 GitHub Discussions 功能</h3><ol>
+<li>打开你的博客仓库页面</li>
+<li>点击顶部的 <strong>Settings</strong></li>
+<li>在 <strong>General</strong> 中 <strong>Features</strong> 区域点击 <strong>Discussions</strong></li>
+<li>勾选 <strong>“Enable discussions for this repository”</strong></li>
+</ol>
+<p><img src="https://github.com/user-attachments/assets/6686f60e-f2d4-4a87-8b0d-d3425070c2cd" alt="setting_discussions"></p>
+<hr>
+<h2 id="二、使用-Giscus-app-获取评论配置代码"><a href="#二、使用-Giscus-app-获取评论配置代码" class="headerlink" title="二、使用 Giscus.app 获取评论配置代码"></a>二、使用 Giscus.app 获取评论配置代码</h2><ol>
+<li>打开 Giscus 官网：<a href="https://giscus.app/">https://giscus.app</a></li>
+<li>登录 GitHub 账号</li>
+<li>安装 <a href="https://github.com/apps/giscus">giscus</a> app  ，否则访客将无法评论和回应</li>
+<li>按照如下选择进行配置：<ul>
+<li>Repository: 选择你的博客仓库（注意填写格式为 <strong>用户名&#x2F;仓库名</strong>）</li>
+<li>Discussion Category: 建议选择 <strong>Announcements</strong>（防止读者随意发帖）</li>
+<li>Page ↔️ Discussion Mapping: 选择 <strong>pathname</strong></li>
+<li>Theme: 选择任意（我们后续会动态控制）</li>
+<li>Language: 选择 <code>zh-CN</code></li>
+</ul>
+</li>
+<li>点击页面底部的 <strong>“Copy code snippet”</strong>，复制生成的 <code>&lt;script&gt;</code> 标签代码</li>
+</ol>
+<hr>
+<h2 id="三、创建评论模块文件"><a href="#三、创建评论模块文件" class="headerlink" title="三、创建评论模块文件"></a>三、创建评论模块文件</h2><h3 id="1-打开博客主题目录"><a href="#1-打开博客主题目录" class="headerlink" title="1. 打开博客主题目录"></a>1. 打开博客主题目录</h3><p>路径：<code>themes/hexo-theme-Chic/layout/_partial/</code></p>
+<h3 id="2-创建或编辑-livers-ejs-文件"><a href="#2-创建或编辑-livers-ejs-文件" class="headerlink" title="2. 创建或编辑 livers.ejs 文件"></a>2. 创建或编辑 <code>livers.ejs</code> 文件</h3><p>将 Giscus 中生成的 <code>&lt;script&gt;</code> 标签代码填入文件（注意部分参数的区别），同时增加主题自动同步功能代码：</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- Giscus 评论区挂载点 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">&quot;giscus-container&quot;</span> <span class="attr">style</span>=<span class="string">&quot;margin-top: 2.5rem;&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- Giscus 动态加载脚本：初始加载 + 明暗主题切换 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">createGiscus</span>(<span class="params">theme</span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> giscusContainer = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;giscus-container&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">if</span> (!giscusContainer) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 清除旧的评论 iframe</span></span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="property">innerHTML</span> = <span class="string">&#x27;&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> script = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(<span class="string">&#x27;script&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">src</span> = <span class="string">&#x27;https://giscus.app/client.js&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 替换为你的 GitHub 仓库信息（格式：username/repo）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo&#x27;</span>, <span class="string">&#x27;your-github-username/your-repo-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">   <span class="comment">// 替换为你的 repo-id 和 category-id（在 giscus.app 配置页面生成）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo-id&#x27;</span>, <span class="string">&#x27;your-repo-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category&#x27;</span>, <span class="string">&#x27;your-category-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category-id&#x27;</span>, <span class="string">&#x27;your-category-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 其他常规推荐设置</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-mapping&#x27;</span>, <span class="string">&#x27;pathname&#x27;</span>);           <span class="comment">// 用页面路径匹配评论帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-strict&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);                   <span class="comment">// 若无匹配帖则创建新帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-reactions-enabled&#x27;</span>, <span class="string">&#x27;1&#x27;</span>);        <span class="comment">// 启用表情反应</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-emit-metadata&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);            <span class="comment">// 不输出元数据</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-input-position&#x27;</span>, <span class="string">&#x27;top&#x27;</span>);         <span class="comment">// 输入框在评论上方</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-theme&#x27;</span>, theme);                </span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-lang&#x27;</span>, <span class="string">&#x27;zh-CN&#x27;</span>);                 <span class="comment">// 中文界面</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;crossorigin&#x27;</span>, <span class="string">&#x27;anonymous&#x27;</span>);           <span class="comment">// 跨域资源安全</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">async</span> = <span class="literal">true</span>;                                       </span></span><br><span class="line"><span class="language-javascript">     </span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="title function_">appendChild</span>(script);</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">getCurrentTheme</span>(<span class="params"></span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">return</span> <span class="variable language_">document</span>.<span class="property">body</span>.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;dark-theme&#x27;</span>) ? <span class="string">&#x27;dark&#x27;</span> : <span class="string">&#x27;light&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 页面首次加载，根据当前主题挂载评论</span></span></span><br><span class="line"><span class="language-javascript">    <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听按钮点击切换主题 → 重载评论区</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> buttons = [</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">querySelector</span>(<span class="string">&#x27;.toggleBtn&#x27;</span>),</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;mobile-toggle-theme&#x27;</span>)</span></span><br><span class="line"><span class="language-javascript">    ];</span></span><br><span class="line"><span class="language-javascript">    buttons.<span class="title function_">forEach</span>(<span class="function"><span class="params">btn</span> =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="keyword">if</span> (!btn) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript">      btn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="built_in">setTimeout</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">          <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">        &#125;, <span class="number">400</span>); <span class="comment">// 稍作延迟，确保 class 切换完毕</span></span></span><br><span class="line"><span class="language-javascript">      &#125;);</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听 body class 改变（保险方案）</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> observer = <span class="keyword">new</span> <span class="title class_">MutationObserver</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript">    observer.<span class="title function_">observe</span>(<span class="variable language_">document</span>.<span class="property">body</span>, &#123; <span class="attr">attributes</span>: <span class="literal">true</span>, <span class="attr">attributeFilter</span>: [<span class="string">&#x27;class&#x27;</span>] &#125;);</span></span><br><span class="line"><span class="language-javascript">  &#125;);</span></span><br><span class="line"><span class="language-javascript"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>⚠️ 请将 <code>data-repo-id</code> 和 <code>data-category-id</code> 替换为你从 giscus.app 获取的值。</p>
+</blockquote>
+<hr>
+<h2 id="四、引入评论模块到文章模板"><a href="#四、引入评论模块到文章模板" class="headerlink" title="四、引入评论模块到文章模板"></a>四、引入评论模块到文章模板</h2><p>打开文件：<code>themes/hexo-theme-Chic/layout/_page/post.ejs</code></p>
+<p>找到代码底部，在 <code>&lt;/article&gt;</code> 上方添加一行代码 <code>&lt;%- partial(&#39;_partial/livers&#39;) %&gt;</code> ：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">        &lt;section class=&quot;post-nav&quot;&gt;</span><br><span class="line">            &lt;% if(post.prev)&#123; %&gt;</span><br><span class="line">                &lt;a class=&quot;prev&quot; rel=&quot;prev&quot; href=&quot;&lt;%- url_for(post.prev.path)%&gt;&quot;&gt;&lt;%- post.prev.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">            &lt;% if(post.next)&#123; %&gt;</span><br><span class="line">            &lt;a class=&quot;next&quot; rel=&quot;next&quot; href=&quot;&lt;%- url_for(post.next.path)%&gt;&quot;&gt;&lt;%- post.next.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">        &lt;/section&gt;</span><br><span class="line"></span><br><span class="line">	&lt;%- partial(&#x27;_partial/livers&#x27;) %&gt;</span><br><span class="line"></span><br><span class="line">    &lt;/article&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+
+<p>这会让评论区出现在每篇文章的底部。</p>
+<hr>
+<h2 id="五、重新部署博客"><a href="#五、重新部署博客" class="headerlink" title="五、重新部署博客"></a>五、重新部署博客</h2><p>执行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+
+<p>然后访问你的博客文章页面，应该就能看到 Giscus 评论框</p>
+<hr>
+<h2 id="成功效果"><a href="#成功效果" class="headerlink" title="成功效果"></a>成功效果</h2><p><img src="https://github.com/user-attachments/assets/b75a7ffd-d99b-4d4a-9e95-cb43b06b36aa" alt="discussions"> </p>
+<ul>
+<li>支持 GitHub 登录评论</li>
+<li>评论存储在 Discussions 中，便于管理</li>
+<li>评论区支持明暗主题自动切换，与 Chic 博客风格一致</li>
+</ul>
+<hr>
+<p>如有问题，可以：</p>
+<ul>
+<li>检查浏览器控制台是否有加载错误</li>
+<li>确保 repo-id 和 category-id 正确</li>
+<li>确保启用了 Discussions 功能</li>
+</ul>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+]]></content>
+      <categories>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>Blog</tag>
+        <tag>前端</tag>
       </tags>
   </entry>
   <entry>
@@ -577,418 +984,11 @@
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
+        <tag>Python</tag>
+        <tag>RAG</tag>
         <tag>Knowledge Graph</tag>
         <tag>GraphRAG</tag>
-        <tag>RAG</tag>
-        <tag>Python</tag>
         <tag>Gephi</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Function Calling</title>
-    <url>/2025/03/21/Function-Calling/</url>
-    <content><![CDATA[<h1 id="Qwen-Function-Calling-详细解析"><a href="#Qwen-Function-Calling-详细解析" class="headerlink" title="Qwen Function Calling 详细解析"></a>Qwen Function Calling 详细解析</h1><hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
-<hr>
-<h2 id="1-Function-Calling-简介"><a href="#1-Function-Calling-简介" class="headerlink" title="1. Function Calling 简介"></a><strong>1. Function Calling 简介</strong></h2><p>Function Calling 允许 LLM（大语言模型）在回答问题时调用外部工具，如 Python 函数、API 或数据库查询。</p>
-<p><strong>核心流程：</strong></p>
-<ol>
-<li><strong>用户输入问题</strong></li>
-<li><strong>AI 判断是否需要调用工具</strong></li>
-<li><strong>如果需要，AI 返回 <code>tool_calls</code>，请求调用特定函数</strong></li>
-<li><strong>开发者执行对应的 Python 函数，并返回执行结果</strong></li>
-<li><strong>AI 读取工具返回值，继续推理并生成最终回答</strong></li>
-</ol>
-<h2 id="2-代码拆解：Function-Calling-功能实现"><a href="#2-代码拆解：Function-Calling-功能实现" class="headerlink" title="2. 代码拆解：Function Calling 功能实现"></a><strong>2. 代码拆解：Function Calling 功能实现</strong></h2><p>本文定义了一个read_markdown函数，用于通过提问让大模型自主调用函数阅读markdown文本内容，回答问题。</p>
-<h3 id="（1）初始化-Qwen-客户端"><a href="#（1）初始化-Qwen-客户端" class="headerlink" title="（1）初始化 Qwen 客户端"></a><strong>（1）初始化 Qwen 客户端</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">client = OpenAI(</span><br><span class="line">    api_key=<span class="string">&quot;your_api_key&quot;</span>,</span><br><span class="line">    base_url=<span class="string">&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>连接 Qwen API 进行请求。</li>
-<li><code>api_key</code> 必须正确，否则请求会失败。</li>
-</ul>
-<hr>
-<h3 id="（2）定义工具（Function-Calling）"><a href="#（2）定义工具（Function-Calling）" class="headerlink" title="（2）定义工具（Function Calling）"></a><strong>（2）定义工具（Function Calling）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>告诉 Qwen 可调用的工具。</li>
-<li><code>name</code> 必须与 Python 函数名一致，否则无法正确调用。</li>
-<li><code>description</code> 用于让 AI 知道工具的用途。</li>
-<li>在 Qwen 的 Function Calling 中，工具的<code>parameters</code> 的 <code>type</code> 必须是 <code>object</code>。</li>
-<li><code>parameters</code> 为空 <code>&#123;&#125;</code>，表示此工具不需要参数。</li>
-<li><code>parameters</code> <strong>如果不为空</strong>，表示此工具需要<strong>传递参数</strong>。<ul>
-<li><code>properties</code> 定义了每个参数的名称、类型和描述。</li>
-<li><code>required</code> 指定了哪些参数是必填项。</li>
-</ul>
-</li>
-</ul>
-<p>如果代码中涉及到了多个工具的调用，可按照以下的格式进行多个工具的定义：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tools = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;read_markdown&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;读取 &#x27;documents&#x27; 文件夹中的 Markdown 文档。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;&#125;,  <span class="comment"># 这个工具不需要参数</span></span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;function&quot;</span>,</span><br><span class="line">        <span class="string">&quot;function&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;fetch_weather&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;获取指定城市的天气信息。&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                    <span class="string">&quot;city&quot;</span>: &#123;</span><br><span class="line">                        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;description&quot;</span>: <span class="string">&quot;要查询天气的城市名称&quot;</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;city&quot;</span>]</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
-<p><strong>示例解释：</strong></p>
-<ul>
-<li><code>read_markdown</code> <strong>不需要参数</strong>，所以 <code>properties</code> 为空。</li>
-<li><code>fetch_weather</code> <strong>需要参数</strong>，它的 <code>parameters</code> 里包含 <code>city</code> 这个字符串参数。</li>
-<li>AI 在调用 <code>fetch_weather</code> 时，会传递 JSON 结构的 <code>arguments</code>，如：<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;city&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Shanghai&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure></li>
-</ul>
-<hr>
-<h3 id="（3）读取-Markdown-文件"><a href="#（3）读取-Markdown-文件" class="headerlink" title="（3）读取 Markdown 文件"></a><strong>（3）读取 Markdown 文件</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">read_markdown</span>():</span><br><span class="line">    doc_path = <span class="string">&quot;documents&quot;</span></span><br><span class="line">    md_file = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> file <span class="keyword">in</span> os.listdir(doc_path):</span><br><span class="line">        <span class="keyword">if</span> file.endswith(<span class="string">&quot;.md&quot;</span>):</span><br><span class="line">            md_file = os.path.join(doc_path, file)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> md_file:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;No markdown file found in the &#x27;documents&#x27; folder.&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(md_file, <span class="string">&quot;r&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        content = f.read()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> content[:<span class="number">5000</span>]</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>读取 <code>documents/</code> 目录下后缀为 <code>.md</code> 文件。</li>
-<li>限制 5000 字符，防止超出 Token 限制。</li>
-<li>将<code>markdown</code>文本的前5000个字符传递给AI。</li>
-</ul>
-<hr>
-<h3 id="（4）获取天气信息（示例工具）"><a href="#（4）获取天气信息（示例工具）" class="headerlink" title="（4）获取天气信息（示例工具）"></a><strong>（4）获取天气信息（示例工具）</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">fetch_weather</span>(<span class="params">city</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取指定城市的天气信息。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;当前 <span class="subst">&#123;city&#125;</span> 的天气：晴，25°C&quot;</span></span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>模拟获取天气信息，<strong>参数 <code>city</code> 必须传递</strong>。</li>
-<li>Qwen 在调用 <code>fetch_weather</code> 时，会自动提供 <code>city</code> 的值。</li>
-</ul>
-<h3 id="（5）主逻辑：工具调用的完整流程"><a href="#（5）主逻辑：工具调用的完整流程" class="headerlink" title="（5）主逻辑：工具调用的完整流程"></a><strong>（5）主逻辑：工具调用的完整流程</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    user_question = <span class="built_in">input</span>(<span class="string">&quot;请输入问题：&quot;</span>).strip()</span><br><span class="line">    messages = [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: user_question&#125;]</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>让用户输入问题，并存入 <code>messages</code> 作为对话历史。</li>
-</ul>
-<hr>
-<h3 id="（6）第一次请求：看看-AI-是否调用工具"><a href="#（6）第一次请求：看看-AI-是否调用工具" class="headerlink" title="（6）第一次请求：看看 AI 是否调用工具"></a><strong>（6）第一次请求：看看 AI 是否调用工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">completion = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>调用 Qwen，让其决定是否需要调用工具。</li>
-</ul>
-<hr>
-<h3 id="（7）检查-Qwen-是否调用了工具"><a href="#（7）检查-Qwen-是否调用了工具" class="headerlink" title="（7）检查 Qwen 是否调用了工具"></a><strong>（7）检查 Qwen 是否调用了工具</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> tool_calls:</span><br><span class="line">    tool_results = []</span><br><span class="line">    <span class="keyword">for</span> tool_call <span class="keyword">in</span> tool_calls:</span><br><span class="line">        tool_name = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;name&quot;</span>]</span><br><span class="line">        tool_id = tool_call[<span class="string">&quot;id&quot;</span>]</span><br><span class="line">        tool_args = tool_call[<span class="string">&quot;function&quot;</span>][<span class="string">&quot;arguments&quot;</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> tool_name == <span class="string">&quot;read_markdown&quot;</span>:</span><br><span class="line">            result_content = read_markdown()</span><br><span class="line">        <span class="keyword">elif</span> tool_name == <span class="string">&quot;fetch_weather&quot;</span>:</span><br><span class="line">            city = tool_args.get(<span class="string">&quot;city&quot;</span>, <span class="string">&quot;未知城市&quot;</span>)</span><br><span class="line">            result_content = fetch_weather(city)</span><br><span class="line">        </span><br><span class="line">        tool_results.append(&#123;</span><br><span class="line">            <span class="string">&quot;role&quot;</span>: <span class="string">&quot;tool&quot;</span>,</span><br><span class="line">            <span class="string">&quot;tool_call_id&quot;</span>: tool_id,</span><br><span class="line">            <span class="string">&quot;content&quot;</span>: result_content</span><br><span class="line">        &#125;)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>解析 Qwen 返回的 <code>tool_calls</code>。</li>
-<li><strong>调用不同的工具</strong>，如 <code>read_markdown()</code> 或 <code>fetch_weather(city)</code> ，并存入 <code>tool</code> 消息。</li>
-<li><strong>如果工具需要参数</strong>，就从 <code>tool_args</code> 里提取。</li>
-<li>若 <code>tool_calls</code> 为空，说明 AI <strong>不需要调用工具</strong>。</li>
-</ul>
-<hr>
-<h3 id="（8）让-Qwen-继续推理"><a href="#（8）让-Qwen-继续推理" class="headerlink" title="（8）让 Qwen 继续推理"></a><strong>（8）让 Qwen 继续推理</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tool_calls&quot;</span>: tool_calls</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)</span><br><span class="line"></span><br><span class="line">completion2 = client.chat.completions.create(</span><br><span class="line">    model=<span class="string">&quot;qwen-plus&quot;</span>,</span><br><span class="line">    messages=messages,</span><br><span class="line">    tools=tools</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p><strong>作用：</strong></p>
-<ul>
-<li>让 Qwen <strong>读取工具返回值，并继续回答</strong>。</li>
-</ul>
-<hr>
-<p>效果测试：</p>
-<p align="center">
-  <img width="1198" alt="function_calling" src="https://github.com/user-attachments/assets/6da63b40-55b2-4eb0-b13c-b5f30225ff33" />
-</p>
-
-<hr>
-<h2 id="3-以下是我在测试的时候一些工具调用失败的原因"><a href="#3-以下是我在测试的时候一些工具调用失败的原因" class="headerlink" title="3. 以下是我在测试的时候一些工具调用失败的原因"></a><strong>3. 以下是我在测试的时候一些工具调用失败的原因</strong></h2><ol>
-<li><code>name</code> 和 Python 函数不匹配，导致 AI 无法正确调用工具。</li>
-<li><code>role=&quot;tool&quot;</code> 消息未紧跟 <code>assistant</code>，导致 AI 解析错误。</li>
-</ol>
-<ul>
-<li>解决方法是在调用完工具之后，向 messages 中手动插入一条 role&#x3D;”assistant” 的空消息，附带 tool_calls 字段，然后紧接着添加 role&#x3D;”tool” 的返回结果，这样就保证了正确的调用链路。<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">messages.append(&#123;</span><br><span class="line">    &quot;role&quot;: &quot;assistant&quot;,</span><br><span class="line">    &quot;content&quot;: &quot;&quot;,  # 一定为空</span><br><span class="line">    &quot;tool_calls&quot;: tool_calls  # 将 AI 最初返回的 tool_calls 原样放回</span><br><span class="line">&#125;)</span><br><span class="line">messages.extend(tool_results)  # 马上接上 tool 返回值</span><br></pre></td></tr></table></figure></li>
-<li>因为 Qwen 模型的调用链规则如下：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">用户消息（role=&quot;user&quot;）</span><br><span class="line">→ AI 返回 tool_calls（role=&quot;assistant&quot;，tool_calls）</span><br><span class="line">→ 工具执行，返回结果（role=&quot;tool&quot;，tool_call_id）</span><br><span class="line">→ AI 接收到结果，继续推理</span><br></pre></td></tr></table></figure></li>
-<li>如果 role&#x3D;”tool” 的消息不紧跟在带有 tool_calls 的 assistant 消息后面，模型就无法对上“这个工具调用返回了这个值”，于是会报错或输出异常。</li>
-</ul>
-<ol start="3">
-<li><code>parameters</code> 设置错误，导致 AI 传递了错误的参数。</li>
-<li><code>messages</code> 结构错误，导致 AI 不能正确读取历史对话。</li>
-</ol>
-<hr>
-<p>该项目代码参考 <a href="https://help.aliyun.com/zh/model-studio/user-guide/qwen-function-calling?spm=0.0.0.i4#8c41d25020ipz">Qwen官方Function Calling</a>。</p>
-]]></content>
-      <categories>
-        <category>LLM学习之路</category>
-      </categories>
-      <tags>
-        <tag>AI</tag>
-        <tag>LLM</tag>
-        <tag>大模型</tag>
-        <tag>Qwen</tag>
-        <tag>Python</tag>
-        <tag>Function Calling</tag>
-        <tag>Agent</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Convert PDF Tables to Readable Text</title>
-    <url>/2025/03/28/Convert-PDF-Tables-to-Readable-Text/</url>
-    <content><![CDATA[<h1 id="PDF-表格提取转为纯文本结构数据"><a href="#PDF-表格提取转为纯文本结构数据" class="headerlink" title="PDF 表格提取转为纯文本结构数据"></a>PDF 表格提取转为纯文本结构数据</h1><p>本文详细记录了如何使用读光的  Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Table_Extraction.git">https://github.com/EvannZhongg/Table_Extraction.git</a></p>
-<hr>
-<h2 id="项目概览"><a href="#项目概览" class="headerlink" title="项目概览"></a><strong>项目概览</strong></h2><p>本项目的主要目标是将 PDF 文件中存在的表格，作为图片提取参数信息，尤其是结构化表格。整个流程分为两个阶段：</p>
-<ol>
-<li><strong>表格结构识别</strong> —— 使用 Cycle-CenterNet 模型识别表格中每个单元格的位置（多边形坐标）。</li>
-<li><strong>OCR 文本识别</strong> —— 使用 PaddleOCR 识别图像中所有文字及其位置坐标。</li>
-</ol>
-<hr>
-<h2 id="环境与设置"><a href="#环境与设置" class="headerlink" title="环境与设置"></a><strong>环境与设置</strong></h2><h3 id="1-表格识别模型配置"><a href="#1-表格识别模型配置" class="headerlink" title="1. 表格识别模型配置"></a><strong>1. 表格识别模型配置</strong></h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git lfs install</span><br><span class="line">git <span class="built_in">clone</span> https://www.modelscope.cn/iic/cv_dla34_table-structure-recognition_cycle-centernet.git</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">model_path = <span class="string">&quot;your_absolute_path_to_cv_dla34_table-structure-recognition_cycle-centernet&quot;</span></span><br></pre></td></tr></table></figure>
-<p>建议自定义路径使用绝对路径</p>
-<p>例如：<code>model_path = &quot;D:/Table_Extraction/cv_dla34_table-structure-recognition_cycle-centernet&quot;</code></p>
-<h3 id="2-PaddleOCR-配置"><a href="#2-PaddleOCR-配置" class="headerlink" title="2. PaddleOCR 配置"></a><strong>2. PaddleOCR 配置</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">ocr = PaddleOCR(</span><br><span class="line">    use_gpu=<span class="literal">True</span>,</span><br><span class="line">    lang=<span class="string">&#x27;ch&#x27;</span>,</span><br><span class="line">    det_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_det_infer&#x27;</span>,</span><br><span class="line">    rec_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_rec_infer&#x27;</span>,</span><br><span class="line">    cls_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_ppocr_mobile_v2.0_cls_infer&#x27;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p>建议自定义路径使用绝对路径</p>
-<p>例如： <code>det_model_dir=&#39;D:/Table_Extraction/PaddleOCR/models/ch_PP-OCRv4_det_infer/&#39;</code></p>
-<hr>
-<h2 id="核心函数详解"><a href="#核心函数详解" class="headerlink" title="核心函数详解"></a><strong>核心函数详解</strong></h2><h3 id="1-函数-calculate-iot-cell-text"><a href="#1-函数-calculate-iot-cell-text" class="headerlink" title="1. 函数 calculate_iot(cell, text)"></a><strong>1. 函数 <code>calculate_iot(cell, text)</code></strong></h3><p><strong>功能</strong>：计算 OCR 文本框与表格单元格的交并比（IoT, Intersection over Text）。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>利用两组矩形坐标，计算它们重叠区域的面积。</li>
-<li>然后用重叠面积 &#x2F; 文本框面积作为 IoT 值。</li>
-<li>若值越大，表示文本越“贴合”单元格。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">calculate_iot</span>(<span class="params">cell, text</span>):</span><br><span class="line">    intersection_x1 = <span class="built_in">max</span>(cell[<span class="number">0</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>])</span><br><span class="line">    intersection_y1 = <span class="built_in">max</span>(cell[<span class="number">1</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    intersection_x2 = <span class="built_in">min</span>(cell[<span class="number">2</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>])</span><br><span class="line">    intersection_y2 = <span class="built_in">min</span>(cell[<span class="number">3</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> intersection_x1 &gt;= intersection_x2 <span class="keyword">or</span> intersection_y1 &gt;= intersection_y2:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.0</span></span><br><span class="line"></span><br><span class="line">    intersection_area = (intersection_x2 - intersection_x1) * (intersection_y2 - intersection_y1)</span><br><span class="line">    text_area = (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>]) * (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    <span class="keyword">return</span> intersection_area / text_area</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="2-函数-merge-text-into-cells-cell-coords-ocr-results"><a href="#2-函数-merge-text-into-cells-cell-coords-ocr-results" class="headerlink" title="2. 函数 merge_text_into_cells(cell_coords, ocr_results)"></a><strong>2. 函数 <code>merge_text_into_cells(cell_coords, ocr_results)</code></strong></h3><p><strong>功能</strong>：将 OCR 识别到的文字分配到表格对应单元格中。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>对每个单元格遍历所有 OCR 文本框，计算 IoT。</li>
-<li>若 IoT &gt; 0.5，则认为该文字属于该单元格。</li>
-<li>同时记录那些与所有单元格 IoT &lt; 0.1 的文字（非表格内容）。</li>
-<li>将属于单元格的文字合并为一个字符串。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">merge_text_into_cells</span>(<span class="params">cell_coords, ocr_results</span>):</span><br><span class="line">    cell_text_dict = &#123;cell: [] <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords&#125;</span><br><span class="line">    noncell_text_dict = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords:</span><br><span class="line">        <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">            <span class="keyword">if</span> calculate_iot(cell, result) &gt; <span class="number">0.5</span>:</span><br><span class="line">                cell_text_dict[cell].append(result[<span class="string">&#x27;text&#x27;</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">all</span>(calculate_iot(cell, result) &lt; <span class="number">0.1</span> <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords):</span><br><span class="line">            noncell_text_dict[result[<span class="string">&#x27;coords&#x27;</span>]] = result[<span class="string">&#x27;text&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    merged_text = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> cell, texts <span class="keyword">in</span> cell_text_dict.items():</span><br><span class="line">        merged_text[cell] = <span class="string">&#x27;&#x27;</span>.join(texts).strip()</span><br><span class="line">    <span class="keyword">for</span> coords, text <span class="keyword">in</span> noncell_text_dict.items():</span><br><span class="line">        merged_text[coords] = <span class="string">&#x27;&#x27;</span>.join(text).strip()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> merged_text</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="3-函数-adjust-coordinates-merged-text-image-path"><a href="#3-函数-adjust-coordinates-merged-text-image-path" class="headerlink" title="3. 函数 adjust_coordinates(merged_text, image_path)"></a><strong>3. 函数 <code>adjust_coordinates(merged_text, image_path)</code></strong></h3><p><strong>功能</strong>：将 y 坐标相近的单元格进行聚类并统一化，方便后续行级别排序。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>图像越高，容许的 y 偏差越大，使用 height &#x2F; 100 作为容差。</li>
-<li>将 y 值差距小于阈值的单元格归为一组。</li>
-<li>每组内统一 y 值为该组的平均 y 值，确保在同一“水平行”内。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">adjust_coordinates</span>(<span class="params">merged_text, image_path</span>):</span><br><span class="line">    image = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    width, height = image.size</span><br><span class="line">    threshold = height / <span class="number">100</span></span><br><span class="line">    groups = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> coordinates, text <span class="keyword">in</span> merged_text.items():</span><br><span class="line">        found_group = <span class="literal">False</span></span><br><span class="line">        <span class="keyword">for</span> group_y <span class="keyword">in</span> groups.keys():</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">abs</span>(coordinates[<span class="number">1</span>] - group_y) &lt;= threshold:</span><br><span class="line">                groups[group_y].append((coordinates, text))</span><br><span class="line">                found_group = <span class="literal">True</span></span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> found_group:</span><br><span class="line">            groups[coordinates[<span class="number">1</span>]] = [(coordinates, text)]</span><br><span class="line"></span><br><span class="line">    adjusted_coordinates = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> group_y, group_coords <span class="keyword">in</span> groups.items():</span><br><span class="line">        avg_y = <span class="built_in">sum</span>(coord[<span class="number">0</span>][<span class="number">1</span>] <span class="keyword">for</span> coord <span class="keyword">in</span> group_coords) / <span class="built_in">len</span>(group_coords)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> group_coords:</span><br><span class="line">            adjusted_coordinates[(i[<span class="number">0</span>][<span class="number">0</span>], avg_y, i[<span class="number">0</span>][<span class="number">2</span>], i[<span class="number">0</span>][<span class="number">3</span>])] = i[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> adjusted_coordinates</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="4-函数-draw-text-boxes-image-path-boxes-texts"><a href="#4-函数-draw-text-boxes-image-path-boxes-texts" class="headerlink" title="4.函数 draw_text_boxes(image_path, boxes, texts)"></a><strong>4.函数 <code>draw_text_boxes(image_path, boxes, texts)</code></strong></h3><p><strong>功能</strong>：在图像上绘制表格框与文字内容，进行可视化标注。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>利用 PIL 创建空白图层，绘制框线与文字。</li>
-<li>若文字宽度超出单元格宽度，则使用 textwrap 进行自动换行。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">draw_text_boxes</span>(<span class="params">image_path, boxes, texts</span>):</span><br><span class="line">    img = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    img = Image.new(<span class="string">&#x27;RGB&#x27;</span>, img.size, (<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>))</span><br><span class="line">    draw = ImageDraw.Draw(img)</span><br><span class="line">    font = ImageFont.truetype(<span class="string">&quot;./chinese_cht.ttf&quot;</span>, size=<span class="number">15</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> box, text <span class="keyword">in</span> <span class="built_in">zip</span>(boxes, texts):</span><br><span class="line">        x0, y0, x1, y1 = box</span><br><span class="line">        x0, x1 = <span class="built_in">sorted</span>([x0, x1])</span><br><span class="line">        y0, y1 = <span class="built_in">sorted</span>([y0, y1])</span><br><span class="line">        normalized_box = (x0, y0, x1, y1)</span><br><span class="line">        draw.rectangle(normalized_box, outline=<span class="string">&#x27;red&#x27;</span>, width=<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        text_len = draw.textbbox((x0, y0), text, font=font)</span><br><span class="line">        <span class="keyword">if</span> (text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) &gt; (x1 - x0):</span><br><span class="line">            text = <span class="string">&#x27;\n&#x27;</span>.join(textwrap.wrap(text, width=<span class="built_in">int</span>(</span><br><span class="line">                np.ceil(<span class="built_in">len</span>(text) / np.ceil((text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) / (x1 - x0))))))</span><br><span class="line"></span><br><span class="line">        draw.text((x0, y0), text, font=font, fill=<span class="string">&#x27;black&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    img.save(<span class="string">&#x27;your_image_storage_path/output.png&#x27;</span>)</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="5-最终文本输出（结构化行）"><a href="#5-最终文本输出（结构化行）" class="headerlink" title="5. 最终文本输出（结构化行）"></a><strong>5. 最终文本输出（结构化行）</strong></h2><p><strong>功能</strong>：将所有坐标按 y → x 排序，按行归组输出结构化文本。</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">adjusted_merged_text_sorted = <span class="built_in">sorted</span>(adjusted_merged_text.items(), key=<span class="keyword">lambda</span> x: (x[<span class="number">0</span>][<span class="number">1</span>], x[<span class="number">0</span>][<span class="number">0</span>]))</span><br><span class="line">adjusted_merged_text_sorted_group = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> coordinates, text <span class="keyword">in</span> adjusted_merged_text_sorted:</span><br><span class="line">    <span class="keyword">if</span> coordinates[<span class="number">1</span>] <span class="keyword">not</span> <span class="keyword">in</span> adjusted_merged_text_sorted_group:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]] = [text]</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]].append(text)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> text_list <span class="keyword">in</span> adjusted_merged_text_sorted_group.values():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27; | &#x27;</span>.join(text_list))</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a><strong>使用方法</strong></h2><ol>
-<li>运行脚本选择表格图片：</li>
-</ol>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python Table_Extraction.py</span><br></pre></td></tr></table></figure>
-<p>或</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python main.py</span><br></pre></td></tr></table></figure>
-
-<p>在项目目录会输出效果图片，终端会输出文本结果</p>
-<ol start="2">
-<li>效果展示<br><img src="https://github.com/user-attachments/assets/8e0f21d8-af6c-4da2-beb7-dcc7f5f73115" alt="image"><br><img src="https://github.com/user-attachments/assets/45ad3906-09df-431e-a4ec-4f0779137195" alt="image"><br>输出结果如下，你可以用这组结果测试大模型是否能读懂这组表格： <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PartNumber | TotalCapacitance(Ct) @ 50 V,(pF) | TotalCapacitance(Ct) @ 0 V,(pF) | SeriesResistance (Rs),@10 mA,(②) | MinorityCarrierLifetime (TL)@ 10 mA(ns) | VoltageRating2(M) | I-RegionThickness(μm) | ThermalResistance(0JC)(°C/W)</span><br><span class="line">Maximum | Typical | Maximum | Typical | Minimum | Nominal | Maximum</span><br><span class="line"></span><br><span class="line">Switching Applications(continued)</span><br><span class="line">| APD0810-203 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 174</span><br><span class="line">| APD0810-210 | 0.40 | 0.45 | 1.5 | 160 | 100 | 8 | 75</span><br><span class="line">| APD0810-219 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 143</span><br><span class="line">| APD0810-240 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 155</span><br><span class="line">| APD1505-203 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 172</span><br><span class="line">| APD1505-210 | 0.40 | 0.45@10 V | 2.5 | 350 | 200 | 15 | 74</span><br><span class="line">| APD1505-219 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 142</span><br><span class="line">| APD1505-240 | 0.40 | 0.45 @ 10 V | 2.5 | 350 | 200 | 15 | 150</span><br><span class="line">| APD1510-203 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 168</span><br><span class="line">| APD1510-210 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 70</span><br><span class="line">| APD1510-219 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 137</span><br><span class="line">| APD1510-240 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 149</span><br><span class="line">| APD1520-203 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 155</span><br><span class="line">| APD1520-210 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 57</span><br><span class="line">| APD1520-219 | 0.45 | 0.50 | 1.2 | 900 | 200 | 15 | 124</span><br><span class="line">| APD1520-240 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 136</span><br><span class="line"></span><br><span class="line">AttenuatorApplications</span><br><span class="line">| APD2220-203 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 132</span><br><span class="line">| APD2220-210 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 32</span><br><span class="line">| APD2220-219 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 104</span><br><span class="line">| APD2220-240 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 115</span><br></pre></td></tr></table></figure></li>
-</ol>
-<hr>
-<h2 id="补充说明"><a href="#补充说明" class="headerlink" title="补充说明"></a><strong>补充说明</strong></h2><ul>
-<li>字体文件 <code>chinese_cht.ttf</code> 必须存在，或替换为系统可识别的中文字体。</li>
-<li>对于复杂结构表格，当前模型仍然无法很好的处理。</li>
-</ul>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/wyf3/llm_related/tree/main">wyf3</a> 和 <a href="https://github.com/PaddlePaddle/PaddleOCR">PaddleOCR</a></p>
-]]></content>
-      <categories>
-        <category>OCR</category>
-      </categories>
-      <tags>
-        <tag>OCR</tag>
-        <tag>PDF</tag>
-        <tag>AI</tag>
-        <tag>PaddleOCR</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Hexo AI Assistant</title>
-    <url>/2025/03/29/Hexo-AI-Assistant/</url>
-    <content><![CDATA[<h1 id="Hexo-博客专属AI助手"><a href="#Hexo-博客专属AI助手" class="headerlink" title="Hexo 博客专属AI助手"></a>Hexo 博客专属AI助手</h1><p>本项目通过向量检索 + 大语言模型（RAG）结合本地 Hexo 博客内容，实现基于语义的智能问答接口。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/hexo-ai-assistant.git">https://github.com/EvannZhongg/hexo-ai-assistant.git</a></p>
-<hr>
-<h2 id="项目结构"><a href="#项目结构" class="headerlink" title="项目结构"></a>项目结构</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">📁 D:/YourProjects/</span><br><span class="line">├── 📁 Blog/                       # Hexo 博客项目目录</span><br><span class="line">│   ├── source/_posts/             # Markdown 博文文件目录</span><br><span class="line">│   ├── themes/hexo-theme-xxx/     # 自定义主题目录</span><br><span class="line">│   │   ├── layout/_partial/</span><br><span class="line">│   │   │   ├── footer.ejs         # 向量构建自动化脚本（Hexo 构建钩子）</span><br><span class="line">│   │   │   ├── chatbot.ejs        # ai助手UI</span><br><span class="line">│   │   │   └── ...</span><br><span class="line">│   │   └── ...  </span><br><span class="line">│   ├── scripts/auto_vector.js     # 向量构建自动化脚本（Hexo 构建钩子）</span><br><span class="line">│   └── ...                        # 其他 Hexo 文件</span><br><span class="line">│   </span><br><span class="line">├── 📁 hexo-ai-assistant/          # AI助手后端项目目录</span><br><span class="line">│   ├── build_vector_store.py      # 向量库和标题映射构建脚本</span><br><span class="line">│   ├── main.py                    # Flask 主服务入口（/ask 问答接口）</span><br><span class="line">│   ├── embedder.py                # 嵌入向量生成器（调用第三方 API）</span><br><span class="line">│   ├── chat.py                    # 通用 LLM 聊天模块（OpenAI / DeepSeek）</span><br><span class="line">│   ├── vector_store.json          # 本地语义向量数据库（自动生成）</span><br><span class="line">│   ├── title_mapping.json         # 博客标题与链接映射表（自动生成）</span><br><span class="line">│   ├── config.yml                 # 所有路径、模型、API Key 配置集中管理</span><br><span class="line">│   └── .venv/                     # 虚拟环境（可选）</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="执行原理（项目运行流程）"><a href="#执行原理（项目运行流程）" class="headerlink" title="执行原理（项目运行流程）"></a>执行原理（项目运行流程）</h2><ol>
-<li><p><strong>语义知识构建阶段</strong>（由 <code>build_vector_store.py</code> 执行）：</p>
-<ul>
-<li>扫描博客的 Markdown 源文件，提取文章正文内容。</li>
-<li>使用嵌入模型（如 BGE）生成语义向量。</li>
-<li>构建 <code>vector_store.json</code> 和 <code>title_mapping.json</code>，供问答使用。</li>
-</ul>
-</li>
-<li><p><strong>用户问答处理阶段</strong>（由 <code>main.py</code> 提供 API）：</p>
-<ul>
-<li>用户通过前端发送提问。</li>
-<li>后端提问向量化，与本地向量库匹配最相关文章。</li>
-<li>拼接问答上下文（包含语义内容和标题索引）发给大语言模型。</li>
-<li>模型生成带参考链接的回答，流式返回至前端。</li>
-</ul>
-</li>
-<li><p><strong>前端问答展示阶段</strong>（由 <code>chat.html</code> &#x2F; <code>chatbot.ejs</code> 负责）：</p>
-<ul>
-<li>用户界面加载聊天框，支持 Markdown 格式渲染和多轮对话。</li>
-<li>请求被代理转发至本地后端或公网中转地址。</li>
-</ul>
-</li>
-</ol>
-<hr>
-<h2 id="1-安装依赖"><a href="#1-安装依赖" class="headerlink" title="1. 安装依赖"></a>1. 安装依赖</h2><p>建议使用虚拟环境：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python -m venv .venv</span><br><span class="line">.venv\Scripts\activate</span><br><span class="line">pip install -r requirements.txt</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="2-配置项修改（hexo-ai-assistant-config-yml）"><a href="#2-配置项修改（hexo-ai-assistant-config-yml）" class="headerlink" title="2. 配置项修改（hexo-ai-assistant/config.yml）"></a>2. 配置项修改（<code>hexo-ai-assistant/config.yml</code>）</h2><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">paths:</span></span><br><span class="line">  <span class="attr">blog_post_dir:</span> <span class="string">/your/path/to/hexo/source/_posts</span>     <span class="comment"># 修改为你的博客 Markdown 路径</span></span><br><span class="line">  <span class="attr">vector_store:</span> <span class="string">vector_store.json</span>                     <span class="comment"># 向量库保存路径，建议使用绝对路径</span></span><br><span class="line">  <span class="attr">title_mapping:</span> <span class="string">title_mapping.json</span>                   <span class="comment"># 博客标题映射表路径，建议使用绝对路径</span></span><br><span class="line"></span><br><span class="line"><span class="attr">blog:</span></span><br><span class="line">  <span class="attr">base_url:</span> <span class="string">https://your-github-pages-url.github.io</span>   <span class="comment"># 修改为你的博客地址（不含末尾 /）</span></span><br><span class="line"></span><br><span class="line"><span class="attr">embedding:</span></span><br><span class="line">  <span class="attr">api_url:</span> <span class="string">https://api.siliconflow.cn/v1/embeddings</span>    <span class="comment"># 嵌入模型 API 地址</span></span><br><span class="line">  <span class="attr">model:</span> <span class="string">BAAI/bge-large-zh-v1.5</span>                         <span class="comment"># 使用的中文嵌入模型</span></span><br><span class="line">  <span class="attr">api_key:</span> <span class="string">&lt;YOUR_EMBEDDING_API_KEY&gt;</span>                    <span class="comment"># 替换为你的嵌入模型 API Key</span></span><br><span class="line">  <span class="attr">max_characters:</span> <span class="number">5000</span>                                 <span class="comment"># 每篇文章最大截取字符数</span></span><br><span class="line"></span><br><span class="line"><span class="attr">chat:</span></span><br><span class="line">  <span class="attr">api_url:</span> <span class="string">https://api.deepseek.com/v1</span>                 <span class="comment"># Chat 模型 API 地址（可替换为 OpenAI）</span></span><br><span class="line">  <span class="attr">model:</span> <span class="string">deepseek-chat</span>                                 <span class="comment"># 使用的模型名称</span></span><br><span class="line">  <span class="attr">api_key:</span> <span class="string">&lt;YOUR_CHAT_API_KEY&gt;</span>                         <span class="comment"># 替换为你的 LLM 接口 Key</span></span><br><span class="line"></span><br><span class="line"><span class="attr">server:</span></span><br><span class="line">  <span class="attr">port:</span> <span class="number">5000</span>                                           <span class="comment"># 后端服务运行端口（默认5000）</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="3-构建向量库-标题映射表"><a href="#3-构建向量库-标题映射表" class="headerlink" title="3. 构建向量库 &amp; 标题映射表"></a>3. 构建向量库 &amp; 标题映射表</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python build_vector_store.py</span><br></pre></td></tr></table></figure>
-
-<p>生成文件：</p>
-<ul>
-<li><code>vector_store.json</code>: 含每篇文章的文本和语义向量</li>
-<li><code>title_mapping.json</code>: 含每篇文章的标题 + 主标题 + 链接</li>
-</ul>
-<p>博客格式需遵循以下结构：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: Article Title</span><br><span class="line">date: YYYY-MM-DD HH:mm:ss</span><br><span class="line">tags: [...]  # No impact</span><br><span class="line">categories: ...  # No impact</span><br><span class="line">---</span><br><span class="line"># Main Title  # Must be a first level title</span><br><span class="line"></span><br><span class="line">正文内容...</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="4-启动后端问答服务"><a href="#4-启动后端问答服务" class="headerlink" title="4. 启动后端问答服务"></a>4. 启动后端问答服务</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python main.py</span><br></pre></td></tr></table></figure>
-
-<p>本地服务启动后默认监听：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">http://127.0.0.1:5000/ask</span><br></pre></td></tr></table></figure>
-<p>你可以在浏览器中打开 <code>chat.html</code> 进行测试，查看是否可以正确输出回答。</p>
-<hr>
-<h2 id="5-配置-Hexo-脚本"><a href="#5-配置-Hexo-脚本" class="headerlink" title="5. 配置 Hexo 脚本"></a>5. 配置 <code>Hexo</code> 脚本</h2><p>如果上述操作都正确执行后，将向量构建脚本接入 <code>Hexo</code> 构建流程</p>
-<h3 id="1-创建脚本文件-scripts-auto-vector-js："><a href="#1-创建脚本文件-scripts-auto-vector-js：" class="headerlink" title="1.创建脚本文件 scripts/auto_vector.js："></a>1.创建脚本文件 <code>scripts/auto_vector.js</code>：</h3><figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> &#123; exec &#125; = <span class="built_in">require</span>(<span class="string">&quot;child_process&quot;</span>);</span><br><span class="line"></span><br><span class="line">hexo.<span class="property">extend</span>.<span class="property">filter</span>.<span class="title function_">register</span>(<span class="string">&quot;before_generate&quot;</span>, <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&quot;构建博客向量中...&quot;</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Promise</span>(<span class="function">(<span class="params">resolve, reject</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="title function_">exec</span>(<span class="string">&quot;/your_project/.venv/Scripts/python build_vector_store.py&quot;</span>, &#123;</span><br><span class="line">      <span class="attr">cwd</span>: <span class="string">&quot;D:/your_project&quot;</span></span><br><span class="line">    &#125;, <span class="function">(<span class="params">err, stdout, stderr</span>) =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (err) &#123;</span><br><span class="line">        <span class="variable language_">console</span>.<span class="title function_">error</span>(<span class="string">&quot;构建失败:&quot;</span>, stderr);</span><br><span class="line">        <span class="title function_">reject</span>(err);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&quot;构建成功&quot;</span>);</span><br><span class="line">        <span class="title function_">resolve</span>();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-<p>这个脚本的作用是在运行 <code>hexo g</code> 时，自动重构向量库保证所有博客均被项链化。</p>
-<h3 id="2-在页面底部引入-ejs-文件"><a href="#2-在页面底部引入-ejs-文件" class="headerlink" title="2. 在页面底部引入 ejs 文件"></a>2. 在页面底部引入 ejs 文件</h3><p>打开文件：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">themes/hexo-theme-Chic/layout/_partial/footer.ejs</span><br></pre></td></tr></table></figure>
-
-<p>在 <code>&lt;/footer&gt;</code> 标签之后添加以下代码：</p>
-<figure class="highlight html"><table><tr><td class="code"><pre><span class="line">&lt;%- partial(&#x27;chatbot&#x27;) %&gt;</span><br></pre></td></tr></table></figure>
-
-<p>新建文件 <code>chatbot.ejs</code> 在路径 <code>themes\hexo-theme-Chic\layout\_partial\chatbot.ejs</code></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">将chatbot.ejs的代码拷贝至此处</span><br><span class="line">完整代码文件可见文章开头的项目地址中</span><br></pre></td></tr></table></figure>
-
-<p>运行以下命令，重新生成并启动本地预览：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
-<p>效果如下：<br><img src="https://github.com/user-attachments/assets/40f5a3c5-74a6-453b-b83b-6152c5b40990" alt="image"></p>
-<hr>
-<h2 id="6-使用-Ngrok-暴露后端接口（可选）"><a href="#6-使用-Ngrok-暴露后端接口（可选）" class="headerlink" title="6. 使用 Ngrok 暴露后端接口（可选）"></a>6. 使用 Ngrok 暴露后端接口（可选）</h2><p>在本地测试都没问题后，可以使用 Ngrok 暴露本地服务至公网</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">ngrok http 5000</span><br></pre></td></tr></table></figure>
-
-<p>将 <code>https://xxx.ngrok-free.app/ask</code> 地址填入前端请求 <code>chatbot.ejs</code> 中：</p>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> response = <span class="keyword">await</span> <span class="title function_">fetch</span>(<span class="string">&quot;https://xxx.ngrok-free.app/ask&quot;</span>, &#123;...&#125;);</span><br></pre></td></tr></table></figure>
-
-<p>只使用 Ngrok 有网路安全问题，你可以自行设置代理保证你的端口不被暴露在公网中。</p>
-<hr>
-<h2 id="完整流程总结"><a href="#完整流程总结" class="headerlink" title="完整流程总结"></a>完整流程总结</h2><ol>
-<li>写好博客（Markdown 文件），保证格式符合要求</li>
-<li><code>build_vector_store.py</code> 提取文本并生成向量</li>
-<li><code>main.py</code> 启动问答服务并支持语义检索</li>
-<li>前端请求通过 Ngrok 访问服务</li>
-<li>模型结合语义内容和标题表生成参考明确的回答</li>
-</ol>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
-]]></content>
-      <categories>
-        <category>Hexo</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-        <tag>博客</tag>
-        <tag>Blog</tag>
-        <tag>前端</tag>
-        <tag>AI</tag>
-        <tag>LLM</tag>
-        <tag>大模型</tag>
-        <tag>RAG</tag>
-        <tag>Agent</tag>
-        <tag>后端</tag>
-        <tag>Ngrok</tag>
-        <tag>flask</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Hexo and Chic themes add Giscus comment system</title>
-    <url>/2025/03/24/Hexo-and-Chic-themes-add-Giscus-comment-system/</url>
-    <content><![CDATA[<h1 id="Hexo-Chic-主题集成-Giscus-评论系统详细教程"><a href="#Hexo-Chic-主题集成-Giscus-评论系统详细教程" class="headerlink" title="Hexo + Chic 主题集成 Giscus 评论系统详细教程"></a>Hexo + Chic 主题集成 Giscus 评论系统详细教程</h1><p>本教程将教你如何在 Hexo 博客（使用 Chic 主题）中添加 Giscus 评论系统，让你的博客拥有简洁现代的评论功能，并且支持明暗模式自动切换。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
-<hr>
-<h2 id="一、准备工作"><a href="#一、准备工作" class="headerlink" title="一、准备工作"></a>一、准备工作</h2><h3 id="1-确保你已完成以下条件："><a href="#1-确保你已完成以下条件：" class="headerlink" title="1. 确保你已完成以下条件："></a>1. 确保你已完成以下条件：</h3><ul>
-<li>博客已搭建并使用 Hexo 框架</li>
-<li>正在使用 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 主题</li>
-<li>博客托管在 GitHub</li>
-</ul>
-<h3 id="2-启用-GitHub-Discussions-功能"><a href="#2-启用-GitHub-Discussions-功能" class="headerlink" title="2. 启用 GitHub Discussions 功能"></a>2. 启用 GitHub Discussions 功能</h3><ol>
-<li>打开你的博客仓库页面</li>
-<li>点击顶部的 <strong>Settings</strong></li>
-<li>在 <strong>General</strong> 中 <strong>Features</strong> 区域点击 <strong>Discussions</strong></li>
-<li>勾选 <strong>“Enable discussions for this repository”</strong></li>
-</ol>
-<p><img src="https://github.com/user-attachments/assets/6686f60e-f2d4-4a87-8b0d-d3425070c2cd" alt="setting_discussions"></p>
-<hr>
-<h2 id="二、使用-Giscus-app-获取评论配置代码"><a href="#二、使用-Giscus-app-获取评论配置代码" class="headerlink" title="二、使用 Giscus.app 获取评论配置代码"></a>二、使用 Giscus.app 获取评论配置代码</h2><ol>
-<li>打开 Giscus 官网：<a href="https://giscus.app/">https://giscus.app</a></li>
-<li>登录 GitHub 账号</li>
-<li>安装 <a href="https://github.com/apps/giscus">giscus</a> app  ，否则访客将无法评论和回应</li>
-<li>按照如下选择进行配置：<ul>
-<li>Repository: 选择你的博客仓库（注意填写格式为 <strong>用户名&#x2F;仓库名</strong>）</li>
-<li>Discussion Category: 建议选择 <strong>Announcements</strong>（防止读者随意发帖）</li>
-<li>Page ↔️ Discussion Mapping: 选择 <strong>pathname</strong></li>
-<li>Theme: 选择任意（我们后续会动态控制）</li>
-<li>Language: 选择 <code>zh-CN</code></li>
-</ul>
-</li>
-<li>点击页面底部的 <strong>“Copy code snippet”</strong>，复制生成的 <code>&lt;script&gt;</code> 标签代码</li>
-</ol>
-<hr>
-<h2 id="三、创建评论模块文件"><a href="#三、创建评论模块文件" class="headerlink" title="三、创建评论模块文件"></a>三、创建评论模块文件</h2><h3 id="1-打开博客主题目录"><a href="#1-打开博客主题目录" class="headerlink" title="1. 打开博客主题目录"></a>1. 打开博客主题目录</h3><p>路径：<code>themes/hexo-theme-Chic/layout/_partial/</code></p>
-<h3 id="2-创建或编辑-livers-ejs-文件"><a href="#2-创建或编辑-livers-ejs-文件" class="headerlink" title="2. 创建或编辑 livers.ejs 文件"></a>2. 创建或编辑 <code>livers.ejs</code> 文件</h3><p>将 Giscus 中生成的 <code>&lt;script&gt;</code> 标签代码填入文件（注意部分参数的区别），同时增加主题自动同步功能代码：</p>
-<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- Giscus 评论区挂载点 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">&quot;giscus-container&quot;</span> <span class="attr">style</span>=<span class="string">&quot;margin-top: 2.5rem;&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- Giscus 动态加载脚本：初始加载 + 明暗主题切换 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">createGiscus</span>(<span class="params">theme</span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> giscusContainer = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;giscus-container&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">if</span> (!giscusContainer) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 清除旧的评论 iframe</span></span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="property">innerHTML</span> = <span class="string">&#x27;&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> script = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(<span class="string">&#x27;script&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">src</span> = <span class="string">&#x27;https://giscus.app/client.js&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 替换为你的 GitHub 仓库信息（格式：username/repo）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo&#x27;</span>, <span class="string">&#x27;your-github-username/your-repo-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">   <span class="comment">// 替换为你的 repo-id 和 category-id（在 giscus.app 配置页面生成）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo-id&#x27;</span>, <span class="string">&#x27;your-repo-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category&#x27;</span>, <span class="string">&#x27;your-category-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category-id&#x27;</span>, <span class="string">&#x27;your-category-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 其他常规推荐设置</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-mapping&#x27;</span>, <span class="string">&#x27;pathname&#x27;</span>);           <span class="comment">// 用页面路径匹配评论帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-strict&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);                   <span class="comment">// 若无匹配帖则创建新帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-reactions-enabled&#x27;</span>, <span class="string">&#x27;1&#x27;</span>);        <span class="comment">// 启用表情反应</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-emit-metadata&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);            <span class="comment">// 不输出元数据</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-input-position&#x27;</span>, <span class="string">&#x27;top&#x27;</span>);         <span class="comment">// 输入框在评论上方</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-theme&#x27;</span>, theme);                </span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-lang&#x27;</span>, <span class="string">&#x27;zh-CN&#x27;</span>);                 <span class="comment">// 中文界面</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;crossorigin&#x27;</span>, <span class="string">&#x27;anonymous&#x27;</span>);           <span class="comment">// 跨域资源安全</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">async</span> = <span class="literal">true</span>;                                       </span></span><br><span class="line"><span class="language-javascript">     </span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="title function_">appendChild</span>(script);</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">getCurrentTheme</span>(<span class="params"></span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">return</span> <span class="variable language_">document</span>.<span class="property">body</span>.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;dark-theme&#x27;</span>) ? <span class="string">&#x27;dark&#x27;</span> : <span class="string">&#x27;light&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 页面首次加载，根据当前主题挂载评论</span></span></span><br><span class="line"><span class="language-javascript">    <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听按钮点击切换主题 → 重载评论区</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> buttons = [</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">querySelector</span>(<span class="string">&#x27;.toggleBtn&#x27;</span>),</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;mobile-toggle-theme&#x27;</span>)</span></span><br><span class="line"><span class="language-javascript">    ];</span></span><br><span class="line"><span class="language-javascript">    buttons.<span class="title function_">forEach</span>(<span class="function"><span class="params">btn</span> =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="keyword">if</span> (!btn) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript">      btn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="built_in">setTimeout</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">          <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">        &#125;, <span class="number">400</span>); <span class="comment">// 稍作延迟，确保 class 切换完毕</span></span></span><br><span class="line"><span class="language-javascript">      &#125;);</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听 body class 改变（保险方案）</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> observer = <span class="keyword">new</span> <span class="title class_">MutationObserver</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript">    observer.<span class="title function_">observe</span>(<span class="variable language_">document</span>.<span class="property">body</span>, &#123; <span class="attr">attributes</span>: <span class="literal">true</span>, <span class="attr">attributeFilter</span>: [<span class="string">&#x27;class&#x27;</span>] &#125;);</span></span><br><span class="line"><span class="language-javascript">  &#125;);</span></span><br><span class="line"><span class="language-javascript"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>⚠️ 请将 <code>data-repo-id</code> 和 <code>data-category-id</code> 替换为你从 giscus.app 获取的值。</p>
-</blockquote>
-<hr>
-<h2 id="四、引入评论模块到文章模板"><a href="#四、引入评论模块到文章模板" class="headerlink" title="四、引入评论模块到文章模板"></a>四、引入评论模块到文章模板</h2><p>打开文件：<code>themes/hexo-theme-Chic/layout/_page/post.ejs</code></p>
-<p>找到代码底部，在 <code>&lt;/article&gt;</code> 上方添加一行代码 <code>&lt;%- partial(&#39;_partial/livers&#39;) %&gt;</code> ：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">        &lt;section class=&quot;post-nav&quot;&gt;</span><br><span class="line">            &lt;% if(post.prev)&#123; %&gt;</span><br><span class="line">                &lt;a class=&quot;prev&quot; rel=&quot;prev&quot; href=&quot;&lt;%- url_for(post.prev.path)%&gt;&quot;&gt;&lt;%- post.prev.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">            &lt;% if(post.next)&#123; %&gt;</span><br><span class="line">            &lt;a class=&quot;next&quot; rel=&quot;next&quot; href=&quot;&lt;%- url_for(post.next.path)%&gt;&quot;&gt;&lt;%- post.next.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">        &lt;/section&gt;</span><br><span class="line"></span><br><span class="line">	&lt;%- partial(&#x27;_partial/livers&#x27;) %&gt;</span><br><span class="line"></span><br><span class="line">    &lt;/article&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-
-<p>这会让评论区出现在每篇文章的底部。</p>
-<hr>
-<h2 id="五、重新部署博客"><a href="#五、重新部署博客" class="headerlink" title="五、重新部署博客"></a>五、重新部署博客</h2><p>执行以下命令：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
-
-<p>然后访问你的博客文章页面，应该就能看到 Giscus 评论框</p>
-<hr>
-<h2 id="成功效果"><a href="#成功效果" class="headerlink" title="成功效果"></a>成功效果</h2><p><img src="https://github.com/user-attachments/assets/b75a7ffd-d99b-4d4a-9e95-cb43b06b36aa" alt="discussions"> </p>
-<ul>
-<li>支持 GitHub 登录评论</li>
-<li>评论存储在 Discussions 中，便于管理</li>
-<li>评论区支持明暗主题自动切换，与 Chic 博客风格一致</li>
-</ul>
-<hr>
-<p>如有问题，可以：</p>
-<ul>
-<li>检查浏览器控制台是否有加载错误</li>
-<li>确保 repo-id 和 category-id 正确</li>
-<li>确保启用了 Discussions 功能</li>
-</ul>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
-]]></content>
-      <categories>
-        <category>Hexo</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-        <tag>博客</tag>
-        <tag>Blog</tag>
-        <tag>前端</tag>
       </tags>
   </entry>
   <entry>
@@ -1075,11 +1075,11 @@
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
+        <tag>Python</tag>
+        <tag>RAG</tag>
+        <tag>flask</tag>
         <tag>Knowledge Graph</tag>
         <tag>GraphRAG</tag>
-        <tag>RAG</tag>
-        <tag>Python</tag>
-        <tag>flask</tag>
         <tag>图数据库</tag>
         <tag>LangChain</tag>
         <tag>NebulaGraph</tag>
@@ -2142,6 +2142,509 @@
       </tags>
   </entry>
   <entry>
+    <title>Nosis Agent Runtime 架构演进学习笔记</title>
+    <url>/2026/09/19/Nosis-Agent-Runtime-Evolution/</url>
+    <content><![CDATA[<h1 id="由浅入深看懂-Nosis-Agent-Runtime-的七天演进"><a href="#由浅入深看懂-Nosis-Agent-Runtime-的七天演进" class="headerlink" title="由浅入深看懂 Nosis Agent Runtime 的七天演进"></a>由浅入深看懂 Nosis Agent Runtime 的七天演进</h1><p>这份笔记是我在学习 Nosis 项目 Agent Runtime 演进史时的整理稿。</p>
+<p>素材来自项目自身的 Git 历史：从最初提交 <code>e1d15a4</code>（2026-09-09）到当前提交 <code>8f7f019</code>（2026-09-16），一共七天、131 个提交，其中 93 个触及了 <code>agent_core</code> 或 <code>interfaces/bridge</code>。</p>
+<p>第一次读原版演进史，读完之后的状态是：每个字都认识，但说不出“为什么第五天要重构成那样”。于是我按时间顺序重抄了一遍。这篇笔记的叙述顺序就是我的理解顺序，由浅入深分三层：</p>
+<ol>
+<li>先看懂<strong>形态</strong>：这个阶段的 Runtime 长什么样；</li>
+<li>再看懂<strong>边界</strong>：哪些职责从谁手里交给了谁；</li>
+<li>最后才看懂<strong>原因</strong>：为什么它非改不可。</li>
+</ol>
+<p>具体到每一个阶段，我固定回答三个问题：</p>
+<ol>
+<li><strong>当时到底被什么问题卡住了？</strong></li>
+<li><strong>Runtime 的职责和边界发生了什么变化？</strong></li>
+<li><strong>我的理解比上一阶段多了哪一层？</strong></li>
+</ol>
+<p>下面的记录，就是这三问一层层推进的过程。涉及的“Runtime”不只是 <code>Agent.run()</code>，还包括驱动一次执行所必需的上下文管理、Tool 系统、Session、持久化、授权、取消、子 Agent、MCP 和前端适配语义。</p>
+<hr>
+<h2 id="0-先记住四句话"><a href="#0-先记住四句话" class="headerlink" title="0. 先记住四句话"></a>0. 先记住四句话</h2><p>原版演进史的最后给了四条“架构不变量”，我第一次读完全无感，等把七个阶段抄完，才发现前面所有剧情都在往这四句话上收。一开始读不懂也没关系，可以先跳过，读完再回头对照：</p>
+<ol>
+<li><strong>执行语义只在 Agent Core 实现一次；</strong></li>
+<li><strong>Runtime 只在 Bridge 装配一次；</strong></li>
+<li><strong>真实执行历史只写入 append-only Journal，其他表现形式都从中投影；</strong></li>
+<li><strong>Tool 是无状态能力，角色差异和环境依赖由 Runtime 在调用时绑定。</strong></li>
+</ol>
+<p>如果读完全文只记住一句话，我选这句：</p>
+<blockquote>
+<p>Nosis 从一个“把聊天记录发给模型”的同步包装器，逐步演化成一个“记录事实、投影视图、装配能力、协调并发并接受实时控制”的持久化执行引擎。</p>
+</blockquote>
+<hr>
+<h2 id="1-总览：七天，七种-Runtime-形态"><a href="#1-总览：七天，七种-Runtime-形态" class="headerlink" title="1. 总览：七天，七种 Runtime 形态"></a>1. 总览：七天，七种 Runtime 形态</h2><table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>时间</th>
+<th>Runtime 的主要形态</th>
+<th>核心变化</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0. 最小对话内核</td>
+<td>09-09</td>
+<td>单次 Provider 调用</td>
+<td>建立 <code>Agent + Session + Provider</code> 最小闭环</td>
+</tr>
+<tr>
+<td>1. Agent Loop 成形</td>
+<td>09-09～09-10</td>
+<td>模型与 Tool 循环执行</td>
+<td>Tool、Workspace、限制、事件、授权进入 Core</td>
+</tr>
+<tr>
+<td>2. 多前端统一 Runtime</td>
+<td>09-11</td>
+<td>Bridge 驱动的独立 Runtime 进程</td>
+<td>TUI&#x2F;GUI 不再各自承担执行语义</td>
+</tr>
+<tr>
+<td>3. 长上下文 Runtime</td>
+<td>09-12～09-13</td>
+<td>可流式输出、可压缩上下文</td>
+<td>从“超限失败”变为“归档后继续执行”</td>
+</tr>
+<tr>
+<td>4. 可装配的多 Agent Runtime</td>
+<td>09-13～09-14</td>
+<td>MCP、子 Agent、共享 Tool Catalog</td>
+<td>能力从对象内依赖改为 Runtime 装配和调用时注入</td>
+</tr>
+<tr>
+<td>5. 持久化执行状态机</td>
+<td>09-14～09-16</td>
+<td>append-only Journal + 多种投影</td>
+<td>真实执行历史与 Provider 对话正式分离</td>
+</tr>
+<tr>
+<td>6. 长生命周期交互 Runtime</td>
+<td>09-16</td>
+<td>可恢复、可接管、可询问、可 steering</td>
+<td>Runtime 不再等同于一次请求，而是 Session 级活动实体</td>
+</tr>
+</tbody></table>
+<p>七个阶段里，真正改变职责边界或状态模型的只有几次（原版把它们叫“转折点”），其余提交都是在补能力、补约束、补语义。我按这个节奏画了张时间线，方便自己回看：</p>
+<pre class="mermaid">flowchart LR
+    A["阶段0<br/>最小对话内核<br/>09-09"] --> B["阶段1<br/>Agent Loop<br/>09-09~10"]
+    B --> C["阶段2<br/>Bridge 统一 Runtime<br/>09-11"]
+    C --> D["阶段3<br/>长上下文 + 流式<br/>09-12~13"]
+    D --> E["阶段4<br/>MCP / 子 Agent / Catalog<br/>09-13~14"]
+    E --> F["阶段5<br/>append-only Journal<br/>09-14~16"]
+    F --> G["阶段6<br/>长生命周期交互<br/>09-16"]</pre>
+
+<p>下面逐个阶段抄笔记。</p>
+<hr>
+<h2 id="2-阶段-0：最小对话内核"><a href="#2-阶段-0：最小对话内核" class="headerlink" title="2. 阶段 0：最小对话内核"></a>2. 阶段 0：最小对话内核</h2><h3 id="2-1-一次输入，一次模型调用"><a href="#2-1-一次输入，一次模型调用" class="headerlink" title="2.1 一次输入，一次模型调用"></a>2.1 一次输入，一次模型调用</h3><p>初始提交 <code>e1d15a4</code> 的调用链短得可爱：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">CLI</span><br><span class="line"> └─ Agent.run(user_input)</span><br><span class="line">     ├─ Session.add_message(user)</span><br><span class="line">     ├─ Provider.complete(system + history)</span><br><span class="line">     └─ Session.add_message(assistant)</span><br></pre></td></tr></table></figure>
+
+<p>此时 <code>Agent</code> 只有三个依赖：<code>LLMProvider</code>、<code>Session</code> 和 system prompt。<code>run()</code> 也只做四件事：追加用户消息、构造请求、调用 Provider、保存助手回复。它还不是循环——模型不能调 Tool，也没有中途事件、取消、授权和上下文压缩。</p>
+<h3 id="2-2-这一层读懂了什么"><a href="#2-2-这一层读懂了什么" class="headerlink" title="2.2 这一层读懂了什么"></a>2.2 这一层读懂了什么</h3><p>我一开始以为“最小版本”没什么可看的，回头看它其实已经埋好了四根桩：</p>
+<ul>
+<li>Provider 通过抽象接口隔离，Agent 不直接依赖某家 SDK；</li>
+<li>Session 是独立对象，而不是 CLI 里的一组临时变量；</li>
+<li>system prompt 从执行代码中分离（后来还被单独命名为 Soul）；</li>
+<li>Agent Core 与入口代码分目录，为后续拆分留了空间。</li>
+</ul>
+<p>紧接着的 <code>42e9b60</code> 加入时间戳、Session Record 和 token usage。它的意义不是“多显示了几个字段”，而是<strong>第一次把一次模型调用的执行记录当成可持久化数据</strong>，而不是一堆聊天文本。</p>
+<h3 id="2-3-卡住的地方"><a href="#2-3-卡住的地方" class="headerlink" title="2.3 卡住的地方"></a>2.3 卡住的地方</h3><ul>
+<li>Agent 只能回答，不能行动；</li>
+<li>Session 本质还是 Provider 历史的容器，没有表达真实执行状态；</li>
+<li>CLI 同时负责配置、运行和展示——一旦出现第二个前端，语义必然被复制。</li>
+</ul>
+<p>这三条限制，直接引出了后面的三条主线：Tool Loop、结构化执行事件、Bridge。</p>
+<hr>
+<h2 id="3-阶段-1：从单次补全到-Agent-Loop"><a href="#3-阶段-1：从单次补全到-Agent-Loop" class="headerlink" title="3. 阶段 1：从单次补全到 Agent Loop"></a>3. 阶段 1：从单次补全到 Agent Loop</h2><h3 id="3-1-7f22d93：run-变成循环"><a href="#3-1-7f22d93：run-变成循环" class="headerlink" title="3.1 7f22d93：run() 变成循环"></a>3.1 <code>7f22d93</code>：<code>run()</code> 变成循环</h3><p>这是第一次根本性变化。模型响应开始带 <code>tool_calls</code>，Agent 必须反复执行：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">构造请求 → 调用模型</span><br><span class="line">               ├─ 最终答案 → 结束</span><br><span class="line">               └─ Tool Calls</span><br><span class="line">                    ├─ 执行 Tool</span><br><span class="line">                    ├─ 写入 Tool Result</span><br><span class="line">                    └─ 再次调用模型</span><br></pre></td></tr></table></figure>
+
+<p>这次提交加了统一的 Tool 抽象、Tool Definition、Tool Call、Tool Result 和第一个内置 Tool，Session 也必须保存 assistant tool-call message 与 tool result message，才能满足 Provider 的消息协议。</p>
+<p><strong>我的理解</strong>：从这一刻开始，Runtime 的核心不再是 <code>complete()</code>，而是显式的 Agent Loop。后面所有的上下文压缩、并发、取消、steering，都是在这个循环的安全边界上继续长出来的。</p>
+<h3 id="3-2-防止失控循环：终止条件第一次被显式化"><a href="#3-2-防止失控循环：终止条件第一次被显式化" class="headerlink" title="3.2 防止失控循环：终止条件第一次被显式化"></a>3.2 防止失控循环：终止条件第一次被显式化</h3><p>Tool Loop 一出现，模型重复调用同一个工具的问题马上就来了：</p>
+<ul>
+<li><code>a361c72</code> 增加可配置的 Tool Call 上限；</li>
+<li><code>2b1d008</code> 把判断收敛为“相同工具名 + 相同参数的连续重复”，避免把合理的多次调用误判成死循环。</li>
+</ul>
+<p>这里的重点不是“限制调用总数”，而是<strong>识别没有产生新进展的调用模式</strong>。</p>
+<h3 id="3-3-Workspace-成为执行边界"><a href="#3-3-Workspace-成为执行边界" class="headerlink" title="3.3 Workspace 成为执行边界"></a>3.3 Workspace 成为执行边界</h3><p><code>eb7b43f</code> 引入 Workspace 感知的入口，<code>03812fc</code> 加入读取、编辑、搜索和目录浏览工具。Workspace 从一个启动路径，变成了 Tool 能力的边界：</p>
+<ul>
+<li>system prompt 能描述当前工作区；</li>
+<li>文件 Tool 通过统一路径解析限制访问范围；</li>
+<li>后来的 shell、附件、Session 分组、子 Agent 都以 Workspace 为装配基础。</li>
+</ul>
+<p>这一步把项目从“普通聊天 Agent”推向了“coding &#x2F; working Agent”。</p>
+<h3 id="3-4-上下文、事件与授权"><a href="#3-4-上下文、事件与授权" class="headerlink" title="3.4 上下文、事件与授权"></a>3.4 上下文、事件与授权</h3><p>同一天还发生了三件后来影响很大的事：</p>
+<ul>
+<li><code>7689f21</code> 首次加入上下文窗口验证。当时策略仍是“超过 hard limit 就失败”，但 Runtime 开始主动掌握上下文预算，而不是把错误完全交给 Provider。</li>
+<li><code>4444b41</code> 加入结构化 <code>AgentEvent</code>。此前 CLI 只能在 <code>run()</code> 返回后展示结果，此后界面可以观察执行中的状态。</li>
+<li><code>29ebad8</code> 引入需要人工批准的 shell Tool，<code>69bb062</code> 把“是否允许执行”和“如何执行命令”拆开：</li>
+</ul>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Shell Tool</span><br><span class="line"> ├─ ToolPolicy：这次调用能否执行</span><br><span class="line"> └─ CommandExecutor：批准后怎样启动进程</span><br></pre></td></tr></table></figure>
+
+<p>这是一个很早、但非常关键的职责分离：Bridge 后来才能负责交互式审批，而 Core 只依赖授权接口；MCP Tool 也复用了同一类政策层。</p>
+<h3 id="3-5-Tool-从散落实例走向配置化工厂"><a href="#3-5-Tool-从散落实例走向配置化工厂" class="headerlink" title="3.5 Tool 从散落实例走向配置化工厂"></a>3.5 Tool 从散落实例走向配置化工厂</h3><p><code>3bdfd5f</code> 给文件读取加入范围和行号，<code>6b34054</code> 把内置 Tool 收口到统一工厂与配置开关。这个工厂后来被共享 Tool Catalog 取代，但它完成了必要的中间步骤。</p>
+<p>阶段结束时，架构大致是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">CLI</span><br><span class="line"> ├─ 组装 Provider / Session / Tools / Policy / Executor</span><br><span class="line"> └─ Agent Loop</span><br><span class="line">     ├─ Context 检查</span><br><span class="line">     ├─ Provider 调用</span><br><span class="line">     ├─ Tool 执行</span><br><span class="line">     ├─ Session 写入</span><br><span class="line">     └─ AgentEvent 输出</span><br></pre></td></tr></table></figure>
+
+<p><strong>问题也在这里埋下</strong>：CLI 已经承担了过多 Runtime 装配职责，而 GUI 马上就要成为第二个调用方。</p>
+<hr>
+<h2 id="4-阶段-2：Bridge-成为唯一-Runtime-装配点"><a href="#4-阶段-2：Bridge-成为唯一-Runtime-装配点" class="headerlink" title="4. 阶段 2：Bridge 成为唯一 Runtime 装配点"></a>4. 阶段 2：Bridge 成为唯一 Runtime 装配点</h2><h3 id="4-1-GUI-逼出了“双-Runtime”风险"><a href="#4-1-GUI-逼出了“双-Runtime”风险" class="headerlink" title="4.1 GUI 逼出了“双 Runtime”风险"></a>4.1 GUI 逼出了“双 Runtime”风险</h3><p>09-11 先补齐产品化基础：</p>
+<ul>
+<li><code>e873500</code>：初始化用户配置，并按 Session 存储；</li>
+<li><code>d341306</code>：加入最小 GUI、Session 列表和模型选择；</li>
+<li><code>8039345</code>：大 Tool Result 不再全塞进上下文，而是保存为 Session Artifact；</li>
+<li><code>725fd3b</code>、<code>831319f</code>：限制文件搜索、读取和 shell 输出规模。</li>
+</ul>
+<p>GUI 一出现，一个架构问题就无法回避了：<strong>如果 TUI 和 GUI 都各自创建 Agent、读配置、执行 Tool、处理授权，项目就会长出两套 Runtime 语义。</strong></p>
+<h3 id="4-2-abdfc6a：从-CLI-重构为-Bridge-TUI"><a href="#4-2-abdfc6a：从-CLI-重构为-Bridge-TUI" class="headerlink" title="4.2 abdfc6a：从 CLI 重构为 Bridge + TUI"></a>4.2 <code>abdfc6a</code>：从 CLI 重构为 Bridge + TUI</h3><p>这次提交删掉了原 <code>agent_cli</code> 的执行入口，建立独立进程 <code>python -m interfaces.bridge</code>，用 newline-delimited JSON 与前端通信：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">TUI ───────────────┐</span><br><span class="line">                   ├─ NDJSON ─ Bridge ─ Agent Core</span><br><span class="line">GUI ─ FastAPI/WS ──┘</span><br></pre></td></tr></table></figure>
+
+<p>Bridge 开始负责：读 Provider 与 Agent 配置、创建 Provider&#x2F;Session&#x2F;Tool&#x2F;执行器、把 <code>AgentEvent</code> 翻译成协议消息、转发 Tool 审批和取消、控制 Runtime 进程生命周期。随后 <code>bf907c6</code> 让 GUI 也适配同一个 Bridge——“两个界面共用同一执行语义”从目标变成了代码结构上的事实。</p>
+<p>由此形成了当前最重要的依赖方向：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">interfaces/*  ──&gt;  agent_core</span><br><span class="line">agent_core    -X-&gt; interfaces/*</span><br></pre></td></tr></table></figure>
+
+<p>Core 提供机制，Bridge 决定装配，前端只处理协议和呈现。后面的 MCP 生命周期、子 Agent 角色、权限 preset、Skills、Session 恢复，全都照着这个边界走。</p>
+<h3 id="4-3-这一层读懂了什么"><a href="#4-3-这一层读懂了什么" class="headerlink" title="4.3 这一层读懂了什么"></a>4.3 这一层读懂了什么</h3><p>我以前会把 Bridge 理解成“一层 API 转发”，这次才看明白它解决的是<strong>运行时拥有者</strong>问题：</p>
+<ul>
+<li>Provider 的选择属于装配，不属于 Agent Loop；</li>
+<li>Shell &#x2F; MCP 的用户确认需要前端交互，但不能进入 Core；</li>
+<li>TUI 与 GUI 必须共享取消和 Session 语义；</li>
+<li>Runtime 需要独立于页面或终端组件存在。</li>
+</ul>
+<p>所以 Bridge 是前端与 Core 之间的<strong>唯一执行通道</strong>，不是可绕开的辅助层。</p>
+<hr>
+<h2 id="5-阶段-3：从上下文超限失败到可持续运行"><a href="#5-阶段-3：从上下文超限失败到可持续运行" class="headerlink" title="5. 阶段 3：从上下文超限失败到可持续运行"></a>5. 阶段 3：从上下文超限失败到可持续运行</h2><h3 id="5-1-第一个归档模型"><a href="#5-1-第一个归档模型" class="headerlink" title="5.1 第一个归档模型"></a>5.1 第一个归档模型</h3><p><code>73b01c5</code> 把上下文策略从“超过窗口就报错”改成“把旧历史总结成 checkpoint 再继续运行”，同时新增 Consolidator prompt、归档摘要和 Session 持久化字段。</p>
+<p>这一步把 Agent 从短对话程序变成了可以长期运行的 Runtime，但第一版归档和 Agent Loop 耦合太紧，于是后面跟着一串语义修正：</p>
+<ul>
+<li><code>7606a39</code>：向 UI 报告上下文压缩事件；</li>
+<li><code>7dee8ff</code>：禁止归档仍在执行的 turn，避免丢失当前工具链；</li>
+<li><code>07feec6</code>：压缩阈值和目标可配置；</li>
+<li><code>6324769</code>：拒绝无法合理划分预算的过小上下文窗口；</li>
+<li><code>2cb3b3a</code>：把历史时间戳合并成单个 timeline system message，减少对原消息的污染；</li>
+<li><code>f59b856</code>：历史 Tool 链不携带时间戳和 reasoning，保持 Provider 格式稳定。</li>
+</ul>
+<h3 id="5-2-流式输出让-Runtime-变成持续事件源"><a href="#5-2-流式输出让-Runtime-变成持续事件源" class="headerlink" title="5.2 流式输出让 Runtime 变成持续事件源"></a>5.2 流式输出让 Runtime 变成持续事件源</h3><p><code>563d111</code> 把 reasoning delta 从 Provider 经 Agent 和 Bridge 流到两个 UI，<code>ca6a8a5</code> 统一了 Provider 回调契约。此前结构化事件主要描述离散状态，此后 Runtime 同时输出文本增量、推理增量和离散执行事件。</p>
+<p>这就要求 UI 不能再把一次 turn 当作“一个最终响应”，而必须根据结构化事件逐步构建界面状态。</p>
+<h3 id="5-3-dfb610d：抽出-ContextManager"><a href="#5-3-dfb610d：抽出-ContextManager" class="headerlink" title="5.3 dfb610d：抽出 ContextManager"></a>5.3 <code>dfb610d</code>：抽出 ContextManager</h3><p>随着构造请求、计数、阈值判断、归档、历史格式化不断变多，<code>Agent</code> 已经同时承担执行循环和上下文策略。<code>dfb610d</code> 把这些职责抽到 <code>ContextManager</code>，一次性从 Agent 移走约两百行上下文逻辑：</p>
+<ul>
+<li><code>Agent</code> 决定什么时候调用模型、什么时候执行 Tool、什么时候继续或结束；</li>
+<li><code>ContextManager</code> 决定发给模型什么、是否需要压缩、如何产生 checkpoint；</li>
+<li><code>Session</code> 保存对话与归档状态；</li>
+<li>Provider 负责模型调用和 token 计数。</li>
+</ul>
+<p><strong>这是我这一阶段最想记住的一点</strong>：这是 Core 内部第一次形成清晰的“执行控制面”和“上下文数据面”分离，后面的 Journal 重构能落地，很大程度上就是因为先有了它。</p>
+<hr>
+<h2 id="6-阶段-4：MCP、子-Agent-与可装配-Tool-Runtime"><a href="#6-阶段-4：MCP、子-Agent-与可装配-Tool-Runtime" class="headerlink" title="6. 阶段 4：MCP、子 Agent 与可装配 Tool Runtime"></a>6. 阶段 4：MCP、子 Agent 与可装配 Tool Runtime</h2><h3 id="6-1-MCP：远程-Tool-进入统一-Tool-系统"><a href="#6-1-MCP：远程-Tool-进入统一-Tool-系统" class="headerlink" title="6.1 MCP：远程 Tool 进入统一 Tool 系统"></a>6.1 MCP：远程 Tool 进入统一 Tool 系统</h3><p><code>0063af8</code> 加入 MCP Client：Server 配置、生命周期管理、动态 Tool 发现、命名空间和审批，全部进入既有 Tool 体系。远程工具以 <code>mcp__server__tool</code> 命名，Agent 不需要知道它来自本地类还是 MCP Server。</p>
+<p>职责依旧按层划分：Core 提供 MCP 配置模型、客户端机制和 Tool 适配；Bridge 启停 Server、把远程 Tool 加入 Runtime、把审批转发给前端；前端只显示启动状态和审批请求。随后 <code>651c648</code> 把“单个 MCP Server 启动失败”从“终止整个 Bridge”改成可报告状态，<code>563133c</code> 把审批粒度从 Server 级细化到 Tool 级。</p>
+<h3 id="6-2-子-Agent-第一版：把委派做成-Tool"><a href="#6-2-子-Agent-第一版：把委派做成-Tool" class="headerlink" title="6.2 子 Agent 第一版：把委派做成 Tool"></a>6.2 子 Agent 第一版：把委派做成 Tool</h3><p><code>0563453</code> 引入 <code>subagent</code> Tool：父 Agent 通过普通 Tool Call 委派任务，子 Agent 使用独立 Provider、Tool 配置和 Session，最后只把最终报告作为 Tool Result 返回。</p>
+<p>这个设计我现在觉得很妙：<strong>子 Agent 没有进入主 Agent Loop 的特殊分支，而是复用了 Tool 协议</strong>，因此天然获得了 Tool Call&#x2F;Result 的上下文回灌、授权和事件边界、并行 Tool Batch 的可能性、Artifact 与 Session 存储能力。</p>
+<p>后面 <code>e4226b2</code> 把子 Agent Tool 收进 Registry 并给它们 Workspace，<code>ae5cd63</code> 把子 Session 重新嵌套回父 Session，<code>6611261</code> 允许子 Agent 继承触发它的用户图片。</p>
+<h3 id="6-3-b401880：共享-Tool-Catalog-配置化角色"><a href="#6-3-b401880：共享-Tool-Catalog-配置化角色" class="headerlink" title="6.3 b401880：共享 Tool Catalog + 配置化角色"></a>6.3 <code>b401880</code>：共享 Tool Catalog + 配置化角色</h3><p>子 Agent 第一版很快暴露出新的重复：不同 Agent 各自创建 Tool 实例、各自持有依赖，角色和 Tool 对象绑死。<code>b401880</code> 对 Tool Runtime 做了大规模重构：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Runtime</span><br><span class="line"> ├─ ToolCatalog：共享、无状态的 Tool 实例</span><br><span class="line"> ├─ ToolExecutionContext：调用时依赖</span><br><span class="line"> ├─ ToolSet(main)：按名称筛选 + 绑定 context/policy</span><br><span class="line"> └─ SubagentRuntime</span><br><span class="line">     ├─ role A → ToolSet A + Provider A</span><br><span class="line">     └─ role B → ToolSet B + Provider B</span><br></pre></td></tr></table></figure>
+
+<p>这次重构确立了当前 Tool 系统的三条原则：</p>
+<ol>
+<li>Tool 实例必须无调用状态，可以被多个 Agent 和并行线程共享；</li>
+<li>Workspace、Session、Executor、MCP、视觉 Provider、子 Agent Runtime 等依赖，通过 <code>ToolExecutionContext</code> 在调用时传入；</li>
+<li>一个角色能看到哪些 Tool，由 Catalog 按名称选择形成 <code>ToolSet</code>，而不是重新实例化一套工具。</li>
+</ol>
+<p>子 Agent 也从单一配置变成角色注册表，<code>subagent(role, task)</code> 成为唯一委派入口。</p>
+<h3 id="6-4-多模态同样遵循装配原则"><a href="#6-4-多模态同样遵循装配原则" class="headerlink" title="6.4 多模态同样遵循装配原则"></a>6.4 多模态同样遵循装配原则</h3><ul>
+<li><code>32871d2</code>：用户附件作为多模态内容进入 Session；</li>
+<li><code>bb7abe1</code>：视觉模型可以通过 <code>read_image</code> 直接查看 Workspace 图片；</li>
+<li><code>5534775</code>：文本模型在显式配置视觉 Provider 后可以使用 <code>analyze_image</code>；</li>
+<li><code>e29aafb</code>：图片 token 按计费模型上界估算，并在路径解析后去重；</li>
+<li><code>4c6b7f9</code>：按文件 magic bytes 而不是声明类型识别附件。</li>
+</ul>
+<p>最终并没有增加一个通用的“视觉模式”开关，而是<strong>根据 Runtime 已解析出的 Provider 能力决定 Tool 是否存在</strong>：缺少依赖时 Tool 不进入 ToolSet，而不是等模型调用后再失败。</p>
+<h3 id="6-5-并发-Tool-的四种顺序"><a href="#6-5-并发-Tool-的四种顺序" class="headerlink" title="6.5 并发 Tool 的四种顺序"></a>6.5 并发 Tool 的四种顺序</h3><p><code>803b5ea</code> 允许并发 Tool 完成后立即向 UI 发出结果，但给 Provider 的 Tool Result 仍按模型调用顺序排列。后续 Journal 又保存了真实完成顺序，于是系统明确区分四种顺序：</p>
+<table>
+<thead>
+<tr>
+<th>顺序</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Invocation order</td>
+<td>模型发出调用的顺序</td>
+</tr>
+<tr>
+<td>Completion order</td>
+<td>工具实际完成、UI 收到结果的顺序</td>
+</tr>
+<tr>
+<td>Journal order</td>
+<td>事实实际发生并落盘的顺序</td>
+</tr>
+<tr>
+<td>Provider projection order</td>
+<td>为满足 Provider 协议而重排后的顺序</td>
+</tr>
+</tbody></table>
+<p><strong>从“并发实现细节”升级为“Runtime 明确定义的执行语义”</strong>，这是我在这一阶段印象最深的变化。</p>
+<hr>
+<h2 id="7-阶段-5：从保存聊天记录到保存执行事实"><a href="#7-阶段-5：从保存聊天记录到保存执行事实" class="headerlink" title="7. 阶段 5：从保存聊天记录到保存执行事实"></a>7. 阶段 5：从保存聊天记录到保存执行事实</h2><h3 id="7-1-Session-先成为-Workspace-级持久实体"><a href="#7-1-Session-先成为-Workspace-级持久实体" class="headerlink" title="7.1 Session 先成为 Workspace 级持久实体"></a>7.1 Session 先成为 Workspace 级持久实体</h3><p><code>cf447b0</code> 把 Session 移入用户配置目录，并让媒体路径相对 Workspace 解析；<code>492fd90</code> 让每个 Session 与 Workspace 绑定；<code>975b794</code> 再按 Workspace 分组 Session，并保留被中断 turn 已经产生的内容。</p>
+<p>此时 Session 已经不只是聊天历史：它决定 Artifact 路径、附件解析、子 Agent Transcript、恢复入口和并发隔离。</p>
+<h3 id="7-2-a31d0b7：执行结果随发生随保存"><a href="#7-2-a31d0b7：执行结果随发生随保存" class="headerlink" title="7.2 a31d0b7：执行结果随发生随保存"></a>7.2 <code>a31d0b7</code>：执行结果随发生随保存</h3><p>早期实现倾向于等一整个 turn 完成后才保存。<code>a31d0b7</code> 改成 Agent 每 settle 一个 item 就立即持久化，使断线、取消或进程异常时，已经发生的消息和 Tool Result 不会全部丢失。</p>
+<p>但这仍然是在“保存消息”：Tool 是否已开始执行、是否完成、turn 为什么结束，这些事实还没有统一的数据模型。</p>
+<h3 id="7-3-b01e999：append-only-Journal，最大的一次状态模型重构"><a href="#7-3-b01e999：append-only-Journal，最大的一次状态模型重构" class="headerlink" title="7.3 b01e999：append-only Journal，最大的一次状态模型重构"></a>7.3 <code>b01e999</code>：append-only Journal，最大的一次状态模型重构</h3><p><code>b01e999</code> 把 Session 重构为 append-only Runtime Journal。每个事件包含单调递增的 <code>seq</code>、唯一 <code>event_id</code>、<code>turn_id</code>，Tool 事件还带 <code>tool_call_id</code>。典型事实包括：</p>
+<ul>
+<li><code>turn_started</code> &#x2F; <code>turn_completed</code> &#x2F; <code>turn_failed</code> &#x2F; <code>turn_cancelled</code>；</li>
+<li><code>message_appended</code>；</li>
+<li><code>model_completed</code>；</li>
+<li><code>tool_started</code> &#x2F; <code>tool_completed</code> &#x2F; <code>tool_failed</code> &#x2F; <code>tool_cancelled</code>；</li>
+<li><code>context_archived</code>。</li>
+</ul>
+<p>关键变化不是“文件格式从 JSON 变成 JSONL”，而是<strong>建立三个不同视图</strong>：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">         append-only Journal</span><br><span class="line">            /      |      \</span><br><span class="line">           /       |       \</span><br><span class="line">Session 当前状态  执行历史  Provider Context</span><br><span class="line">  （replay）       （事实）    （projection）</span><br></pre></td></tr></table></figure>
+
+<p>Journal 保存“实际发生了什么”，Provider Context 只投影“下一次请求允许看到什么”。比如一个 Tool 已经 started 但进程退出、没有可靠结果：</p>
+<ul>
+<li>真实历史中保留 started，并在恢复时标为 unknown；</li>
+<li>Runtime 不会自动重放，因为 Tool 可能已经产生副作用；</li>
+<li>Provider 投影会排除不完整的 Tool Batch，避免构造非法消息链。</li>
+</ul>
+<p>这一下就把此前最难缠的一组问题解开了：崩溃恢复、取消、中断副作用、并发完成顺序、Provider 格式约束，不再互相冲突。</p>
+<h3 id="7-4-上下文压缩改用-Cursor-和-ContextUnit"><a href="#7-4-上下文压缩改用-Cursor-和-ContextUnit" class="headerlink" title="7.4 上下文压缩改用 Cursor 和 ContextUnit"></a>7.4 上下文压缩改用 Cursor 和 ContextUnit</h3><p>Journal 重构之后，按“已归档 turn 数”记录压缩位置就不够了，因为一个 turn 内可能有多次模型调用、多个 Tool Batch 和 steering。于是陆续：</p>
+<ul>
+<li><code>4506832</code>：归档位置改为原始 item cursor，不再保留 archived turns 作为第二套索引；</li>
+<li><code>7672710</code>：移除旧 provider-message wrapper，并要求明确 archive cursor；</li>
+<li><code>82262b5</code>：以 <code>ContextUnit</code> 为不可拆分边界，并原样保留最近若干单元；</li>
+<li><code>50cf2fb</code>：删除 Runtime 已不再使用的旧 Provider Message 投影。</li>
+</ul>
+<p>当前 <code>ContextUnit</code> 的核心规则是：普通消息各自构成一个单元；带 Tool Calls 的 assistant message、该批全部 Tool Results 和尾随 Tool Media 共同构成一个单元。<strong>压缩游标不能落在 Tool Batch 中间</strong>，因此不会生成 Provider 无法接受的残缺工具链。</p>
+<p>同一批提交还校正了预算语义：<code>output_reserve_tokens</code> 只为下一次输出预留输入空间；<code>max_generation_tokens</code> 是可选的生成策略，不再和上下文预算混为一谈；压缩到 trigger 前的边界，不再同时维护一个容易造成过度压缩的 target。</p>
+<hr>
+<h2 id="8-阶段-6：Runtime-成为可接管的长生命周期实体"><a href="#8-阶段-6：Runtime-成为可接管的长生命周期实体" class="headerlink" title="8. 阶段 6：Runtime 成为可接管的长生命周期实体"></a>8. 阶段 6：Runtime 成为可接管的长生命周期实体</h2><h3 id="8-1-GUI-Server-开始拥有-Runtime"><a href="#8-1-GUI-Server-开始拥有-Runtime" class="headerlink" title="8.1 GUI Server 开始拥有 Runtime"></a>8.1 GUI Server 开始拥有 Runtime</h3><p><code>7d3db87</code> 改变了 GUI 的所有权模型：Bridge 进程由 GUI Server 按 Session 持有，浏览器页面只是 attach &#x2F; detach。页面断开不再等价于 Runtime 结束，运行中的 turn 可以继续，重连后恢复事件和待审批状态。<code>ced07a7</code> 又明确同一 Session 的 live attachment 只由一个页面拥有，避免多个页面同时发控制消息。</p>
+<p>Runtime 的生命周期，就此从“一个 WebSocket 连接”变成“一个活动 Session”。</p>
+<h3 id="8-2-Skills-采用渐进加载"><a href="#8-2-Skills-采用渐进加载" class="headerlink" title="8.2 Skills 采用渐进加载"></a>8.2 Skills 采用渐进加载</h3><p><code>b331969</code> 增加 Skills，但没有把所有 <code>SKILL.md</code> 全文塞进 system prompt。Runtime 启动时只注册名称和描述，模型需要时调用 <code>read_skill</code> 分段读取完整指令和引用文件。</p>
+<p>这延续了上下文管理一贯的方向：<strong>能力可以很多，但常驻上下文只保留“发现能力”所需的最小信息。</strong></p>
+<h3 id="8-3-Agent-主动询问用户"><a href="#8-3-Agent-主动询问用户" class="headerlink" title="8.3 Agent 主动询问用户"></a>8.3 Agent 主动询问用户</h3><p><code>9f3f91c</code> 增加 <code>ask_user</code> Tool，由 Bridge 注入交互回调，且只提供给 main Agent：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Agent Tool Call</span><br><span class="line">  → Bridge 发出 user_question</span><br><span class="line">  → TUI/GUI 展示选项或自由输入</span><br><span class="line">  → Bridge 等待 user_question_response</span><br><span class="line">  → 结构化 Tool Result 回灌 Agent</span><br></pre></td></tr></table></figure>
+
+<p>这里依然没有让 Core 依赖 UI：Core 只知道 Tool Context 里存在一个询问回调，问题怎么展示、怎么回答，全由 Bridge 协议处理。</p>
+<h3 id="8-4-运行中-steering-与安全点"><a href="#8-4-运行中-steering-与安全点" class="headerlink" title="8.4 运行中 steering 与安全点"></a>8.4 运行中 steering 与安全点</h3><p><code>1edc4f0</code> 允许用户在 turn 运行期间追加指令。Bridge 的唯一输入 Reader 把 <code>user_steer</code> 路由到当前 <code>TurnControl</code>，Agent 只在安全点接收：</p>
+<ul>
+<li>一次模型调用结束后；</li>
+<li>完整 Tool Batch 已写回后；</li>
+<li>准备返回最终答案前。</li>
+</ul>
+<p>Steering 最终作为普通 user message 写入 Session，因此自动获得 Journal、token 统计、上下文压缩和恢复语义，<strong>不需要一套平行状态</strong>。“只在安全点应用”则避免了两件事：不会在 Provider 流中间修改请求，也不会把新消息插进 assistant tool_calls 与 Tool Results 之间。</p>
+<h3 id="8-5-取消与权限成为-Session-级控制"><a href="#8-5-取消与权限成为-Session-级控制" class="headerlink" title="8.5 取消与权限成为 Session 级控制"></a>8.5 取消与权限成为 Session 级控制</h3><p><code>5b6b8e6</code> 让停止发送 chunk 的 Provider stream 也能被取消，取消不再依赖 Provider 继续产出 chunk。<code>2041f70</code> 增加 Session 级权限 preset：</p>
+<ul>
+<li><code>ask_for_approval</code>：Shell 和配置要求确认的 MCP Tool 继续询问用户；</li>
+<li><code>full_access</code>：跳过这层人工确认，但不改变 ToolSet，也不额外引入 Sandbox。</li>
+</ul>
+<p>权限状态随后写入独立 Session metadata；<code>60e6554</code> 把 metadata 统一为 <code>session.json</code>；<code>8f7f019</code> 从 Session 所在目录反推 Workspace，删掉重复存储的信息。</p>
+<p><strong>项目后期有一个很一致的设计倾向：状态只保留一个真实来源，能从结构推导出来的字段就不再重复保存。</strong></p>
+<hr>
+<h2 id="9-当前架构：一次看懂的分层、装配与执行"><a href="#9-当前架构：一次看懂的分层、装配与执行" class="headerlink" title="9. 当前架构：一次看懂的分层、装配与执行"></a>9. 当前架构：一次看懂的分层、装配与执行</h2><h3 id="9-1-分层和职责"><a href="#9-1-分层和职责" class="headerlink" title="9.1 分层和职责"></a>9.1 分层和职责</h3><figure class="highlight text"><table><tr><td class="code"><pre><span class="line">TUI (Ink + React) ─────────┐</span><br><span class="line">                           ├── NDJSON Protocol ── Bridge ── Agent Core</span><br><span class="line">GUI (React) ── FastAPI ────┘</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>层</th>
+<th>当前职责</th>
+<th>不应承担的职责</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TUI &#x2F; GUI</td>
+<td>渲染事件、采集输入、展示授权与问题</td>
+<td>Agent Loop、Tool 执行、上下文压缩</td>
+</tr>
+<tr>
+<td>Bridge</td>
+<td>配置解析、Runtime 装配、进程与协议、MCP 生命周期、交互路由</td>
+<td>模型决策、Tool Result 回灌、归档算法</td>
+</tr>
+<tr>
+<td>Agent Core</td>
+<td>Agent Loop、上下文、Session、事件、Tool 抽象、子 Agent、Provider&#x2F;MCP 机制</td>
+<td>UI、浏览器、终端和协议消息</td>
+</tr>
+</tbody></table>
+<h3 id="9-2-Bridge-的装配顺序"><a href="#9-2-Bridge-的装配顺序" class="headerlink" title="9.2 Bridge 的装配顺序"></a>9.2 Bridge 的装配顺序</h3><p>当前 <code>Bridge.start()</code> 大致按以下顺序建立 Runtime：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">读取配置与 .env</span><br><span class="line">  → 解析 Workspace</span><br><span class="line">  → 发现 Skills</span><br><span class="line">  → 创建/恢复 Session，并挂接 Journal Sink</span><br><span class="line">  → 创建主 Provider 与视觉 Provider</span><br><span class="line">  → 创建内置 Tool Catalog</span><br><span class="line">  → 启动 MCP，扩展 Catalog</span><br><span class="line">  → 创建审批 Policy / PermissionController</span><br><span class="line">  → 创建 SubagentRoleRegistry / SubagentRuntime</span><br><span class="line">  → 创建主 Agent 的 ToolExecutionContext</span><br><span class="line">  → 从 Catalog 选择主 Agent ToolSet</span><br><span class="line">  → 创建 Agent</span><br><span class="line">  → 发出 ready</span><br></pre></td></tr></table></figure>
+
+<p>“机制在 Core，组合在 Bridge”在这段流程里体现得最清楚：Core 提供所有构件，但只有 Bridge 知道配置文件、当前 Workspace、前端交互和进程生命周期。</p>
+<h3 id="9-3-一次-turn-的当前执行时序"><a href="#9-3-一次-turn-的当前执行时序" class="headerlink" title="9.3 一次 turn 的当前执行时序"></a>9.3 一次 turn 的当前执行时序</h3><figure class="highlight text"><table><tr><td class="code"><pre><span class="line">begin_turn，立即写 Journal</span><br><span class="line">  → 追加 user message</span><br><span class="line">  → 构造 Provider request</span><br><span class="line">  → token 计数</span><br><span class="line">      ├─ 达到压缩阈值：生成 checkpoint，推进 cursor，重新构造请求</span><br><span class="line">      └─ 超过 hard limit：失败</span><br><span class="line">  → 流式调用 Provider</span><br><span class="line">  → 记录 model_completed</span><br><span class="line">      ├─ 返回 Tool Calls</span><br><span class="line">      │    → 记录 assistant/tool_calls</span><br><span class="line">      │    → Tool started 立即写 Journal</span><br><span class="line">      │    → 串行或并行执行</span><br><span class="line">      │    → Tool finished 与 result 随完成立即写入</span><br><span class="line">      │    → 如有图片，在整批 Tool Results 后追加 tool_media</span><br><span class="line">      │    → 应用 pending steering</span><br><span class="line">      │    → 回到下一次模型调用</span><br><span class="line">      └─ 返回最终文本</span><br><span class="line">           → 追加 assistant message</span><br><span class="line">           → 返回前再次检查 steering</span><br><span class="line">           → finish_turn</span><br></pre></td></tr></table></figure>
+
+<p>异常、取消和进程中断都会映射为明确的 turn &#x2F; tool 状态；已经发生的副作用，不会因为缺少 Tool Result 就被假定为“没有执行”。</p>
+<h3 id="9-4-核心对象关系"><a href="#9-4-核心对象关系" class="headerlink" title="9.4 核心对象关系"></a>9.4 核心对象关系</h3><figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Bridge</span><br><span class="line"> ├─ Session + JsonlSessionStore</span><br><span class="line"> ├─ Provider(s)</span><br><span class="line"> ├─ SkillRegistry</span><br><span class="line"> ├─ McpClientManager</span><br><span class="line"> ├─ PermissionController</span><br><span class="line"> ├─ ToolCatalog</span><br><span class="line"> ├─ SubagentRuntime</span><br><span class="line"> └─ Agent</span><br><span class="line">     ├─ ContextManager</span><br><span class="line">     ├─ ToolSet</span><br><span class="line">     │   ├─ ToolExecutionContext</span><br><span class="line">     │   └─ ToolPolicy</span><br><span class="line">     └─ TurnControl</span><br></pre></td></tr></table></figure>
+
+<p>最关键的所有权规则：</p>
+<ul>
+<li>Agent 只拥有一次对话循环所需的引用，不拥有共享 Tool 实例；</li>
+<li>ToolCatalog 持有无状态 Tool，ToolSet 只是按角色绑定上下文后的视图；</li>
+<li>Session 是运行事实的内存状态，JsonlSessionStore 是它的 append-only 持久化；</li>
+<li>ContextManager 只负责 Provider 上下文，不负责执行 Tool；</li>
+<li>TurnControl 只承载当前 turn 的取消与 steering；</li>
+<li>Bridge 拥有 Runtime 级资源，以及所有需要前端参与的交互。</li>
+</ul>
+<hr>
+<h2 id="10-贯穿整个过程的五个设计变化"><a href="#10-贯穿整个过程的五个设计变化" class="headerlink" title="10. 贯穿整个过程的五个设计变化"></a>10. 贯穿整个过程的五个设计变化</h2><h3 id="10-1-从“先抽象”转为“第二个消费者出现时抽象”"><a href="#10-1-从“先抽象”转为“第二个消费者出现时抽象”" class="headerlink" title="10.1 从“先抽象”转为“第二个消费者出现时抽象”"></a>10.1 从“先抽象”转为“第二个消费者出现时抽象”</h3><p>早期先用最小 Agent 和 CLI 验证闭环；Tool 多起来才加工厂；GUI 出现才建 Bridge；子 Agent 出现才重构共享 Catalog。<strong>大部分抽象都有明确的第二个消费者，而不是预先设计。</strong> 于是每个层次都对应真实的压力：</p>
+<ul>
+<li>Provider 抽象 → 模型实现可替换；</li>
+<li>Bridge → TUI 与 GUI；</li>
+<li>Tool Catalog → main Agent 与多个 subagent role；</li>
+<li>Journal projection → 执行历史与 Provider 对话的不同要求。</li>
+</ul>
+<h3 id="10-2-从“保存结果”转为“记录事实，再生成结果视图”"><a href="#10-2-从“保存结果”转为“记录事实，再生成结果视图”" class="headerlink" title="10.2 从“保存结果”转为“记录事实，再生成结果视图”"></a>10.2 从“保存结果”转为“记录事实，再生成结果视图”</h3><p>Session 的演进最能体现这一点：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">消息列表</span><br><span class="line">  → 带时间和 usage 的 Session Record</span><br><span class="line">  → 每个 turn 的持久化 items</span><br><span class="line">  → append-only execution Journal</span><br><span class="line">  → replay 得到状态，projection 得到 Provider Context</span><br></pre></td></tr></table></figure>
+
+<p>最终模型不是把持久化结构直接发出去，而是从真实执行历史中投影出合法请求。持久化因此不再被某家模型 API 的消息格式绑架。</p>
+<h3 id="10-3-从“Tool-持有能力”转为“Runtime-注入能力”"><a href="#10-3-从“Tool-持有能力”转为“Runtime-注入能力”" class="headerlink" title="10.3 从“Tool 持有能力”转为“Runtime 注入能力”"></a>10.3 从“Tool 持有能力”转为“Runtime 注入能力”</h3><p>早期 Tool 可以在构造时拿到 Workspace 或 Executor；共享 Catalog 重构后，Tool 只描述自身能力，具体依赖由 <code>ToolExecutionContext</code> 提供。结果是：同一 Tool 实例可以服务多个 Agent；Tool 可用性由当前 Runtime 是否提供依赖决定；并行执行不共享调用状态。</p>
+<h3 id="10-4-从“前端生命周期”转为“Session-生命周期”"><a href="#10-4-从“前端生命周期”转为“Session-生命周期”" class="headerlink" title="10.4 从“前端生命周期”转为“Session 生命周期”"></a>10.4 从“前端生命周期”转为“Session 生命周期”</h3><p>Bridge 独立进程、GUI Server 持有 Runtime、页面 attach&#x2F;detach、append-only Journal 和恢复逻辑共同完成了这一变化。当前 Session 可以跨页面、跨连接，甚至跨异常退出保留真实进度。</p>
+<h3 id="10-5-不断删除过渡结构"><a href="#10-5-不断删除过渡结构" class="headerlink" title="10.5 不断删除过渡结构"></a>10.5 不断删除过渡结构</h3><p>演进中有多次主动删除：旧 Agent archive wrapper、<code>create_tools</code> alias、可配置 shell timeout、重复 Provider projection、兼容 fallback、Bridge 侧取消清理、重复 Workspace metadata。</p>
+<p><strong>项目并不是只在叠加能力，而是在新职责边界稳定后及时移除旧路径。</strong> 当前架构的清晰度，很大程度上来自这些删除。</p>
+<hr>
+<h2 id="11-我抄下来的八条开发方法"><a href="#11-我抄下来的八条开发方法" class="headerlink" title="11. 我抄下来的八条开发方法"></a>11. 我抄下来的八条开发方法</h2><ol>
+<li>先建立最小可运行闭环，用真实需求暴露边界，而不是预设完整框架；</li>
+<li>每加入一种执行能力，都同时补齐终止条件、错误语义、持久化和 UI 事件；</li>
+<li>第二个调用方出现时统一执行入口，避免复制 Runtime；</li>
+<li>当一个对象同时承担“流程”和“策略”时再拆分，例如 Agent 与 ContextManager；</li>
+<li>并发和恢复以“实际发生的事实”为准，外部协议格式通过 projection 适配；</li>
+<li>Runtime 依赖统一在装配层解析，通过显式 Context 注入；</li>
+<li>新状态尽量复用现有语义，例如 steering 直接成为普通 user message；</li>
+<li>新结构稳定后删除旧 wrapper、fallback 和重复数据源。</li>
+</ol>
+<hr>
+<h2 id="12-附录：Runtime-相关提交索引（按时间）"><a href="#12-附录：Runtime-相关提交索引（按时间）" class="headerlink" title="12. 附录：Runtime 相关提交索引（按时间）"></a>12. 附录：Runtime 相关提交索引（按时间）</h2><p>标记为 <strong>里程碑</strong> 的提交改变了职责边界或状态模型；其余提交主要补齐能力、约束或语义。</p>
+<h3 id="2026-09-09：最小内核与-Tool-Loop"><a href="#2026-09-09：最小内核与-Tool-Loop" class="headerlink" title="2026-09-09：最小内核与 Tool Loop"></a>2026-09-09：最小内核与 Tool Loop</h3><ul>
+<li><code>e1d15a4</code> Initial commit：建立 Agent、Provider、Session 和 CLI 的最小闭环。（<strong>里程碑</strong>）</li>
+<li><code>42e9b60</code> Add timestamped session records and token usage：执行记录开始携带时间和 usage。</li>
+<li><code>95eb231</code> Rename system prompt to Soul：将 Agent 身份提示独立命名。</li>
+<li><code>7f22d93</code> Add tool calling support：单次补全变为可迭代 Tool Loop。（<strong>里程碑</strong>）</li>
+</ul>
+<h3 id="2026-09-10：Workspace、事件、安全和-Tool-装配"><a href="#2026-09-10：Workspace、事件、安全和-Tool-装配" class="headerlink" title="2026-09-10：Workspace、事件、安全和 Tool 装配"></a>2026-09-10：Workspace、事件、安全和 Tool 装配</h3><ul>
+<li><code>a361c72</code> Add configurable tool call limit：加入 Tool 循环终止条件。</li>
+<li><code>2b1d008</code> Refine repeated tool call detection：按连续相同调用检测无进展循环。</li>
+<li><code>eb7b43f</code> Add workspace-aware CLI entry point：Workspace 进入 Runtime 上下文。</li>
+<li><code>03812fc</code> Add workspace file tools：加入文件读取、编辑、搜索和目录浏览。</li>
+<li><code>7689f21</code> Add context window validation：Runtime 主动验证上下文 hard limit。</li>
+<li><code>4444b41</code> Add structured agent execution events：执行过程变为结构化事件流。（<strong>里程碑</strong>）</li>
+<li><code>29ebad8</code> Add approved shell tool and grouped event output：Shell 引入人工审批。</li>
+<li><code>69bb062</code> Separate shell policy from command execution：授权策略与命令执行解耦。（<strong>里程碑</strong>）</li>
+<li><code>3bdfd5f</code> Add ranged file reading with line numbers：文件读取获得有界范围语义。</li>
+<li><code>6b34054</code> Add configurable built-in tool factory：Tool 创建从 CLI 收口到统一工厂。</li>
+</ul>
+<h3 id="2026-09-11：持久化产品化与-Bridge"><a href="#2026-09-11：持久化产品化与-Bridge" class="headerlink" title="2026-09-11：持久化产品化与 Bridge"></a>2026-09-11：持久化产品化与 Bridge</h3><ul>
+<li><code>e873500</code> Add user configuration initialization and per-session storage：建立用户级配置和独立 Session 存储。</li>
+<li><code>d341306</code> Add minimal assistant-ui GUI with sessions and model selection：第二前端出现，暴露统一 Runtime 的需求。</li>
+<li><code>8039345</code> Store large tool results as session artifacts：大结果转为可分段读取的 Artifact。</li>
+<li><code>725fd3b</code> Bound file reading and search results：限制文件工具的上下文占用。</li>
+<li><code>831319f</code> Add configurable shell timeout and bounded command output：限制命令执行时间和输出。</li>
+<li><code>a4443a2</code> Increase maximum shell timeout to 15 minutes：放宽长任务执行上限。</li>
+<li><code>abdfc6a</code> Restructure interfaces: replace agent_cli with bridge + TUI：Bridge 成为唯一 Runtime 装配与协议入口。（<strong>里程碑</strong>）</li>
+<li><code>bf907c6</code> Merge PR #1: adapt the GUI to the bridge architecture：GUI 接入同一 Bridge，完成双前端统一。</li>
+</ul>
+<h3 id="2026-09-12：长上下文与流式-Runtime"><a href="#2026-09-12：长上下文与流式-Runtime" class="headerlink" title="2026-09-12：长上下文与流式 Runtime"></a>2026-09-12：长上下文与流式 Runtime</h3><ul>
+<li><code>5035553</code> Make shell execution work on Windows：补齐跨平台命令执行。</li>
+<li><code>526b11a</code> Run shell commands in a POSIX shell on every platform：统一 Shell 语法和执行语义。</li>
+<li><code>24db70e</code> Add a web_search Tool backed by Exa：外部检索进入统一 Tool 系统。</li>
+<li><code>43ee630</code> Rename the project to Nosis：统一项目身份和配置目录命名。</li>
+<li><code>73b01c5</code> Archive context into a summary instead of failing at the window limit：上下文从超限失败改为 checkpoint 压缩。（<strong>里程碑</strong>）</li>
+<li><code>7606a39</code> Report context compression to the UIs：压缩成为可观察 Runtime 事件。</li>
+<li><code>7dee8ff</code> Never archive the turn that is still running：归档不破坏活动 Tool 链。</li>
+<li><code>07feec6</code> Make context compression configurable：压缩策略进入 Agent 配置。</li>
+<li><code>6324769</code> Reject a context window too small to divide：明确无可用预算时的启动失败。</li>
+<li><code>2cb3b3a</code> Move message timestamps into a single timeline system message：历史时间信息与原消息内容分离。</li>
+<li><code>563d111</code> Stream model reasoning deltas through the agent and interfaces：Runtime 输出连续 reasoning 事件。（<strong>里程碑</strong>）</li>
+</ul>
+<h3 id="2026-09-13：ContextManager、MCP、子-Agent-和多模态"><a href="#2026-09-13：ContextManager、MCP、子-Agent-和多模态" class="headerlink" title="2026-09-13：ContextManager、MCP、子 Agent 和多模态"></a>2026-09-13：ContextManager、MCP、子 Agent 和多模态</h3><ul>
+<li><code>0063af8</code> Add MCP client support with namespaced tools and approvals：远程 Tool 进入统一 Runtime。（<strong>里程碑</strong>）</li>
+<li><code>651c648</code> Report MCP server startup failures instead of aborting the bridge：MCP 局部失败可观察、不中止全部 Runtime。</li>
+<li><code>f59b856</code> Keep historical tool chains without timestamps or reasoning：历史 Tool 链保持 Provider 合法格式。</li>
+<li><code>ca6a8a5</code> Always pass the reasoning delta callback to providers：统一 Provider 流式回调契约。</li>
+<li><code>dfb610d</code> Extract context building and archiving into ContextManager：上下文策略从 Agent Loop 中独立。（<strong>里程碑</strong>）</li>
+<li><code>2ace3d2</code> Drop the leftover Agent archive wrapper：删除抽取后的过渡 wrapper。</li>
+<li><code>c6d9476</code> Fail archiving when no turn is active：归档要求明确活动 turn。</li>
+<li><code>c5e66f6</code> Show MCP startup progress as transient status instead of transcript：运行状态与对话历史分离。</li>
+<li><code>0563453</code> Add a subagent tool with its own provider and tool config：委派能力作为 Tool 进入 Runtime。（<strong>里程碑</strong>）</li>
+<li><code>e4226b2</code> Collect subagent tools through the registry and give them a workspace：子 Agent 获得注册表和 Workspace。</li>
+<li><code>32871d2</code> Accept image attachments as multimodal message content：Session 和 Provider 请求支持多模态内容。</li>
+<li><code>cf447b0</code> Move session storage to the user config directory and resolve media paths against the workspace：Session 与 Workspace 媒体路径形成稳定关系。</li>
+<li><code>ae5cd63</code> Nest subagent transcripts under the parent session again：子 Agent 历史归属父 Session。</li>
+<li><code>644bd3c</code> Reject a subagent without either a sessions directory or a parent session：明确子 Session 存储不变量。</li>
+<li><code>fb389fc</code> Drop the create_tools alias and correct a misleading test name：删除 Tool 工厂过渡别名。</li>
+<li><code>6611261</code> Let subagents see the images of the turn that spawned them：子 Agent 继承触发 turn 的用户附件。</li>
+<li><code>7a2b2cd</code> Resolve provider names from the config load that already reads the file：消除 Provider 配置重复读取。</li>
+<li><code>492fd90</code> Bind each session to its workspace and keep GUI sessions running side by side：Session 与 Workspace 绑定，并支持 GUI 并行 Session。</li>
+</ul>
+<h3 id="2026-09-14：共享能力、角色化和并发语义"><a href="#2026-09-14：共享能力、角色化和并发语义" class="headerlink" title="2026-09-14：共享能力、角色化和并发语义"></a>2026-09-14：共享能力、角色化和并发语义</h3><ul>
+<li><code>975b794</code> Group sessions by workspace and keep what an interrupted turn produced：Session 按 Workspace 分组，并保留中断进度。（<strong>里程碑</strong>）</li>
+<li><code>563133c</code> Decide MCP approval per tool and infer the transport：MCP 审批细化到 Tool。</li>
+<li><code>b401880</code> Share one Tool catalog across agents and turn sub-agents into configured roles：共享无状态 Tool Catalog，子 Agent 角色化。（<strong>里程碑</strong>）</li>
+<li><code>5534775</code> Give each subagent role its own provider and derive analyze_image from capability：角色级 Provider 与能力派生 Tool。</li>
+<li><code>446b598</code> Order enabled tools by the canonical list so the schema order is stable：Tool Schema 顺序稳定化。</li>
+<li><code>bb7abe1</code> Let a vision model read a workspace image itself：视觉模型获得直接读图通道。</li>
+<li><code>e29aafb</code> Price an image at the highest billing model and dedup after resolution：图片 token 估算与路径去重语义稳定化。</li>
+<li><code>803b5ea</code> Emit tool completions as they finish and commit them in call order：区分完成顺序和 Provider 顺序。（<strong>里程碑</strong>）</li>
+<li><code>08ac1ae</code> Shut a starting bridge and its MCP servers down without orphanage：Bridge 启动期取消不会遗留 MCP 进程。</li>
+<li><code>b325a88</code> Keep large shell output on disk and clean up its spool：Shell 大输出以 spool + Artifact 管理。</li>
+</ul>
+<h3 id="2026-09-15：预算语义与输出边界"><a href="#2026-09-15：预算语义与输出边界" class="headerlink" title="2026-09-15：预算语义与输出边界"></a>2026-09-15：预算语义与输出边界</h3><ul>
+<li><code>e9dd06b</code> Add write_file for replacing a whole file atomically：加入原子整文件写入能力。</li>
+<li><code>15d9527</code> Accept streamed text blocks and let the GUI drop a session：Provider 流兼容文本块，Session 可删除。</li>
+<li><code>86f3d3d</code> Split the output reserve from the per-call generation limit：上下文预留与生成上限分离。（<strong>里程碑</strong>）</li>
+<li><code>6eab91f</code> Only cap generation when a policy asks for it：默认不主动限制 Provider 输出。</li>
+<li><code>ee76bd2</code> Compress to a trigger, not a target size：简化压缩模型，删除 target 语义。</li>
+<li><code>9de8b73</code> Tell the consolidator to shrink the checkpoint：防止 checkpoint 自身持续膨胀。</li>
+<li><code>4c6b7f9</code> Accept an attachment by its bytes, not its declared type：媒体类型由真实字节决定。</li>
+<li><code>b914ab6</code> Write down the layer contract the code already keeps：将 Core、Bridge、前端的既有边界正式写入项目约束。</li>
+</ul>
+<h3 id="2026-09-16：Journal、可恢复执行与实时交互"><a href="#2026-09-16：Journal、可恢复执行与实时交互" class="headerlink" title="2026-09-16：Journal、可恢复执行与实时交互"></a>2026-09-16：Journal、可恢复执行与实时交互</h3><ul>
+<li><code>a31d0b7</code> Store a turn’s items as the agent settles them：执行项随发生立即持久化。</li>
+<li><code>c1dfbd3</code> Let the shell take a timeout longer than the default：单次调用可覆盖默认 timeout。</li>
+<li><code>119b3a7</code> Drop the configurable shell timeout：删除 Agent 配置中的执行器细节。</li>
+<li><code>b621a55</code> Take the shell’s timeout bounds from the executor：timeout 能力边界归 Command Executor 所有。</li>
+<li><code>b01e999</code> Record execution as an append-only journal and project it for the provider：真实执行 Journal 与 Provider 投影分离。（<strong>核心里程碑</strong>）</li>
+<li><code>af50c76</code> Give every turn a durable identity and drop the dead journal plumbing：turn 获得稳定身份，删除旧持久化路径。</li>
+<li><code>f343d57</code> Drop the cancel cleanup the agent already performs：取消清理只保留 Core 实现。</li>
+<li><code>4506832</code> Archive context by raw item cursor and drop archived turns：压缩位置改为 item cursor。</li>
+<li><code>7672710</code> Drop the provider-message wrapper and require the archive cursor：删除旧消息 wrapper 和隐式归档位置。</li>
+<li><code>b331969</code> Load skills progressively through a read_skill tool：Skills 采用发现信息常驻、完整内容按需读取。（<strong>里程碑</strong>）</li>
+<li><code>7d3db87</code> Let the GUI server own runtimes so pages attach to a running turn：GUI Runtime 生命周期独立于页面连接。（<strong>里程碑</strong>）</li>
+<li><code>82262b5</code> Keep a verbatim context-unit tail when compressing：压缩以完整 ContextUnit 为边界。（<strong>里程碑</strong>）</li>
+<li><code>50cf2fb</code> Drop the provider-message projection the runtime no longer uses：删除已被 ContextUnit 投影取代的旧实现。</li>
+<li><code>21bcc37</code> Drop the compatibility fallbacks the current pins rule out：删除依赖版本已不需要的兼容路径。</li>
+<li><code>ced07a7</code> Let one page own a session’s live attachment：明确活动 Session 的页面控制权。</li>
+<li><code>9f3f91c</code> Let the agent ask the user to pick an answer：Agent 可通过结构化 Tool 暂停并询问用户。（<strong>里程碑</strong>）</li>
+<li><code>1edc4f0</code> Let the user steer a turn that is already running：运行中指令通过安全点进入同一 turn。（<strong>里程碑</strong>）</li>
+<li><code>5b6b8e6</code> Cancel a provider stream that has stopped sending chunks：取消不再依赖 Provider 继续产出 chunk。</li>
+<li><code>2041f70</code> Let a session choose between asking for approval and full access：权限成为 Session 级 Runtime 状态。</li>
+<li><code>60e6554</code> Store a session’s metadata in a file named after it：Session metadata 收口到 <code>session.json</code>。</li>
+<li><code>8f7f019</code> Derive a session’s workspace from the directory that holds it：Workspace 从目录结构推导，删除重复状态。</li>
+</ul>
+<hr>
+<h2 id="13-结语与我还留在笔记最后的问题"><a href="#13-结语与我还留在笔记最后的问题" class="headerlink" title="13. 结语与我还留在笔记最后的问题"></a>13. 结语与我还留在笔记最后的问题</h2><p>七天的演进最后汇合成几条线：Tool Loop 让 Agent 从回答器变成执行器；结构化事件和 Bridge 让多个前端共享同一 Runtime；ContextManager 让长对话和压缩成为独立机制；Tool Catalog、Context 注入、MCP 和角色化子 Agent 让能力可组合；append-only Journal 让执行事实、恢复和 Provider 格式彻底解耦；Runtime ownership、<code>ask_user</code>、steering 和权限 preset 让 Session 成为可持续、可接管的活动实体。</p>
+<p>所以当前最值得保留的，不是某个具体类，而是开头那四条不变量：执行语义只在 Core 实现一次、Runtime 只在 Bridge 装配一次、真实历史只写 Journal 其余皆投影、Tool 无状态且依赖在调用时注入。它们解释了项目为什么能在快速加入 GUI、MCP、子 Agent、多模态、并发、恢复和实时交互之后，依赖方向依然干净。</p>
+<p>回头看，这三层理解是逐层加上去的：最早只能复述“哪个阶段加了什么”，接着才看清每次重构把职责从谁手里交给了谁，最后才认出这些取舍都来自同一条主线——把执行语义收紧到一处，把容易变化的部分推到装配层和投影层。写到这里，开头那句“每个字都认识但说不出为什么”，才算勉强有了答案。</p>
+<p>最后留几个我自己还没想透的问题，等下一轮再读代码：</p>
+<ol>
+<li>并发 Tool 的四种顺序里，UI 展示用 completion order、Provider 用 projection order，那如果用户想“按事实顺序回看一次执行”，最自然的入口应该是 replayed Session 还是 Journal 原文？</li>
+<li><code>ask_user</code> 和 steering 都让用户在 turn 中途介入，这两条通道未来会不会统一成一种“运行中交互”语义？</li>
+<li>当子 Agent 也能装配自己的子 Agent 时，Journal 的 <code>turn_id</code> 嵌套和 ContextUnit 边界还能不能保持现在的简洁？</li>
+</ol>
+<p>如果这篇笔记对同样在啃 Agent Runtime 的人有一点帮助，那它的目的就达到了。</p>
+]]></content>
+      <categories>
+        <category>LLM学习之路</category>
+      </categories>
+      <tags>
+        <tag>AI</tag>
+        <tag>LLM</tag>
+        <tag>大模型</tag>
+        <tag>Function Calling</tag>
+        <tag>Agent</tag>
+        <tag>Python</tag>
+        <tag>架构设计</tag>
+        <tag>Agent Runtime</tag>
+        <tag>Nosis</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Securely Rendering LLM-Generated Local Image Paths in Flask</title>
     <url>/2025/06/13/Securely-Rendering-LLM-Generated-Local-Image-Paths-in-Flask/</url>
     <content><![CDATA[<h1 id="一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法"><a href="#一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法" class="headerlink" title="一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法"></a>一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法</h1><h2 id="1-问题背景：浏览器安全模型与本地文件访问限制"><a href="#1-问题背景：浏览器安全模型与本地文件访问限制" class="headerlink" title="1. 问题背景：浏览器安全模型与本地文件访问限制"></a>1. 问题背景：浏览器安全模型与本地文件访问限制</h2><p>在构建基于大型语言模型（<code>LLM</code>）的 <code>Web</code> 应用时，一个常见的场景是 <code>LLM</code> 的输出中包含了指向服务器本地文件系统的图片路径。例如，在一个本地搭建的 <code>RAG</code> 系统中，<code>LLM</code> 可能会根据上下文生成一段包含标准 <code>Markdown</code> 图片语法的回答：</p>
@@ -2223,13 +2726,13 @@
       </categories>
       <tags>
         <tag>前端</tag>
-        <tag>Markdown</tag>
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
-        <tag>RAG</tag>
         <tag>Python</tag>
+        <tag>RAG</tag>
         <tag>flask</tag>
+        <tag>Markdown</tag>
       </tags>
   </entry>
   <entry>
@@ -2387,9 +2890,9 @@
         <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
+        <tag>Agent</tag>
         <tag>Qwen</tag>
         <tag>Python</tag>
-        <tag>Agent</tag>
         <tag>视觉</tag>
       </tags>
   </entry>
@@ -2694,6 +3197,43 @@
       </tags>
   </entry>
   <entry>
+    <title>About Me</title>
+    <url>/about/index.html</url>
+    <content><![CDATA[<h2 id="👋-你好，我是-Evan-Zhong！"><a href="#👋-你好，我是-Evan-Zhong！" class="headerlink" title="👋 你好，我是 Evan Zhong！"></a>👋 你好，我是 Evan Zhong！</h2><ul>
+<li>目前是东南大学研究生在读</li>
+<li>研究方向是多模态大模型 &#x2F; Graph RAG &#x2F; LLM的Agent构建</li>
+</ul>
+<h2 id="🔧-科研与项目经历"><a href="#🔧-科研与项目经历" class="headerlink" title="🔧 科研与项目经历"></a>🔧 科研与项目经历</h2><h3 id="面向电子器件datasheet的多模态知识图谱构建与社区化图检索增强查询"><a href="#面向电子器件datasheet的多模态知识图谱构建与社区化图检索增强查询" class="headerlink" title="面向电子器件datasheet的多模态知识图谱构建与社区化图检索增强查询"></a>面向电子器件datasheet的<strong>多模态知识图谱</strong>构建与<strong>社区化图检索增强查询</strong></h3><ul>
+<li><strong>基于Docling的多模态文档解构与语义修复</strong>：利用<strong>多模态VLM</strong>对图片进行上下文感知的信息抽取，生成准确的图片信息与关联实体抽取。</li>
+<li><strong>采用同源双视角的语义分块策略</strong>，将 Markdown 文档智能地拆分为最小的、有意义的“结构块”，根据文档中最大的“结构块”来动态计算一个合适的分块尺寸，保持 chunk 语义结构完整且长度合理。同时构建<strong>分块视角1</strong>：纯文本去图分块，减噪音，有利于模型聚焦，精确抽取出型号实体；<strong>分块视角2</strong>：保留图片，为每个chunk创建一个包含其前后相邻chunk内容的滑动。这些chunk拥有更完整的语义，用于抽取器件参数。</li>
+<li><strong>通过LLM驱动的Agent实体决策与融合实现电子器件的知识图谱构建</strong>：利用LLM驱动的型号名称消歧与融合实现器件的准确提取，基于双视角的数据融合与器件参数抽取，利用LLM驱动的冲突参数智能决策机制，实现准确构建规范化的多模态电子器件知识图谱。</li>
+<li><strong>采用社区化构建的图谱检索增强生成</strong>：引入“社区”划分的器件图谱检索，类似于 GraphRAG 的社区层次索引思想。针对电子领域知识各子领域的特点构建不同的社区；通过Query改写理解用户意图并用领域术语表达重写&#x2F;扩写提问；提供LLM规划图谱检索的路径：确定从哪个社区&#x2F;实体出发、沿哪些关系遍历，实现多跳路径推理；采用<strong>混合自适应剪枝（Beam Search + 语义剪枝）</strong>，获取更为精准的检索路径，避免多跳推理时的路径的组合爆炸。</li>
+</ul>
+<h3 id="基于-Django-MySQL-构建的电弧故障数据管理与分析平台（全栈开发）"><a href="#基于-Django-MySQL-构建的电弧故障数据管理与分析平台（全栈开发）" class="headerlink" title="基于 Django + MySQL 构建的电弧故障数据管理与分析平台（全栈开发）"></a>基于 <strong>Django</strong> + <strong>MySQL</strong> 构建的电弧故障数据管理与分析平台（全栈开发）</h3><ul>
+<li>前端使用 <strong>HTML5</strong> &#x2F; <strong>CSS3</strong> &#x2F; <strong>JavaScript</strong> + <strong>Fetch API</strong> 实现交互式页面与 <strong>RESTful API</strong> 通信。</li>
+<li>后端基于 <strong>Django</strong> 构建自定义用户系统，使用 <strong>ORM</strong> 管理用户、电弧数据、算法模型与测试结果，实现用户认证、数据上传、特征提取、算法模型评估与可视化等功能。</li>
+<li>设计 <strong>FFT</strong> 实现电弧故障信号的特征工程，包括时域分析、频域分析和小波分析。</li>
+<li>设计实现完善的用户管理系统，包括用户认证、个人资料管理等功能。</li>
+<li>支持企业与用户自行上传算法模型评估（准确率、F1 分数、混淆矩阵等、误判率）。</li>
+</ul>
+<h3 id="补苗移栽机器人（2020-10-2020-12）"><a href="#补苗移栽机器人（2020-10-2020-12）" class="headerlink" title="补苗移栽机器人（2020&#x2F;10 - 2020&#x2F;12）"></a>补苗移栽机器人（2020&#x2F;10 - 2020&#x2F;12）</h3><ul>
+<li>设计机械臂结构</li>
+<li>主控 STM32 + 电机驱动电路设计</li>
+<li>行走程序编写（基于超声波传感器）</li>
+</ul>
+<h3 id="三相-AC-DC-变换电路（2021-11）"><a href="#三相-AC-DC-变换电路（2021-11）" class="headerlink" title="三相 AC-DC 变换电路（2021&#x2F;11）"></a>三相 AC-DC 变换电路（2021&#x2F;11）</h3><ul>
+<li>三相 PWM 整流双闭环电路设计</li>
+<li>MATLAB 仿真建模与验证</li>
+<li>实物电路焊接调试</li>
+</ul>
+]]></content>
+  </entry>
+  <entry>
+    <title>category</title>
+    <url>/category/index.html</url>
+    <content><![CDATA[]]></content>
+  </entry>
+  <entry>
     <title></title>
     <url>/js/code-copy.js</url>
     <content><![CDATA[document.addEventListener('DOMContentLoaded', () => {
@@ -2749,45 +3289,8 @@
 ]]></content>
   </entry>
   <entry>
-    <title>About Me</title>
-    <url>/about/index.html</url>
-    <content><![CDATA[<h2 id="👋-你好，我是-Evan-Zhong！"><a href="#👋-你好，我是-Evan-Zhong！" class="headerlink" title="👋 你好，我是 Evan Zhong！"></a>👋 你好，我是 Evan Zhong！</h2><ul>
-<li>目前是东南大学研究生在读</li>
-<li>研究方向是多模态大模型 &#x2F; Graph RAG &#x2F; LLM的Agent构建</li>
-</ul>
-<h2 id="🔧-科研与项目经历"><a href="#🔧-科研与项目经历" class="headerlink" title="🔧 科研与项目经历"></a>🔧 科研与项目经历</h2><h3 id="面向电子器件datasheet的多模态知识图谱构建与社区化图检索增强查询"><a href="#面向电子器件datasheet的多模态知识图谱构建与社区化图检索增强查询" class="headerlink" title="面向电子器件datasheet的多模态知识图谱构建与社区化图检索增强查询"></a>面向电子器件datasheet的<strong>多模态知识图谱</strong>构建与<strong>社区化图检索增强查询</strong></h3><ul>
-<li><strong>基于Docling的多模态文档解构与语义修复</strong>：利用<strong>多模态VLM</strong>对图片进行上下文感知的信息抽取，生成准确的图片信息与关联实体抽取。</li>
-<li><strong>采用同源双视角的语义分块策略</strong>，将 Markdown 文档智能地拆分为最小的、有意义的“结构块”，根据文档中最大的“结构块”来动态计算一个合适的分块尺寸，保持 chunk 语义结构完整且长度合理。同时构建<strong>分块视角1</strong>：纯文本去图分块，减噪音，有利于模型聚焦，精确抽取出型号实体；<strong>分块视角2</strong>：保留图片，为每个chunk创建一个包含其前后相邻chunk内容的滑动。这些chunk拥有更完整的语义，用于抽取器件参数。</li>
-<li><strong>通过LLM驱动的Agent实体决策与融合实现电子器件的知识图谱构建</strong>：利用LLM驱动的型号名称消歧与融合实现器件的准确提取，基于双视角的数据融合与器件参数抽取，利用LLM驱动的冲突参数智能决策机制，实现准确构建规范化的多模态电子器件知识图谱。</li>
-<li><strong>采用社区化构建的图谱检索增强生成</strong>：引入“社区”划分的器件图谱检索，类似于 GraphRAG 的社区层次索引思想。针对电子领域知识各子领域的特点构建不同的社区；通过Query改写理解用户意图并用领域术语表达重写&#x2F;扩写提问；提供LLM规划图谱检索的路径：确定从哪个社区&#x2F;实体出发、沿哪些关系遍历，实现多跳路径推理；采用<strong>混合自适应剪枝（Beam Search + 语义剪枝）</strong>，获取更为精准的检索路径，避免多跳推理时的路径的组合爆炸。</li>
-</ul>
-<h3 id="基于-Django-MySQL-构建的电弧故障数据管理与分析平台（全栈开发）"><a href="#基于-Django-MySQL-构建的电弧故障数据管理与分析平台（全栈开发）" class="headerlink" title="基于 Django + MySQL 构建的电弧故障数据管理与分析平台（全栈开发）"></a>基于 <strong>Django</strong> + <strong>MySQL</strong> 构建的电弧故障数据管理与分析平台（全栈开发）</h3><ul>
-<li>前端使用 <strong>HTML5</strong> &#x2F; <strong>CSS3</strong> &#x2F; <strong>JavaScript</strong> + <strong>Fetch API</strong> 实现交互式页面与 <strong>RESTful API</strong> 通信。</li>
-<li>后端基于 <strong>Django</strong> 构建自定义用户系统，使用 <strong>ORM</strong> 管理用户、电弧数据、算法模型与测试结果，实现用户认证、数据上传、特征提取、算法模型评估与可视化等功能。</li>
-<li>设计 <strong>FFT</strong> 实现电弧故障信号的特征工程，包括时域分析、频域分析和小波分析。</li>
-<li>设计实现完善的用户管理系统，包括用户认证、个人资料管理等功能。</li>
-<li>支持企业与用户自行上传算法模型评估（准确率、F1 分数、混淆矩阵等、误判率）。</li>
-</ul>
-<h3 id="补苗移栽机器人（2020-10-2020-12）"><a href="#补苗移栽机器人（2020-10-2020-12）" class="headerlink" title="补苗移栽机器人（2020&#x2F;10 - 2020&#x2F;12）"></a>补苗移栽机器人（2020&#x2F;10 - 2020&#x2F;12）</h3><ul>
-<li>设计机械臂结构</li>
-<li>主控 STM32 + 电机驱动电路设计</li>
-<li>行走程序编写（基于超声波传感器）</li>
-</ul>
-<h3 id="三相-AC-DC-变换电路（2021-11）"><a href="#三相-AC-DC-变换电路（2021-11）" class="headerlink" title="三相 AC-DC 变换电路（2021&#x2F;11）"></a>三相 AC-DC 变换电路（2021&#x2F;11）</h3><ul>
-<li>三相 PWM 整流双闭环电路设计</li>
-<li>MATLAB 仿真建模与验证</li>
-<li>实物电路焊接调试</li>
-</ul>
-]]></content>
-  </entry>
-  <entry>
     <title>tag</title>
     <url>/tag/index.html</url>
-    <content><![CDATA[]]></content>
-  </entry>
-  <entry>
-    <title>category</title>
-    <url>/category/index.html</url>
     <content><![CDATA[]]></content>
   </entry>
 </search>
