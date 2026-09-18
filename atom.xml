@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <author>
+    <name>Evan Zhong</name>
+  </author>
+  <generator uri="https://hexo.io/">Hexo</generator>
+  <id>https://evannzhongg.github.io/</id>
+  <link href="https://evannzhongg.github.io/" rel="alternate"/>
+  <link href="https://evannzhongg.github.io/atom.xml" rel="self"/>
+  <rights>All rights reserved 2026, Evan Zhong</rights>
+  <subtitle>Record in a limited time.</subtitle>
+  <title>Evan Zhong's Blog</title>
+  <updated>2026-09-18T19:06:05.391Z</updated>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="LLM学习之路" scheme="https://evannzhongg.github.io/categories/LLM%E5%AD%A6%E4%B9%A0%E4%B9%8B%E8%B7%AF/"/>
+    <category term="AI" scheme="https://evannzhongg.github.io/tags/AI/"/>
+    <category term="LLM" scheme="https://evannzhongg.github.io/tags/LLM/"/>
+    <category term="大模型" scheme="https://evannzhongg.github.io/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"/>
+    <category term="Function Calling" scheme="https://evannzhongg.github.io/tags/Function-Calling/"/>
+    <category term="Agent" scheme="https://evannzhongg.github.io/tags/Agent/"/>
+    <category term="Python" scheme="https://evannzhongg.github.io/tags/Python/"/>
+    <category term="架构设计" scheme="https://evannzhongg.github.io/tags/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/"/>
+    <category term="Agent Runtime" scheme="https://evannzhongg.github.io/tags/Agent-Runtime/"/>
+    <category term="Nosis" scheme="https://evannzhongg.github.io/tags/Nosis/"/>
+    <id>https://evannzhongg.github.io/2026/09/19/Nosis-Agent-Runtime-Evolution/</id>
+    <link href="https://evannzhongg.github.io/2026/09/19/Nosis-Agent-Runtime-Evolution/"/>
+    <published>2026-09-18T18:10:23.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="由浅入深看懂-Agent-Runtime-的七天演进"><a href="#由浅入深看懂-Agent-Runtime-的七天演进" class="headerlink" title="由浅入深看懂 Agent Runtime 的七天演进"></a>由浅入深看懂 A]]>
+    </summary>
+    <title>Understanding Agent Runtime in One Week</title>
+    <updated>2026-09-18T19:06:05.391Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="LLM学习之路" scheme="https://evannzhongg.github.io/categories/LLM%E5%AD%A6%E4%B9%A0%E4%B9%8B%E8%B7%AF/"/>
+    <category term="AI" scheme="https://evannzhongg.github.io/tags/AI/"/>
+    <category term="LLM" scheme="https://evannzhongg.github.io/tags/LLM/"/>
+    <category term="大模型" scheme="https://evannzhongg.github.io/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"/>
+    <category term="Python" scheme="https://evannzhongg.github.io/tags/Python/"/>
+    <category term="预训练" scheme="https://evannzhongg.github.io/tags/%E9%A2%84%E8%AE%AD%E7%BB%83/"/>
+    <category term="MiniMind" scheme="https://evannzhongg.github.io/tags/MiniMind/"/>
+    <id>https://evannzhongg.github.io/2026/03/28/Learning-LLM-Pretraining-from-MiniMind/</id>
+    <link href="https://evannzhongg.github.io/2026/03/28/Learning-LLM-Pretraining-from-MiniMind/"/>
+    <published>2026-03-27T17:02:15.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="MiniMind-预训练学习指南"><a href="#MiniMind-预训练学习指南" class="headerlink" title="MiniMind 预训练学习指南"></a>MiniMind 预训练学习指南</h2><p>这份文档专门介绍 MiniM]]>
+    </summary>
+    <title>Learning LLM Pretraining from MiniMind</title>
+    <updated>2026-03-28T05:12:33.432Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="LLM学习之路" scheme="https://evannzhongg.github.io/categories/LLM%E5%AD%A6%E4%B9%A0%E4%B9%8B%E8%B7%AF/"/>
+    <category term="AI" scheme="https://evannzhongg.github.io/tags/AI/"/>
+    <category term="LLM" scheme="https://evannzhongg.github.io/tags/LLM/"/>
+    <category term="大模型" scheme="https://evannzhongg.github.io/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"/>
+    <category term="Qwen" scheme="https://evannzhongg.github.io/tags/Qwen/"/>
+    <category term="后端" scheme="https://evannzhongg.github.io/tags/%E5%90%8E%E7%AB%AF/"/>
+    <category term="vLLM" scheme="https://evannzhongg.github.io/tags/vLLM/"/>
+    <category term="Cloudflare" scheme="https://evannzhongg.github.io/tags/Cloudflare/"/>
+    <id>https://evannzhongg.github.io/2025/09/01/Run-vLLM-Locally-and-Expose-with-Cloudflare-Tunnel/</id>
+    <link href="https://evannzhongg.github.io/2025/09/01/Run-vLLM-Locally-and-Expose-with-Cloudflare-Tunnel/"/>
+    <published>2025-09-01T03:47:03.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="通过vLLM部署本地模型并通过Cloudflare-Tunnel发布到公网"><a href="#通过vLLM部署本地模型并通过Cloudflare-Tunnel发布到公网" class="headerlink" title="通过vLLM部署本地模型并通过Clo]]>
+    </summary>
+    <title>Run vLLM Locally and Expose with Cloudflare Tunnel</title>
+    <updated>2025-09-01T10:15:59.120Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="LLM学习之路" scheme="https://evannzhongg.github.io/categories/LLM%E5%AD%A6%E4%B9%A0%E4%B9%8B%E8%B7%AF/"/>
+    <category term="前端" scheme="https://evannzhongg.github.io/tags/%E5%89%8D%E7%AB%AF/"/>
+    <category term="Markdown" scheme="https://evannzhongg.github.io/tags/Markdown/"/>
+    <category term="AI" scheme="https://evannzhongg.github.io/tags/AI/"/>
+    <category term="LLM" scheme="https://evannzhongg.github.io/tags/LLM/"/>
+    <category term="大模型" scheme="https://evannzhongg.github.io/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"/>
+    <category term="Python" scheme="https://evannzhongg.github.io/tags/Python/"/>
+    <category term="RAG" scheme="https://evannzhongg.github.io/tags/RAG/"/>
+    <category term="flask" scheme="https://evannzhongg.github.io/tags/flask/"/>
+    <id>https://evannzhongg.github.io/2025/06/13/Securely-Rendering-LLM-Generated-Local-Image-Paths-in-Flask/</id>
+    <link href="https://evannzhongg.github.io/2025/06/13/Securely-Rendering-LLM-Generated-Local-Image-Paths-in-Flask/"/>
+    <published>2025-06-13T07:10:54.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法"><a href="#一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法" class="headerlink" title="一个在Flask Web应用中安全渲染LLM输出]]>
+    </summary>
+    <title>Securely Rendering LLM-Generated Local Image Paths in Flask</title>
+    <updated>2025-06-13T07:56:19.609Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="OCR" scheme="https://evannzhongg.github.io/categories/OCR/"/>
+    <category term="OCR" scheme="https://evannzhongg.github.io/tags/OCR/"/>
+    <category term="PDF" scheme="https://evannzhongg.github.io/tags/PDF/"/>
+    <category term="Markdown" scheme="https://evannzhongg.github.io/tags/Markdown/"/>
+    <category term="AI" scheme="https://evannzhongg.github.io/tags/AI/"/>
+    <category term="LLM" scheme="https://evannzhongg.github.io/tags/LLM/"/>
+    <category term="大模型" scheme="https://evannzhongg.github.io/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"/>
+    <category term="Qwen" scheme="https://evannzhongg.github.io/tags/Qwen/"/>
+    <category term="Docling" scheme="https://evannzhongg.github.io/tags/Docling/"/>
+    <category term="Knowledge Graph" scheme="https://evannzhongg.github.io/tags/Knowledge-Graph/"/>
+    <id>https://evannzhongg.github.io/2025/05/01/Docling2md/</id>
+    <link href="https://evannzhongg.github.io/2025/05/01/Docling2md/"/>
+    <published>2025-05-01T05:17:19.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="基于Docling结合多模态大模型的的PDF转Markdown"><a href="#基于Docling结合多模态大模型的的PDF转Markdown" class="headerlink" title="基于Docling结合多模态大模型的的PDF转Markdow]]>
+    </summary>
+    <title>Docling2md</title>
+    <updated>2025-05-05T06:16:22.213Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="LLM学习之路" scheme="https://evannzhongg.github.io/categories/LLM%E5%AD%A6%E4%B9%A0%E4%B9%8B%E8%B7%AF/"/>
+    <category term="AI" scheme="https://evannzhongg.github.io/tags/AI/"/>
+    <category term="LLM" scheme="https://evannzhongg.github.io/tags/LLM/"/>
+    <category term="大模型" scheme="https://evannzhongg.github.io/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"/>
+    <category term="Qwen" scheme="https://evannzhongg.github.io/tags/Qwen/"/>
+    <category term="Agent" scheme="https://evannzhongg.github.io/tags/Agent/"/>
+    <category term="Python" scheme="https://evannzhongg.github.io/tags/Python/"/>
+    <category term="视觉" scheme="https://evannzhongg.github.io/tags/%E8%A7%86%E8%A7%89/"/>
+    <id>https://evannzhongg.github.io/2025/04/18/Uploading-Local-Images-to-Vision-LLM/</id>
+    <link href="https://evannzhongg.github.io/2025/04/18/Uploading-Local-Images-to-Vision-LLM/"/>
+    <published>2025-04-18T02:33:51.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="如何使用视觉大模型上传本地图像并生成回答"><a href="#如何使用视觉大模型上传本地图像并生成回答" class="headerlink" title="如何使用视觉大模型上传本地图像并生成回答"></a>如何使用视觉大模型上传本地图像并生成回答</h2><]]>
+    </summary>
+    <title>Uploading Local Images to Vision LLM</title>
+    <updated>2025-04-18T03:06:00.471Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="Knowledge Graph" scheme="https://evannzhongg.github.io/categories/Knowledge-Graph/"/>
+    <category term="AI" scheme="https://evannzhongg.github.io/tags/AI/"/>
+    <category term="LLM" scheme="https://evannzhongg.github.io/tags/LLM/"/>
+    <category term="大模型" scheme="https://evannzhongg.github.io/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"/>
+    <category term="Knowledge Graph" scheme="https://evannzhongg.github.io/tags/Knowledge-Graph/"/>
+    <category term="Python" scheme="https://evannzhongg.github.io/tags/Python/"/>
+    <category term="GraphRAG" scheme="https://evannzhongg.github.io/tags/GraphRAG/"/>
+    <category term="RAG" scheme="https://evannzhongg.github.io/tags/RAG/"/>
+    <category term="Gephi" scheme="https://evannzhongg.github.io/tags/Gephi/"/>
+    <id>https://evannzhongg.github.io/2025/04/11/GraphRag-Visualization/</id>
+    <link href="https://evannzhongg.github.io/2025/04/11/GraphRag-Visualization/"/>
+    <published>2025-04-11T15:02:21.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="GraphRag-图谱可视化"><a href="#GraphRag-图谱可视化" class="headerlink" title="GraphRag 图谱可视化"></a>GraphRag 图谱可视化</h2><p>本文将详细介绍如何将微软 GraphRAG]]>
+    </summary>
+    <title>GraphRag Visualization</title>
+    <updated>2025-05-01T16:11:28.210Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="代码学习" scheme="https://evannzhongg.github.io/categories/%E4%BB%A3%E7%A0%81%E5%AD%A6%E4%B9%A0/"/>
+    <category term="Python" scheme="https://evannzhongg.github.io/tags/Python/"/>
+    <category term="算法" scheme="https://evannzhongg.github.io/tags/%E7%AE%97%E6%B3%95/"/>
+    <category term="LeetCode" scheme="https://evannzhongg.github.io/tags/LeetCode/"/>
+    <id>https://evannzhongg.github.io/2025/04/10/%E3%80%8CLeetCode%E3%80%8D-Palindrome-Number/</id>
+    <link href="https://evannzhongg.github.io/2025/04/10/%E3%80%8CLeetCode%E3%80%8D-Palindrome-Number/"/>
+    <published>2025-04-10T08:06:35.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="回文数"><a href="#回文数" class="headerlink" title="回文数"></a>回文数</h2><hr>
+<h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></]]>
+    </summary>
+    <title>「LeetCode」 Palindrome Number</title>
+    <updated>2025-04-10T16:17:31.142Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="代码学习" scheme="https://evannzhongg.github.io/categories/%E4%BB%A3%E7%A0%81%E5%AD%A6%E4%B9%A0/"/>
+    <category term="Python" scheme="https://evannzhongg.github.io/tags/Python/"/>
+    <category term="算法" scheme="https://evannzhongg.github.io/tags/%E7%AE%97%E6%B3%95/"/>
+    <category term="LeetCode" scheme="https://evannzhongg.github.io/tags/LeetCode/"/>
+    <id>https://evannzhongg.github.io/2025/04/09/%E3%80%8CLeetCode%E3%80%8D-Two-Sum/</id>
+    <link href="https://evannzhongg.github.io/2025/04/09/%E3%80%8CLeetCode%E3%80%8D-Two-Sum/"/>
+    <published>2025-04-09T10:43:46.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="两数之和"><a href="#两数之和" class="headerlink" title="两数之和"></a>两数之和</h2><p>开始学习Python的第一天，努力ing</p>
+<hr>
+<h2 id="题目描述"><a href="#题目描述" cl]]>
+    </summary>
+    <title>「LeetCode」 Two Sum</title>
+    <updated>2025-04-10T07:59:09.768Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="Hexo" scheme="https://evannzhongg.github.io/categories/Hexo/"/>
+    <category term="Hexo" scheme="https://evannzhongg.github.io/tags/Hexo/"/>
+    <category term="博客" scheme="https://evannzhongg.github.io/tags/%E5%8D%9A%E5%AE%A2/"/>
+    <category term="Blog" scheme="https://evannzhongg.github.io/tags/Blog/"/>
+    <category term="前端" scheme="https://evannzhongg.github.io/tags/%E5%89%8D%E7%AB%AF/"/>
+    <category term="AI" scheme="https://evannzhongg.github.io/tags/AI/"/>
+    <category term="LLM" scheme="https://evannzhongg.github.io/tags/LLM/"/>
+    <category term="大模型" scheme="https://evannzhongg.github.io/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"/>
+    <category term="Agent" scheme="https://evannzhongg.github.io/tags/Agent/"/>
+    <category term="RAG" scheme="https://evannzhongg.github.io/tags/RAG/"/>
+    <category term="后端" scheme="https://evannzhongg.github.io/tags/%E5%90%8E%E7%AB%AF/"/>
+    <category term="Ngrok" scheme="https://evannzhongg.github.io/tags/Ngrok/"/>
+    <category term="flask" scheme="https://evannzhongg.github.io/tags/flask/"/>
+    <id>https://evannzhongg.github.io/2025/03/29/Hexo-AI-Assistant/</id>
+    <link href="https://evannzhongg.github.io/2025/03/29/Hexo-AI-Assistant/"/>
+    <published>2025-03-28T16:09:51.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="Hexo-博客专属AI助手"><a href="#Hexo-博客专属AI助手" class="headerlink" title="Hexo 博客专属AI助手"></a>Hexo 博客专属AI助手</h2><p>本项目通过向量检索 + 大语言模型（RAG）结合本地]]>
+    </summary>
+    <title>Hexo AI Assistant</title>
+    <updated>2025-04-12T02:27:26.038Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="OCR" scheme="https://evannzhongg.github.io/categories/OCR/"/>
+    <category term="OCR" scheme="https://evannzhongg.github.io/tags/OCR/"/>
+    <category term="PDF" scheme="https://evannzhongg.github.io/tags/PDF/"/>
+    <category term="AI" scheme="https://evannzhongg.github.io/tags/AI/"/>
+    <category term="PaddleOCR" scheme="https://evannzhongg.github.io/tags/PaddleOCR/"/>
+    <id>https://evannzhongg.github.io/2025/03/28/Convert-PDF-Tables-to-Readable-Text/</id>
+    <link href="https://evannzhongg.github.io/2025/03/28/Convert-PDF-Tables-to-Readable-Text/"/>
+    <published>2025-03-28T03:03:04.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="PDF-表格提取转为纯文本结构数据"><a href="#PDF-表格提取转为纯文本结构数据" class="headerlink" title="PDF 表格提取转为纯文本结构数据"></a>PDF 表格提取转为纯文本结构数据</h2><p>本文详细记录了如何使]]>
+    </summary>
+    <title>Convert PDF Tables to Readable Text</title>
+    <updated>2025-03-28T06:20:50.171Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="Hexo" scheme="https://evannzhongg.github.io/categories/Hexo/"/>
+    <category term="Hexo" scheme="https://evannzhongg.github.io/tags/Hexo/"/>
+    <category term="博客" scheme="https://evannzhongg.github.io/tags/%E5%8D%9A%E5%AE%A2/"/>
+    <category term="Blog" scheme="https://evannzhongg.github.io/tags/Blog/"/>
+    <category term="前端" scheme="https://evannzhongg.github.io/tags/%E5%89%8D%E7%AB%AF/"/>
+    <id>https://evannzhongg.github.io/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/</id>
+    <link href="https://evannzhongg.github.io/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/"/>
+    <published>2025-03-26T16:09:05.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="Hexo-Chic-主题实现搜索功能"><a href="#Hexo-Chic-主题实现搜索功能" class="headerlink" title="Hexo + Chic 主题实现搜索功能"></a>Hexo + Chic 主题实现搜索功能</h2><p>本文]]>
+    </summary>
+    <title>Custom Search Integration for Hexo Chic</title>
+    <updated>2025-03-28T06:54:15.823Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="Hexo" scheme="https://evannzhongg.github.io/categories/Hexo/"/>
+    <category term="Hexo" scheme="https://evannzhongg.github.io/tags/Hexo/"/>
+    <category term="博客" scheme="https://evannzhongg.github.io/tags/%E5%8D%9A%E5%AE%A2/"/>
+    <category term="Blog" scheme="https://evannzhongg.github.io/tags/Blog/"/>
+    <category term="前端" scheme="https://evannzhongg.github.io/tags/%E5%89%8D%E7%AB%AF/"/>
+    <id>https://evannzhongg.github.io/2025/03/26/Add-Copy-Button-to-Code-Blocks-in-Hexo/</id>
+    <link href="https://evannzhongg.github.io/2025/03/26/Add-Copy-Button-to-Code-Blocks-in-Hexo/"/>
+    <published>2025-03-25T16:02:39.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="Hexo-为代码块添加复制功能按钮"><a href="#Hexo-为代码块添加复制功能按钮" class="headerlink" title="Hexo 为代码块添加复制功能按钮"></a>Hexo 为代码块添加复制功能按钮</h2><p>本文详细记录如何在]]>
+    </summary>
+    <title>Add Copy Button to Code Blocks in Hexo</title>
+    <updated>2025-03-25T16:05:02.698Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="Hexo" scheme="https://evannzhongg.github.io/categories/Hexo/"/>
+    <category term="Hexo" scheme="https://evannzhongg.github.io/tags/Hexo/"/>
+    <category term="博客" scheme="https://evannzhongg.github.io/tags/%E5%8D%9A%E5%AE%A2/"/>
+    <category term="Blog" scheme="https://evannzhongg.github.io/tags/Blog/"/>
+    <category term="前端" scheme="https://evannzhongg.github.io/tags/%E5%89%8D%E7%AB%AF/"/>
+    <id>https://evannzhongg.github.io/2025/03/25/Sync-Code-Block-Theme-with-Dark-Mode-in-Hexo-Chic/</id>
+    <link href="https://evannzhongg.github.io/2025/03/25/Sync-Code-Block-Theme-with-Dark-Mode-in-Hexo-Chic/"/>
+    <published>2025-03-24T16:01:58.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="Hexo-Chic-主题为代码块实现明暗主题切换效果"><a href="#Hexo-Chic-主题为代码块实现明暗主题切换效果" class="headerlink" title="Hexo + Chic 主题为代码块实现明暗主题切换效果"></a>Hexo +]]>
+    </summary>
+    <title>Sync Code Block Theme with Dark Mode in Hexo Chic</title>
+    <updated>2025-03-26T09:25:59.800Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="Hexo" scheme="https://evannzhongg.github.io/categories/Hexo/"/>
+    <category term="Hexo" scheme="https://evannzhongg.github.io/tags/Hexo/"/>
+    <category term="博客" scheme="https://evannzhongg.github.io/tags/%E5%8D%9A%E5%AE%A2/"/>
+    <category term="Blog" scheme="https://evannzhongg.github.io/tags/Blog/"/>
+    <category term="前端" scheme="https://evannzhongg.github.io/tags/%E5%89%8D%E7%AB%AF/"/>
+    <id>https://evannzhongg.github.io/2025/03/24/Hexo-and-Chic-themes-add-Giscus-comment-system/</id>
+    <link href="https://evannzhongg.github.io/2025/03/24/Hexo-and-Chic-themes-add-Giscus-comment-system/"/>
+    <published>2025-03-23T16:13:19.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="Hexo-Chic-主题集成-Giscus-评论系统详细教程"><a href="#Hexo-Chic-主题集成-Giscus-评论系统详细教程" class="headerlink" title="Hexo + Chic 主题集成 Giscus 评论系统详细教程]]>
+    </summary>
+    <title>Hexo and Chic themes add Giscus comment system</title>
+    <updated>2025-03-25T16:55:41.980Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="LLM学习之路" scheme="https://evannzhongg.github.io/categories/LLM%E5%AD%A6%E4%B9%A0%E4%B9%8B%E8%B7%AF/"/>
+    <category term="AI" scheme="https://evannzhongg.github.io/tags/AI/"/>
+    <category term="LLM" scheme="https://evannzhongg.github.io/tags/LLM/"/>
+    <category term="大模型" scheme="https://evannzhongg.github.io/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"/>
+    <category term="Qwen" scheme="https://evannzhongg.github.io/tags/Qwen/"/>
+    <category term="Function Calling" scheme="https://evannzhongg.github.io/tags/Function-Calling/"/>
+    <category term="Agent" scheme="https://evannzhongg.github.io/tags/Agent/"/>
+    <category term="Python" scheme="https://evannzhongg.github.io/tags/Python/"/>
+    <id>https://evannzhongg.github.io/2025/03/21/Function-Calling/</id>
+    <link href="https://evannzhongg.github.io/2025/03/21/Function-Calling/"/>
+    <published>2025-03-21T15:50:25.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="Qwen-Function-Calling-详细解析"><a href="#Qwen-Function-Calling-详细解析" class="headerlink" title="Qwen Function Calling 详细解析"></a>Qwen Fun]]>
+    </summary>
+    <title>Function Calling</title>
+    <updated>2025-04-12T02:26:39.755Z</updated>
+  </entry>
+  <entry>
+    <author>
+      <name>Evan Zhong</name>
+    </author>
+    <category term="Knowledge Graph" scheme="https://evannzhongg.github.io/categories/Knowledge-Graph/"/>
+    <category term="AI" scheme="https://evannzhongg.github.io/tags/AI/"/>
+    <category term="LLM" scheme="https://evannzhongg.github.io/tags/LLM/"/>
+    <category term="大模型" scheme="https://evannzhongg.github.io/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"/>
+    <category term="Knowledge Graph" scheme="https://evannzhongg.github.io/tags/Knowledge-Graph/"/>
+    <category term="Python" scheme="https://evannzhongg.github.io/tags/Python/"/>
+    <category term="GraphRAG" scheme="https://evannzhongg.github.io/tags/GraphRAG/"/>
+    <category term="RAG" scheme="https://evannzhongg.github.io/tags/RAG/"/>
+    <category term="flask" scheme="https://evannzhongg.github.io/tags/flask/"/>
+    <category term="图数据库" scheme="https://evannzhongg.github.io/tags/%E5%9B%BE%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
+    <category term="LangChain" scheme="https://evannzhongg.github.io/tags/LangChain/"/>
+    <category term="NebulaGraph" scheme="https://evannzhongg.github.io/tags/NebulaGraph/"/>
+    <id>https://evannzhongg.github.io/2025/03/20/NebulaGraphQAChain/</id>
+    <link href="https://evannzhongg.github.io/2025/03/20/NebulaGraphQAChain/"/>
+    <published>2025-03-20T13:50:06.000Z</published>
+    <summary>
+      <![CDATA[<h2 id="基于Langchain在NebulaGraph实现GraphRAG"><a href="#基于Langchain在NebulaGraph实现GraphRAG" class="headerlink" title="基于Langchain在NebulaGraph实现G]]>
+    </summary>
+    <title>NebulaGraphQAChain</title>
+    <updated>2025-05-01T16:11:28.233Z</updated>
+  </entry>
+</feed>

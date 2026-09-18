@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 
 <head>
     <meta charset="UTF-8">
@@ -10,12 +10,49 @@
     <meta name="author" content="Evan Zhong">
 
 
+    <meta name="subtitle" content="Record in a limited time.">
 
 
-<!-- oogle Search Console 验证标签 -->
+
+<link rel="canonical" href="https://evannzhongg.github.io/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/">
+<meta name="description" content="Hexo + Chic 主题实现搜索功能 本文详细记录如何在 Hexo 中使用插件 hexo-generator-searchdb 实现基于 Chic 主题的实时搜索功能，包括搜索回复框、搜索结果卡、暗黑模式适配等细节。 项目地址： https://github.com/EvannZhongg/Bl…">
+<meta name="keywords" content="Hexo,博客,Blog,前端">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Evan Zhong&#39;s Blog">
+<meta property="og:title" content="Custom Search Integration for Hexo Chic | Evan Zhong&#39;s Blog">
+<meta property="og:description" content="Hexo + Chic 主题实现搜索功能 本文详细记录如何在 Hexo 中使用插件 hexo-generator-searchdb 实现基于 Chic 主题的实时搜索功能，包括搜索回复框、搜索结果卡、暗黑模式适配等细节。 项目地址： https://github.com/EvannZhongg/Bl…">
+<meta property="og:url" content="https://evannzhongg.github.io/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://evannzhongg.github.io/image/freakthrow.jpg">
+
+<meta property="article:published_time" content="2025-03-26T16:09:05.000Z">
+<meta property="article:modified_time" content="2025-03-28T06:54:15.823Z">
+<meta property="article:tag" content="Hexo">
+<meta property="article:tag" content="博客">
+<meta property="article:tag" content="Blog">
+<meta property="article:tag" content="前端">
+
+
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Custom Search Integration for Hexo Chic | Evan Zhong&#39;s Blog">
+<meta name="twitter:description" content="Hexo + Chic 主题实现搜索功能 本文详细记录如何在 Hexo 中使用插件 hexo-generator-searchdb 实现基于 Chic 主题的实时搜索功能，包括搜索回复框、搜索结果卡、暗黑模式适配等细节。 项目地址： https://github.com/EvannZhongg/Bl…">
+<meta name="twitter:image" content="https://evannzhongg.github.io/image/freakthrow.jpg">
+
+
+<link rel="alternate" type="application/atom+xml" title="Evan Zhong&#39;s Blog" href="/atom.xml">
+
+
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Custom Search Integration for Hexo Chic","description":"Hexo + Chic 主题实现搜索功能 本文详细记录如何在 Hexo 中使用插件 hexo-generator-searchdb 实现基于 Chic 主题的实时搜索功能，包括搜索回复框、搜索结果卡、暗黑模式适配等细节。 项目地址： https://github.com/EvannZhongg/Bl…","url":"https://evannzhongg.github.io/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/","mainEntityOfPage":{"@type":"WebPage","@id":"https://evannzhongg.github.io/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/"},"datePublished":"2025-03-26T16:09:05.000Z","dateModified":"2025-03-28T06:54:15.823Z","author":{"@type":"Person","name":"Evan Zhong","url":"https://evannzhongg.github.io/"},"publisher":{"@type":"Person","name":"Evan Zhong"},"keywords":"Hexo,博客,Blog,前端","inLanguage":"zh-CN","image":"https://evannzhongg.github.io/image/freakthrow.jpg"}</script>
+
+<!-- Google Search Console 验证标签 -->
 <meta name="google-site-verification" content="0hjafUT-HANjK2izAW9bOEq2iQG3VWXZTPPKl5pVMyc" />
 
-<title>Custom Search Integration for Hexo Chic | Hexo</title>
+<title>Custom Search Integration for Hexo Chic | Evan Zhong&#39;s Blog</title>
 
 
 
@@ -319,7 +356,7 @@
 
                     
                         <span class="post-time">
-                        Date: <a href="#">March 27, 2025&nbsp;&nbsp;0:09:05</a>
+                        Date: <a href="#">三月 27, 2025&nbsp;&nbsp;0:09:05</a>
                         </span>
                     
                     
@@ -335,7 +372,7 @@
         </header>
 
         <div class="post-content">
-            <h1 id="Hexo-Chic-主题实现搜索功能"><a href="#Hexo-Chic-主题实现搜索功能" class="headerlink" title="Hexo + Chic 主题实现搜索功能"></a>Hexo + Chic 主题实现搜索功能</h1><p>本文详细记录如何在 Hexo 中使用插件 <code>hexo-generator-searchdb</code> 实现基于 Chic 主题的实时搜索功能，包括搜索回复框、搜索结果卡、暗黑模式适配等细节。</p>
+            <h2 id="Hexo-Chic-主题实现搜索功能"><a href="#Hexo-Chic-主题实现搜索功能" class="headerlink" title="Hexo + Chic 主题实现搜索功能"></a>Hexo + Chic 主题实现搜索功能</h2><p>本文详细记录如何在 Hexo 中使用插件 <code>hexo-generator-searchdb</code> 实现基于 Chic 主题的实时搜索功能，包括搜索回复框、搜索结果卡、暗黑模式适配等细节。</p>
 <hr>
 <p>项目地址：<a target="_blank" rel="noopener" href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
 <hr>

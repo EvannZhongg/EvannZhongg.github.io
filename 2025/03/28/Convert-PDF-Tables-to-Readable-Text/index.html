@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 
 <head>
     <meta charset="UTF-8">
@@ -10,12 +10,49 @@
     <meta name="author" content="Evan Zhong">
 
 
+    <meta name="subtitle" content="Record in a limited time.">
 
 
-<!-- oogle Search Console 验证标签 -->
+
+<link rel="canonical" href="https://evannzhongg.github.io/2025/03/28/Convert-PDF-Tables-to-Readable-Text/">
+<meta name="description" content="PDF 表格提取转为纯文本结构数据 本文详细记录了如何使用读光的 Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。 项目地址： https://github.com/EvannZhongg…">
+<meta name="keywords" content="OCR,PDF,AI,PaddleOCR">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Evan Zhong&#39;s Blog">
+<meta property="og:title" content="Convert PDF Tables to Readable Text | Evan Zhong&#39;s Blog">
+<meta property="og:description" content="PDF 表格提取转为纯文本结构数据 本文详细记录了如何使用读光的 Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。 项目地址： https://github.com/EvannZhongg…">
+<meta property="og:url" content="https://evannzhongg.github.io/2025/03/28/Convert-PDF-Tables-to-Readable-Text/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://evannzhongg.github.io/image/freakthrow.jpg">
+
+<meta property="article:published_time" content="2025-03-28T03:03:04.000Z">
+<meta property="article:modified_time" content="2025-03-28T06:20:50.171Z">
+<meta property="article:tag" content="OCR">
+<meta property="article:tag" content="PDF">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="PaddleOCR">
+
+
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Convert PDF Tables to Readable Text | Evan Zhong&#39;s Blog">
+<meta name="twitter:description" content="PDF 表格提取转为纯文本结构数据 本文详细记录了如何使用读光的 Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。 项目地址： https://github.com/EvannZhongg…">
+<meta name="twitter:image" content="https://evannzhongg.github.io/image/freakthrow.jpg">
+
+
+<link rel="alternate" type="application/atom+xml" title="Evan Zhong&#39;s Blog" href="/atom.xml">
+
+
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Convert PDF Tables to Readable Text","description":"PDF 表格提取转为纯文本结构数据 本文详细记录了如何使用读光的 Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。 项目地址： https://github.com/EvannZhongg…","url":"https://evannzhongg.github.io/2025/03/28/Convert-PDF-Tables-to-Readable-Text/","mainEntityOfPage":{"@type":"WebPage","@id":"https://evannzhongg.github.io/2025/03/28/Convert-PDF-Tables-to-Readable-Text/"},"datePublished":"2025-03-28T03:03:04.000Z","dateModified":"2025-03-28T06:20:50.171Z","author":{"@type":"Person","name":"Evan Zhong","url":"https://evannzhongg.github.io/"},"publisher":{"@type":"Person","name":"Evan Zhong"},"keywords":"OCR,PDF,AI,PaddleOCR","inLanguage":"zh-CN","image":"https://evannzhongg.github.io/image/freakthrow.jpg"}</script>
+
+<!-- Google Search Console 验证标签 -->
 <meta name="google-site-verification" content="0hjafUT-HANjK2izAW9bOEq2iQG3VWXZTPPKl5pVMyc" />
 
-<title>Convert PDF Tables to Readable Text | Hexo</title>
+<title>Convert PDF Tables to Readable Text | Evan Zhong&#39;s Blog</title>
 
 
 
@@ -319,7 +356,7 @@
 
                     
                         <span class="post-time">
-                        Date: <a href="#">March 28, 2025&nbsp;&nbsp;11:03:04</a>
+                        Date: <a href="#">三月 28, 2025&nbsp;&nbsp;11:03:04</a>
                         </span>
                     
                     
@@ -335,7 +372,7 @@
         </header>
 
         <div class="post-content">
-            <h1 id="PDF-表格提取转为纯文本结构数据"><a href="#PDF-表格提取转为纯文本结构数据" class="headerlink" title="PDF 表格提取转为纯文本结构数据"></a>PDF 表格提取转为纯文本结构数据</h1><p>本文详细记录了如何使用读光的  Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。</p>
+            <h2 id="PDF-表格提取转为纯文本结构数据"><a href="#PDF-表格提取转为纯文本结构数据" class="headerlink" title="PDF 表格提取转为纯文本结构数据"></a>PDF 表格提取转为纯文本结构数据</h2><p>本文详细记录了如何使用读光的  Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。</p>
 <hr>
 <p>项目地址：<a target="_blank" rel="noopener" href="https://github.com/EvannZhongg/Table_Extraction.git">https://github.com/EvannZhongg/Table_Extraction.git</a></p>
 <hr>
@@ -451,11 +488,11 @@
                     
                         <a href="/tags/OCR/"># OCR</a>
                     
-                        <a href="/tags/PaddleOCR/"># PaddleOCR</a>
-                    
                         <a href="/tags/PDF/"># PDF</a>
                     
                         <a href="/tags/AI/"># AI</a>
+                    
+                        <a href="/tags/PaddleOCR/"># PaddleOCR</a>
                     
                         
                 </span>

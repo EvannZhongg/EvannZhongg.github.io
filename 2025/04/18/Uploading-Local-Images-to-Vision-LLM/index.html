@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 
 <head>
     <meta charset="UTF-8">
@@ -10,12 +10,52 @@
     <meta name="author" content="Evan Zhong">
 
 
+    <meta name="subtitle" content="Record in a limited time.">
 
 
-<!-- oogle Search Console 验证标签 -->
+
+<link rel="canonical" href="https://evannzhongg.github.io/2025/04/18/Uploading-Local-Images-to-Vision-LLM/">
+<meta name="description" content="如何使用视觉大模型上传本地图像并生成回答 在本篇博客中，我将讲解如何将本地图片上传至视觉大模型，并让模型生成图像的描述，本文以 Qwen 的模型举例。 1. 什么是视觉模型？ 视觉模型是一个基于大规模视觉-语言模型的工具，能够将图片与自然语言结合。通过调用该模型，你可以将图像发送给它，并让它生成对图…">
+<meta name="keywords" content="AI,LLM,大模型,Qwen,Agent,Python,视觉">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Evan Zhong&#39;s Blog">
+<meta property="og:title" content="Uploading Local Images to Vision LLM | Evan Zhong&#39;s Blog">
+<meta property="og:description" content="如何使用视觉大模型上传本地图像并生成回答 在本篇博客中，我将讲解如何将本地图片上传至视觉大模型，并让模型生成图像的描述，本文以 Qwen 的模型举例。 1. 什么是视觉模型？ 视觉模型是一个基于大规模视觉-语言模型的工具，能够将图片与自然语言结合。通过调用该模型，你可以将图像发送给它，并让它生成对图…">
+<meta property="og:url" content="https://evannzhongg.github.io/2025/04/18/Uploading-Local-Images-to-Vision-LLM/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://evannzhongg.github.io/image/freakthrow.jpg">
+
+<meta property="article:published_time" content="2025-04-18T02:33:51.000Z">
+<meta property="article:modified_time" content="2025-04-18T03:06:00.471Z">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="大模型">
+<meta property="article:tag" content="Qwen">
+<meta property="article:tag" content="Agent">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="视觉">
+
+
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Uploading Local Images to Vision LLM | Evan Zhong&#39;s Blog">
+<meta name="twitter:description" content="如何使用视觉大模型上传本地图像并生成回答 在本篇博客中，我将讲解如何将本地图片上传至视觉大模型，并让模型生成图像的描述，本文以 Qwen 的模型举例。 1. 什么是视觉模型？ 视觉模型是一个基于大规模视觉-语言模型的工具，能够将图片与自然语言结合。通过调用该模型，你可以将图像发送给它，并让它生成对图…">
+<meta name="twitter:image" content="https://evannzhongg.github.io/image/freakthrow.jpg">
+
+
+<link rel="alternate" type="application/atom+xml" title="Evan Zhong&#39;s Blog" href="/atom.xml">
+
+
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Uploading Local Images to Vision LLM","description":"如何使用视觉大模型上传本地图像并生成回答 在本篇博客中，我将讲解如何将本地图片上传至视觉大模型，并让模型生成图像的描述，本文以 Qwen 的模型举例。 1. 什么是视觉模型？ 视觉模型是一个基于大规模视觉-语言模型的工具，能够将图片与自然语言结合。通过调用该模型，你可以将图像发送给它，并让它生成对图…","url":"https://evannzhongg.github.io/2025/04/18/Uploading-Local-Images-to-Vision-LLM/","mainEntityOfPage":{"@type":"WebPage","@id":"https://evannzhongg.github.io/2025/04/18/Uploading-Local-Images-to-Vision-LLM/"},"datePublished":"2025-04-18T02:33:51.000Z","dateModified":"2025-04-18T03:06:00.471Z","author":{"@type":"Person","name":"Evan Zhong","url":"https://evannzhongg.github.io/"},"publisher":{"@type":"Person","name":"Evan Zhong"},"keywords":"AI,LLM,大模型,Qwen,Agent,Python,视觉","inLanguage":"zh-CN","image":"https://evannzhongg.github.io/image/freakthrow.jpg"}</script>
+
+<!-- Google Search Console 验证标签 -->
 <meta name="google-site-verification" content="0hjafUT-HANjK2izAW9bOEq2iQG3VWXZTPPKl5pVMyc" />
 
-<title>Uploading Local Images to Vision LLM | Hexo</title>
+<title>Uploading Local Images to Vision LLM | Evan Zhong&#39;s Blog</title>
 
 
 
@@ -319,7 +359,7 @@
 
                     
                         <span class="post-time">
-                        Date: <a href="#">April 18, 2025&nbsp;&nbsp;10:33:51</a>
+                        Date: <a href="#">四月 18, 2025&nbsp;&nbsp;10:33:51</a>
                         </span>
                     
                     
@@ -335,7 +375,7 @@
         </header>
 
         <div class="post-content">
-            <h1 id="如何使用视觉大模型上传本地图像并生成回答"><a href="#如何使用视觉大模型上传本地图像并生成回答" class="headerlink" title="如何使用视觉大模型上传本地图像并生成回答"></a>如何使用视觉大模型上传本地图像并生成回答</h1><p>在本篇博客中，我将讲解如何将本地图片上传至视觉大模型，并让模型生成图像的描述，本文以 Qwen 的模型举例。</p>
+            <h2 id="如何使用视觉大模型上传本地图像并生成回答"><a href="#如何使用视觉大模型上传本地图像并生成回答" class="headerlink" title="如何使用视觉大模型上传本地图像并生成回答"></a>如何使用视觉大模型上传本地图像并生成回答</h2><p>在本篇博客中，我将讲解如何将本地图片上传至视觉大模型，并让模型生成图像的描述，本文以 Qwen 的模型举例。</p>
 <h2 id="1-什么是视觉模型？"><a href="#1-什么是视觉模型？" class="headerlink" title="1. 什么是视觉模型？"></a>1. 什么是视觉模型？</h2><p>视觉模型是一个基于大规模视觉-语言模型的工具，能够将图片与自然语言结合。通过调用该模型，你可以将图像发送给它，并让它生成对图像内容的详细描述。例如，它可以描述图像中的物体、场景甚至情感。</p>
 <hr>
 <h2 id="2-Qwen官方的-API-调用方法"><a href="#2-Qwen官方的-API-调用方法" class="headerlink" title="2. Qwen官方的 API 调用方法"></a>2. Qwen官方的 API 调用方法</h2><p>Qwen 官方提供的视觉大模型调用方式是通过直接提供图像的 URL 来进行图像分析。代码如下：</p>

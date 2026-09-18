@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 
 <head>
     <meta charset="UTF-8">
@@ -10,12 +10,52 @@
     <meta name="author" content="Evan Zhong">
 
 
+    <meta name="subtitle" content="Record in a limited time.">
 
 
-<!-- oogle Search Console 验证标签 -->
+
+<link rel="canonical" href="https://evannzhongg.github.io/2025/09/01/Run-vLLM-Locally-and-Expose-with-Cloudflare-Tunnel/">
+<meta name="description" content="通过vLLM部署本地模型并通过Cloudflare Tunnel发布到公网 这份指南将以我本人解决问题的历程为线索，记录每一步的命令、参数、遇到的问题以及相应的解决方案。 1. 准备工作 在开始之前，请确保您具备以下条件： 硬件 ：一台拥有至少24GB显存的NVIDIA GPU。 软件 ： 64位的…">
+<meta name="keywords" content="AI,LLM,大模型,Qwen,后端,vLLM,Cloudflare">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Evan Zhong&#39;s Blog">
+<meta property="og:title" content="Run vLLM Locally and Expose with Cloudflare Tunnel | Evan Zhong&#39;s Blog">
+<meta property="og:description" content="通过vLLM部署本地模型并通过Cloudflare Tunnel发布到公网 这份指南将以我本人解决问题的历程为线索，记录每一步的命令、参数、遇到的问题以及相应的解决方案。 1. 准备工作 在开始之前，请确保您具备以下条件： 硬件 ：一台拥有至少24GB显存的NVIDIA GPU。 软件 ： 64位的…">
+<meta property="og:url" content="https://evannzhongg.github.io/2025/09/01/Run-vLLM-Locally-and-Expose-with-Cloudflare-Tunnel/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://evannzhongg.github.io/image/freakthrow.jpg">
+
+<meta property="article:published_time" content="2025-09-01T03:47:03.000Z">
+<meta property="article:modified_time" content="2025-09-01T10:15:59.120Z">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="大模型">
+<meta property="article:tag" content="Qwen">
+<meta property="article:tag" content="后端">
+<meta property="article:tag" content="vLLM">
+<meta property="article:tag" content="Cloudflare">
+
+
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Run vLLM Locally and Expose with Cloudflare Tunnel | Evan Zhong&#39;s Blog">
+<meta name="twitter:description" content="通过vLLM部署本地模型并通过Cloudflare Tunnel发布到公网 这份指南将以我本人解决问题的历程为线索，记录每一步的命令、参数、遇到的问题以及相应的解决方案。 1. 准备工作 在开始之前，请确保您具备以下条件： 硬件 ：一台拥有至少24GB显存的NVIDIA GPU。 软件 ： 64位的…">
+<meta name="twitter:image" content="https://evannzhongg.github.io/image/freakthrow.jpg">
+
+
+<link rel="alternate" type="application/atom+xml" title="Evan Zhong&#39;s Blog" href="/atom.xml">
+
+
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Run vLLM Locally and Expose with Cloudflare Tunnel","description":"通过vLLM部署本地模型并通过Cloudflare Tunnel发布到公网 这份指南将以我本人解决问题的历程为线索，记录每一步的命令、参数、遇到的问题以及相应的解决方案。 1. 准备工作 在开始之前，请确保您具备以下条件： 硬件 ：一台拥有至少24GB显存的NVIDIA GPU。 软件 ： 64位的…","url":"https://evannzhongg.github.io/2025/09/01/Run-vLLM-Locally-and-Expose-with-Cloudflare-Tunnel/","mainEntityOfPage":{"@type":"WebPage","@id":"https://evannzhongg.github.io/2025/09/01/Run-vLLM-Locally-and-Expose-with-Cloudflare-Tunnel/"},"datePublished":"2025-09-01T03:47:03.000Z","dateModified":"2025-09-01T10:15:59.120Z","author":{"@type":"Person","name":"Evan Zhong","url":"https://evannzhongg.github.io/"},"publisher":{"@type":"Person","name":"Evan Zhong"},"keywords":"AI,LLM,大模型,Qwen,后端,vLLM,Cloudflare","inLanguage":"zh-CN","image":"https://evannzhongg.github.io/image/freakthrow.jpg"}</script>
+
+<!-- Google Search Console 验证标签 -->
 <meta name="google-site-verification" content="0hjafUT-HANjK2izAW9bOEq2iQG3VWXZTPPKl5pVMyc" />
 
-<title>Run vLLM Locally and Expose with Cloudflare Tunnel | Hexo</title>
+<title>Run vLLM Locally and Expose with Cloudflare Tunnel | Evan Zhong&#39;s Blog</title>
 
 
 
@@ -319,7 +359,7 @@
 
                     
                         <span class="post-time">
-                        Date: <a href="#">September 1, 2025&nbsp;&nbsp;11:47:03</a>
+                        Date: <a href="#">九月 1, 2025&nbsp;&nbsp;11:47:03</a>
                         </span>
                     
                     
@@ -335,7 +375,7 @@
         </header>
 
         <div class="post-content">
-            <h1 id="通过vLLM部署本地模型并通过Cloudflare-Tunnel发布到公网"><a href="#通过vLLM部署本地模型并通过Cloudflare-Tunnel发布到公网" class="headerlink" title="通过vLLM部署本地模型并通过Cloudflare Tunnel发布到公网"></a>通过vLLM部署本地模型并通过Cloudflare Tunnel发布到公网</h1><p>这份指南将以我本人解决问题的历程为线索，记录每一步的命令、参数、遇到的问题以及相应的解决方案。</p>
+            <h2 id="通过vLLM部署本地模型并通过Cloudflare-Tunnel发布到公网"><a href="#通过vLLM部署本地模型并通过Cloudflare-Tunnel发布到公网" class="headerlink" title="通过vLLM部署本地模型并通过Cloudflare Tunnel发布到公网"></a>通过vLLM部署本地模型并通过Cloudflare Tunnel发布到公网</h2><p>这份指南将以我本人解决问题的历程为线索，记录每一步的命令、参数、遇到的问题以及相应的解决方案。</p>
 <hr>
 <h2 id="1-准备工作"><a href="#1-准备工作" class="headerlink" title="1. 准备工作"></a>1. 准备工作</h2><p>在开始之前，请确保您具备以下条件：</p>
 <ul>

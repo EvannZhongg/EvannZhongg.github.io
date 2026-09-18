@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 
 <head>
     <meta charset="UTF-8">
@@ -10,12 +10,54 @@
     <meta name="author" content="Evan Zhong">
 
 
+    <meta name="subtitle" content="Record in a limited time.">
 
 
-<!-- oogle Search Console 验证标签 -->
+
+<link rel="canonical" href="https://evannzhongg.github.io/2026/09/19/Nosis-Agent-Runtime-Evolution/">
+<meta name="description" content="由浅入深看懂 Agent Runtime 的七天演进 这是我自己开发 Nosis 的历程记录。 项目地址： https://github.com/EvannZhongg/Nosis.git 素材来自项目自身的 Git 历史：从最初提交 e1d15a4 （2026-09-09）到当前提交 8f7f01…">
+<meta name="keywords" content="AI,LLM,大模型,Function Calling,Agent,Python,架构设计,Agent Runtime,Nosis">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Evan Zhong&#39;s Blog">
+<meta property="og:title" content="Understanding Agent Runtime in One Week | Evan Zhong&#39;s Blog">
+<meta property="og:description" content="由浅入深看懂 Agent Runtime 的七天演进 这是我自己开发 Nosis 的历程记录。 项目地址： https://github.com/EvannZhongg/Nosis.git 素材来自项目自身的 Git 历史：从最初提交 e1d15a4 （2026-09-09）到当前提交 8f7f01…">
+<meta property="og:url" content="https://evannzhongg.github.io/2026/09/19/Nosis-Agent-Runtime-Evolution/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://evannzhongg.github.io/image/freakthrow.jpg">
+
+<meta property="article:published_time" content="2026-09-18T18:10:23.000Z">
+<meta property="article:modified_time" content="2026-09-18T19:06:05.391Z">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="大模型">
+<meta property="article:tag" content="Function Calling">
+<meta property="article:tag" content="Agent">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="架构设计">
+<meta property="article:tag" content="Agent Runtime">
+<meta property="article:tag" content="Nosis">
+
+
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Understanding Agent Runtime in One Week | Evan Zhong&#39;s Blog">
+<meta name="twitter:description" content="由浅入深看懂 Agent Runtime 的七天演进 这是我自己开发 Nosis 的历程记录。 项目地址： https://github.com/EvannZhongg/Nosis.git 素材来自项目自身的 Git 历史：从最初提交 e1d15a4 （2026-09-09）到当前提交 8f7f01…">
+<meta name="twitter:image" content="https://evannzhongg.github.io/image/freakthrow.jpg">
+
+
+<link rel="alternate" type="application/atom+xml" title="Evan Zhong&#39;s Blog" href="/atom.xml">
+
+
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Understanding Agent Runtime in One Week","description":"由浅入深看懂 Agent Runtime 的七天演进 这是我自己开发 Nosis 的历程记录。 项目地址： https://github.com/EvannZhongg/Nosis.git 素材来自项目自身的 Git 历史：从最初提交 e1d15a4 （2026-09-09）到当前提交 8f7f01…","url":"https://evannzhongg.github.io/2026/09/19/Nosis-Agent-Runtime-Evolution/","mainEntityOfPage":{"@type":"WebPage","@id":"https://evannzhongg.github.io/2026/09/19/Nosis-Agent-Runtime-Evolution/"},"datePublished":"2026-09-18T18:10:23.000Z","dateModified":"2026-09-18T19:06:05.391Z","author":{"@type":"Person","name":"Evan Zhong","url":"https://evannzhongg.github.io/"},"publisher":{"@type":"Person","name":"Evan Zhong"},"keywords":"AI,LLM,大模型,Function Calling,Agent,Python,架构设计,Agent Runtime,Nosis","inLanguage":"zh-CN","image":"https://evannzhongg.github.io/image/freakthrow.jpg"}</script>
+
+<!-- Google Search Console 验证标签 -->
 <meta name="google-site-verification" content="0hjafUT-HANjK2izAW9bOEq2iQG3VWXZTPPKl5pVMyc" />
 
-<title>Understanding Agent Runtime in One Week | Hexo</title>
+<title>Understanding Agent Runtime in One Week | Evan Zhong&#39;s Blog</title>
 
 
 
@@ -319,7 +361,7 @@
 
                     
                         <span class="post-time">
-                        Date: <a href="#">September 19, 2026&nbsp;&nbsp;2:10:23</a>
+                        Date: <a href="#">九月 19, 2026&nbsp;&nbsp;2:10:23</a>
                         </span>
                     
                     
@@ -335,7 +377,7 @@
         </header>
 
         <div class="post-content">
-            <h1 id="由浅入深看懂-Agent-Runtime-的七天演进"><a href="#由浅入深看懂-Agent-Runtime-的七天演进" class="headerlink" title="由浅入深看懂 Agent Runtime 的七天演进"></a>由浅入深看懂 Agent Runtime 的七天演进</h1><p>这是我自己开发 Nosis 的历程记录。</p>
+            <h2 id="由浅入深看懂-Agent-Runtime-的七天演进"><a href="#由浅入深看懂-Agent-Runtime-的七天演进" class="headerlink" title="由浅入深看懂 Agent Runtime 的七天演进"></a>由浅入深看懂 Agent Runtime 的七天演进</h2><p>这是我自己开发 Nosis 的历程记录。</p>
 <hr>
 <h2 id="项目地址：https-github-com-EvannZhongg-Nosis-git"><a href="#项目地址：https-github-com-EvannZhongg-Nosis-git" class="headerlink" title="项目地址：https://github.com/EvannZhongg/Nosis.git"></a>项目地址：<a target="_blank" rel="noopener" href="https://github.com/EvannZhongg/Nosis.git">https://github.com/EvannZhongg/Nosis.git</a></h2><p>素材来自项目自身的 Git 历史：从最初提交 <code>e1d15a4</code>（2026-09-09）到当前提交 <code>8f7f019</code>（2026-09-16），一共七天、131 个提交，其中 93 个触及了 <code>agent_core</code> 或 <code>interfaces/bridge</code>。</p>
 <p>我一直想做一个属于自己的 Agent，但很长一段时间里都不知道从哪下手——对它的理解只停留在一些基本的调用运行逻辑上，至于工具、上下文、状态这些东西该怎么组织，完全没有概念。这次总算从头写了一遍，七天之后再回头看，几乎每个阶段的改动我都要重新想一遍，才说得清“当时为什么非改不可”。于是我把这段历程按时间顺序重抄了一遍——这篇笔记的叙述顺序就是我的理解顺序，由浅入深分三层：</p>
@@ -691,18 +733,7 @@
 <h3 id="10-5-不断删除过渡结构"><a href="#10-5-不断删除过渡结构" class="headerlink" title="10.5 不断删除过渡结构"></a>10.5 不断删除过渡结构</h3><p>演进中有多次主动删除：旧 Agent archive wrapper、<code>create_tools</code> alias、可配置 shell timeout、重复 Provider projection、兼容 fallback、Bridge 侧取消清理、重复 Workspace metadata。</p>
 <p><strong>项目并不是只在叠加能力，而是在新职责边界稳定后及时移除旧路径。</strong> 当前架构的清晰度，很大程度上来自这些删除。</p>
 <hr>
-<h2 id="11-我抄下来的八条开发方法"><a href="#11-我抄下来的八条开发方法" class="headerlink" title="11. 我抄下来的八条开发方法"></a>11. 我抄下来的八条开发方法</h2><ol>
-<li>先建立最小可运行闭环，用真实需求暴露边界，而不是预设完整框架；</li>
-<li>每加入一种执行能力，都同时补齐终止条件、错误语义、持久化和 UI 事件；</li>
-<li>第二个调用方出现时统一执行入口，避免复制 Runtime；</li>
-<li>当一个对象同时承担“流程”和“策略”时再拆分，例如 Agent 与 ContextManager；</li>
-<li>并发和恢复以“实际发生的事实”为准，外部协议格式通过 projection 适配；</li>
-<li>Runtime 依赖统一在装配层解析，通过显式 Context 注入；</li>
-<li>新状态尽量复用现有语义，例如 steering 直接成为普通 user message；</li>
-<li>新结构稳定后删除旧 wrapper、fallback 和重复数据源。</li>
-</ol>
-<hr>
-<h2 id="12-附录：Runtime-相关提交索引（按时间）"><a href="#12-附录：Runtime-相关提交索引（按时间）" class="headerlink" title="12. 附录：Runtime 相关提交索引（按时间）"></a>12. 附录：Runtime 相关提交索引（按时间）</h2><p>标记为 <strong>里程碑</strong> 的提交改变了职责边界或状态模型；其余提交主要补齐能力、约束或语义。</p>
+<h2 id="11-附录：Runtime-相关提交索引（按时间）"><a href="#11-附录：Runtime-相关提交索引（按时间）" class="headerlink" title="11. 附录：Runtime 相关提交索引（按时间）"></a>11. 附录：Runtime 相关提交索引（按时间）</h2><p>标记为 <strong>里程碑</strong> 的提交改变了职责边界或状态模型；其余提交主要补齐能力、约束或语义。</p>
 <h3 id="2026-09-09：最小内核与-Tool-Loop"><a href="#2026-09-09：最小内核与-Tool-Loop" class="headerlink" title="2026-09-09：最小内核与 Tool Loop"></a>2026-09-09：最小内核与 Tool Loop</h3><ul>
 <li><code>e1d15a4</code> Initial commit：建立 Agent、Provider、Session 和 CLI 的最小闭环。（<strong>里程碑</strong>）</li>
 <li><code>42e9b60</code> Add timestamped session records and token usage：执行记录开始携带时间和 usage。</li>
@@ -809,17 +840,6 @@
 <li><code>60e6554</code> Store a session’s metadata in a file named after it：Session metadata 收口到 <code>session.json</code>。</li>
 <li><code>8f7f019</code> Derive a session’s workspace from the directory that holds it：Workspace 从目录结构推导，删除重复状态。</li>
 </ul>
-<hr>
-<h2 id="13-结语与我还留在笔记最后的问题"><a href="#13-结语与我还留在笔记最后的问题" class="headerlink" title="13. 结语与我还留在笔记最后的问题"></a>13. 结语与我还留在笔记最后的问题</h2><p>七天的演进最后汇合成几条线：Tool Loop 让 Agent 从回答器变成执行器；结构化事件和 Bridge 让多个前端共享同一 Runtime；ContextManager 让长对话和压缩成为独立机制；Tool Catalog、Context 注入、MCP 和角色化子 Agent 让能力可组合；append-only Journal 让执行事实、恢复和 Provider 格式彻底解耦；Runtime ownership、<code>ask_user</code>、steering 和权限 preset 让 Session 成为可持续、可接管的活动实体。</p>
-<p>所以当前最值得保留的，不是某个具体类，而是开头那四条不变量：执行语义只在 Core 实现一次、Runtime 只在 Bridge 装配一次、真实历史只写 Journal 其余皆投影、Tool 无状态且依赖在调用时注入。它们解释了项目为什么能在快速加入 GUI、MCP、子 Agent、多模态、并发、恢复和实时交互之后，依赖方向依然干净。</p>
-<p>回头看，这三层理解是逐层加上去的：最早只能复述“哪个阶段加了什么”，接着才看清每次重构把职责从谁手里交给了谁，最后才认出这些取舍都来自同一条主线——把执行语义收紧到一处，把容易变化的部分推到装配层和投影层。写到这里，开头那句“当时为什么非改不可”，才算勉强有了答案。</p>
-<p>最后留几个我自己还没想透的问题，等下一轮再读代码：</p>
-<ol>
-<li>并发 Tool 的四种顺序里，UI 展示用 completion order、Provider 用 projection order，那如果用户想“按事实顺序回看一次执行”，最自然的入口应该是 replayed Session 还是 Journal 原文？</li>
-<li><code>ask_user</code> 和 steering 都让用户在 turn 中途介入，这两条通道未来会不会统一成一种“运行中交互”语义？</li>
-<li>当子 Agent 也能装配自己的子 Agent 时，Journal 的 <code>turn_id</code> 嵌套和 ContextUnit 边界还能不能保持现在的简洁？</li>
-</ol>
-<p>如果这篇笔记对同样在啃 Agent Runtime 的人有一点帮助，那它的目的就达到了。</p>
 
         </div>
 

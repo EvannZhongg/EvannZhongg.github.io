@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 
 <head>
     <meta charset="UTF-8">
@@ -10,12 +10,51 @@
     <meta name="author" content="Evan Zhong">
 
 
+    <meta name="subtitle" content="Record in a limited time.">
 
 
-<!-- oogle Search Console 验证标签 -->
+
+<link rel="canonical" href="https://evannzhongg.github.io/2026/03/28/Learning-LLM-Pretraining-from-MiniMind/">
+<meta name="description" content="MiniMind 预训练学习指南 这份文档专门介绍 MiniMind 项目的预训练部分，帮助你真正理解： train_pretrain.py 在训练什么 pretrain_hq.jsonl 这种数据为什么能拿来训练 tokenizer、 input_ids 、embedding、 hidden_si…">
+<meta name="keywords" content="AI,LLM,大模型,Python,预训练,MiniMind">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Evan Zhong&#39;s Blog">
+<meta property="og:title" content="Learning LLM Pretraining from MiniMind | Evan Zhong&#39;s Blog">
+<meta property="og:description" content="MiniMind 预训练学习指南 这份文档专门介绍 MiniMind 项目的预训练部分，帮助你真正理解： train_pretrain.py 在训练什么 pretrain_hq.jsonl 这种数据为什么能拿来训练 tokenizer、 input_ids 、embedding、 hidden_si…">
+<meta property="og:url" content="https://evannzhongg.github.io/2026/03/28/Learning-LLM-Pretraining-from-MiniMind/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://evannzhongg.github.io/image/freakthrow.jpg">
+
+<meta property="article:published_time" content="2026-03-27T17:02:15.000Z">
+<meta property="article:modified_time" content="2026-03-28T05:12:33.432Z">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="大模型">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="预训练">
+<meta property="article:tag" content="MiniMind">
+
+
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Learning LLM Pretraining from MiniMind | Evan Zhong&#39;s Blog">
+<meta name="twitter:description" content="MiniMind 预训练学习指南 这份文档专门介绍 MiniMind 项目的预训练部分，帮助你真正理解： train_pretrain.py 在训练什么 pretrain_hq.jsonl 这种数据为什么能拿来训练 tokenizer、 input_ids 、embedding、 hidden_si…">
+<meta name="twitter:image" content="https://evannzhongg.github.io/image/freakthrow.jpg">
+
+
+<link rel="alternate" type="application/atom+xml" title="Evan Zhong&#39;s Blog" href="/atom.xml">
+
+
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Learning LLM Pretraining from MiniMind","description":"MiniMind 预训练学习指南 这份文档专门介绍 MiniMind 项目的预训练部分，帮助你真正理解： train_pretrain.py 在训练什么 pretrain_hq.jsonl 这种数据为什么能拿来训练 tokenizer、 input_ids 、embedding、 hidden_si…","url":"https://evannzhongg.github.io/2026/03/28/Learning-LLM-Pretraining-from-MiniMind/","mainEntityOfPage":{"@type":"WebPage","@id":"https://evannzhongg.github.io/2026/03/28/Learning-LLM-Pretraining-from-MiniMind/"},"datePublished":"2026-03-27T17:02:15.000Z","dateModified":"2026-03-28T05:12:33.432Z","author":{"@type":"Person","name":"Evan Zhong","url":"https://evannzhongg.github.io/"},"publisher":{"@type":"Person","name":"Evan Zhong"},"keywords":"AI,LLM,大模型,Python,预训练,MiniMind","inLanguage":"zh-CN","image":"https://evannzhongg.github.io/image/freakthrow.jpg"}</script>
+
+<!-- Google Search Console 验证标签 -->
 <meta name="google-site-verification" content="0hjafUT-HANjK2izAW9bOEq2iQG3VWXZTPPKl5pVMyc" />
 
-<title>Learning LLM Pretraining from MiniMind | Hexo</title>
+<title>Learning LLM Pretraining from MiniMind | Evan Zhong&#39;s Blog</title>
 
 
 
@@ -319,7 +358,7 @@
 
                     
                         <span class="post-time">
-                        Date: <a href="#">March 28, 2026&nbsp;&nbsp;1:02:15</a>
+                        Date: <a href="#">三月 28, 2026&nbsp;&nbsp;1:02:15</a>
                         </span>
                     
                     
@@ -335,7 +374,7 @@
         </header>
 
         <div class="post-content">
-            <h1 id="MiniMind-预训练学习指南"><a href="#MiniMind-预训练学习指南" class="headerlink" title="MiniMind 预训练学习指南"></a>MiniMind 预训练学习指南</h1><p>这份文档专门介绍 MiniMind 项目的预训练部分，帮助你真正理解：</p>
+            <h2 id="MiniMind-预训练学习指南"><a href="#MiniMind-预训练学习指南" class="headerlink" title="MiniMind 预训练学习指南"></a>MiniMind 预训练学习指南</h2><p>这份文档专门介绍 MiniMind 项目的预训练部分，帮助你真正理解：</p>
 <ul>
 <li><code>train_pretrain.py</code> 在训练什么</li>
 <li><code>pretrain_hq.jsonl</code> 这种数据为什么能拿来训练</li>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 
 <head>
     <meta charset="UTF-8">
@@ -10,12 +10,53 @@
     <meta name="author" content="Evan Zhong">
 
 
+    <meta name="subtitle" content="Record in a limited time.">
 
 
-<!-- oogle Search Console 验证标签 -->
+
+<link rel="canonical" href="https://evannzhongg.github.io/2025/06/13/Securely-Rendering-LLM-Generated-Local-Image-Paths-in-Flask/">
+<meta name="description" content="一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法 1. 问题背景：浏览器安全模型与本地文件访问限制 在构建基于大型语言模型（ LLM ）的 Web 应用时，一个常见的场景是 LLM 的输出中包含了指向服务器本地文件系统的图片路径。例如，在一个本地搭建的 RAG 系统中， LLM …">
+<meta name="keywords" content="前端,Markdown,AI,LLM,大模型,Python,RAG,flask">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Evan Zhong&#39;s Blog">
+<meta property="og:title" content="Securely Rendering LLM-Generated Local Image Paths in Flask | Evan Zhong&#39;s Blog">
+<meta property="og:description" content="一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法 1. 问题背景：浏览器安全模型与本地文件访问限制 在构建基于大型语言模型（ LLM ）的 Web 应用时，一个常见的场景是 LLM 的输出中包含了指向服务器本地文件系统的图片路径。例如，在一个本地搭建的 RAG 系统中， LLM …">
+<meta property="og:url" content="https://evannzhongg.github.io/2025/06/13/Securely-Rendering-LLM-Generated-Local-Image-Paths-in-Flask/">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://evannzhongg.github.io/image/freakthrow.jpg">
+
+<meta property="article:published_time" content="2025-06-13T07:10:54.000Z">
+<meta property="article:modified_time" content="2025-06-13T07:56:19.609Z">
+<meta property="article:tag" content="前端">
+<meta property="article:tag" content="Markdown">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="大模型">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="RAG">
+<meta property="article:tag" content="flask">
+
+
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Securely Rendering LLM-Generated Local Image Paths in Flask | Evan Zhong&#39;s Blog">
+<meta name="twitter:description" content="一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法 1. 问题背景：浏览器安全模型与本地文件访问限制 在构建基于大型语言模型（ LLM ）的 Web 应用时，一个常见的场景是 LLM 的输出中包含了指向服务器本地文件系统的图片路径。例如，在一个本地搭建的 RAG 系统中， LLM …">
+<meta name="twitter:image" content="https://evannzhongg.github.io/image/freakthrow.jpg">
+
+
+<link rel="alternate" type="application/atom+xml" title="Evan Zhong&#39;s Blog" href="/atom.xml">
+
+
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Securely Rendering LLM-Generated Local Image Paths in Flask","description":"一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法 1. 问题背景：浏览器安全模型与本地文件访问限制 在构建基于大型语言模型（ LLM ）的 Web 应用时，一个常见的场景是 LLM 的输出中包含了指向服务器本地文件系统的图片路径。例如，在一个本地搭建的 RAG 系统中， LLM …","url":"https://evannzhongg.github.io/2025/06/13/Securely-Rendering-LLM-Generated-Local-Image-Paths-in-Flask/","mainEntityOfPage":{"@type":"WebPage","@id":"https://evannzhongg.github.io/2025/06/13/Securely-Rendering-LLM-Generated-Local-Image-Paths-in-Flask/"},"datePublished":"2025-06-13T07:10:54.000Z","dateModified":"2025-06-13T07:56:19.609Z","author":{"@type":"Person","name":"Evan Zhong","url":"https://evannzhongg.github.io/"},"publisher":{"@type":"Person","name":"Evan Zhong"},"keywords":"前端,Markdown,AI,LLM,大模型,Python,RAG,flask","inLanguage":"zh-CN","image":"https://evannzhongg.github.io/image/freakthrow.jpg"}</script>
+
+<!-- Google Search Console 验证标签 -->
 <meta name="google-site-verification" content="0hjafUT-HANjK2izAW9bOEq2iQG3VWXZTPPKl5pVMyc" />
 
-<title>Securely Rendering LLM-Generated Local Image Paths in Flask | Hexo</title>
+<title>Securely Rendering LLM-Generated Local Image Paths in Flask | Evan Zhong&#39;s Blog</title>
 
 
 
@@ -319,7 +360,7 @@
 
                     
                         <span class="post-time">
-                        Date: <a href="#">June 13, 2025&nbsp;&nbsp;15:10:54</a>
+                        Date: <a href="#">六月 13, 2025&nbsp;&nbsp;15:10:54</a>
                         </span>
                     
                     
@@ -335,7 +376,7 @@
         </header>
 
         <div class="post-content">
-            <h1 id="一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法"><a href="#一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法" class="headerlink" title="一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法"></a>一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法</h1><h2 id="1-问题背景：浏览器安全模型与本地文件访问限制"><a href="#1-问题背景：浏览器安全模型与本地文件访问限制" class="headerlink" title="1. 问题背景：浏览器安全模型与本地文件访问限制"></a>1. 问题背景：浏览器安全模型与本地文件访问限制</h2><p>在构建基于大型语言模型（<code>LLM</code>）的 <code>Web</code> 应用时，一个常见的场景是 <code>LLM</code> 的输出中包含了指向服务器本地文件系统的图片路径。例如，在一个本地搭建的 <code>RAG</code> 系统中，<code>LLM</code> 可能会根据上下文生成一段包含标准 <code>Markdown</code> 图片语法的回答：</p>
+            <h2 id="一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法"><a href="#一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法" class="headerlink" title="一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法"></a>一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法</h2><h2 id="1-问题背景：浏览器安全模型与本地文件访问限制"><a href="#1-问题背景：浏览器安全模型与本地文件访问限制" class="headerlink" title="1. 问题背景：浏览器安全模型与本地文件访问限制"></a>1. 问题背景：浏览器安全模型与本地文件访问限制</h2><p>在构建基于大型语言模型（<code>LLM</code>）的 <code>Web</code> 应用时，一个常见的场景是 <code>LLM</code> 的输出中包含了指向服务器本地文件系统的图片路径。例如，在一个本地搭建的 <code>RAG</code> 系统中，<code>LLM</code> 可能会根据上下文生成一段包含标准 <code>Markdown</code> 图片语法的回答：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">![图片](D:\images\image.png)</span><br></pre></td></tr></table></figure>
 <p>然而，如果将这段 <code>Markdown</code> 直接转换为 <code>HTML</code>（例如 <code>&lt;img src=&quot;D:\project\data\images\package_diagram.png&quot;&gt;</code>），并试图在用户浏览器中渲染，该请求将会失败出现报错：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Not allowed to load local resource: file:///D:/...</span><br></pre></td></tr></table></figure>
@@ -441,11 +482,11 @@
                 <span class="tag">
                     
                     
-                        <a href="/tags/AI/"># AI</a>
-                    
                         <a href="/tags/%E5%89%8D%E7%AB%AF/"># 前端</a>
                     
                         <a href="/tags/Markdown/"># Markdown</a>
+                    
+                        <a href="/tags/AI/"># AI</a>
                     
                         <a href="/tags/LLM/"># LLM</a>
                     

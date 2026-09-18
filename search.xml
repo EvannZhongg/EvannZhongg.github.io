@@ -1,104 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Convert PDF Tables to Readable Text</title>
-    <url>/2025/03/28/Convert-PDF-Tables-to-Readable-Text/</url>
-    <content><![CDATA[<h1 id="PDF-表格提取转为纯文本结构数据"><a href="#PDF-表格提取转为纯文本结构数据" class="headerlink" title="PDF 表格提取转为纯文本结构数据"></a>PDF 表格提取转为纯文本结构数据</h1><p>本文详细记录了如何使用读光的  Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Table_Extraction.git">https://github.com/EvannZhongg/Table_Extraction.git</a></p>
-<hr>
-<h2 id="项目概览"><a href="#项目概览" class="headerlink" title="项目概览"></a><strong>项目概览</strong></h2><p>本项目的主要目标是将 PDF 文件中存在的表格，作为图片提取参数信息，尤其是结构化表格。整个流程分为两个阶段：</p>
-<ol>
-<li><strong>表格结构识别</strong> —— 使用 Cycle-CenterNet 模型识别表格中每个单元格的位置（多边形坐标）。</li>
-<li><strong>OCR 文本识别</strong> —— 使用 PaddleOCR 识别图像中所有文字及其位置坐标。</li>
-</ol>
-<hr>
-<h2 id="环境与设置"><a href="#环境与设置" class="headerlink" title="环境与设置"></a><strong>环境与设置</strong></h2><h3 id="1-表格识别模型配置"><a href="#1-表格识别模型配置" class="headerlink" title="1. 表格识别模型配置"></a><strong>1. 表格识别模型配置</strong></h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git lfs install</span><br><span class="line">git <span class="built_in">clone</span> https://www.modelscope.cn/iic/cv_dla34_table-structure-recognition_cycle-centernet.git</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">model_path = <span class="string">&quot;your_absolute_path_to_cv_dla34_table-structure-recognition_cycle-centernet&quot;</span></span><br></pre></td></tr></table></figure>
-<p>建议自定义路径使用绝对路径</p>
-<p>例如：<code>model_path = &quot;D:/Table_Extraction/cv_dla34_table-structure-recognition_cycle-centernet&quot;</code></p>
-<h3 id="2-PaddleOCR-配置"><a href="#2-PaddleOCR-配置" class="headerlink" title="2. PaddleOCR 配置"></a><strong>2. PaddleOCR 配置</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">ocr = PaddleOCR(</span><br><span class="line">    use_gpu=<span class="literal">True</span>,</span><br><span class="line">    lang=<span class="string">&#x27;ch&#x27;</span>,</span><br><span class="line">    det_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_det_infer&#x27;</span>,</span><br><span class="line">    rec_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_rec_infer&#x27;</span>,</span><br><span class="line">    cls_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_ppocr_mobile_v2.0_cls_infer&#x27;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p>建议自定义路径使用绝对路径</p>
-<p>例如： <code>det_model_dir=&#39;D:/Table_Extraction/PaddleOCR/models/ch_PP-OCRv4_det_infer/&#39;</code></p>
-<hr>
-<h2 id="核心函数详解"><a href="#核心函数详解" class="headerlink" title="核心函数详解"></a><strong>核心函数详解</strong></h2><h3 id="1-函数-calculate-iot-cell-text"><a href="#1-函数-calculate-iot-cell-text" class="headerlink" title="1. 函数 calculate_iot(cell, text)"></a><strong>1. 函数 <code>calculate_iot(cell, text)</code></strong></h3><p><strong>功能</strong>：计算 OCR 文本框与表格单元格的交并比（IoT, Intersection over Text）。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>利用两组矩形坐标，计算它们重叠区域的面积。</li>
-<li>然后用重叠面积 &#x2F; 文本框面积作为 IoT 值。</li>
-<li>若值越大，表示文本越“贴合”单元格。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">calculate_iot</span>(<span class="params">cell, text</span>):</span><br><span class="line">    intersection_x1 = <span class="built_in">max</span>(cell[<span class="number">0</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>])</span><br><span class="line">    intersection_y1 = <span class="built_in">max</span>(cell[<span class="number">1</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    intersection_x2 = <span class="built_in">min</span>(cell[<span class="number">2</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>])</span><br><span class="line">    intersection_y2 = <span class="built_in">min</span>(cell[<span class="number">3</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> intersection_x1 &gt;= intersection_x2 <span class="keyword">or</span> intersection_y1 &gt;= intersection_y2:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.0</span></span><br><span class="line"></span><br><span class="line">    intersection_area = (intersection_x2 - intersection_x1) * (intersection_y2 - intersection_y1)</span><br><span class="line">    text_area = (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>]) * (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    <span class="keyword">return</span> intersection_area / text_area</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="2-函数-merge-text-into-cells-cell-coords-ocr-results"><a href="#2-函数-merge-text-into-cells-cell-coords-ocr-results" class="headerlink" title="2. 函数 merge_text_into_cells(cell_coords, ocr_results)"></a><strong>2. 函数 <code>merge_text_into_cells(cell_coords, ocr_results)</code></strong></h3><p><strong>功能</strong>：将 OCR 识别到的文字分配到表格对应单元格中。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>对每个单元格遍历所有 OCR 文本框，计算 IoT。</li>
-<li>若 IoT &gt; 0.5，则认为该文字属于该单元格。</li>
-<li>同时记录那些与所有单元格 IoT &lt; 0.1 的文字（非表格内容）。</li>
-<li>将属于单元格的文字合并为一个字符串。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">merge_text_into_cells</span>(<span class="params">cell_coords, ocr_results</span>):</span><br><span class="line">    cell_text_dict = &#123;cell: [] <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords&#125;</span><br><span class="line">    noncell_text_dict = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords:</span><br><span class="line">        <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">            <span class="keyword">if</span> calculate_iot(cell, result) &gt; <span class="number">0.5</span>:</span><br><span class="line">                cell_text_dict[cell].append(result[<span class="string">&#x27;text&#x27;</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">all</span>(calculate_iot(cell, result) &lt; <span class="number">0.1</span> <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords):</span><br><span class="line">            noncell_text_dict[result[<span class="string">&#x27;coords&#x27;</span>]] = result[<span class="string">&#x27;text&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    merged_text = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> cell, texts <span class="keyword">in</span> cell_text_dict.items():</span><br><span class="line">        merged_text[cell] = <span class="string">&#x27;&#x27;</span>.join(texts).strip()</span><br><span class="line">    <span class="keyword">for</span> coords, text <span class="keyword">in</span> noncell_text_dict.items():</span><br><span class="line">        merged_text[coords] = <span class="string">&#x27;&#x27;</span>.join(text).strip()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> merged_text</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="3-函数-adjust-coordinates-merged-text-image-path"><a href="#3-函数-adjust-coordinates-merged-text-image-path" class="headerlink" title="3. 函数 adjust_coordinates(merged_text, image_path)"></a><strong>3. 函数 <code>adjust_coordinates(merged_text, image_path)</code></strong></h3><p><strong>功能</strong>：将 y 坐标相近的单元格进行聚类并统一化，方便后续行级别排序。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>图像越高，容许的 y 偏差越大，使用 height &#x2F; 100 作为容差。</li>
-<li>将 y 值差距小于阈值的单元格归为一组。</li>
-<li>每组内统一 y 值为该组的平均 y 值，确保在同一“水平行”内。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">adjust_coordinates</span>(<span class="params">merged_text, image_path</span>):</span><br><span class="line">    image = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    width, height = image.size</span><br><span class="line">    threshold = height / <span class="number">100</span></span><br><span class="line">    groups = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> coordinates, text <span class="keyword">in</span> merged_text.items():</span><br><span class="line">        found_group = <span class="literal">False</span></span><br><span class="line">        <span class="keyword">for</span> group_y <span class="keyword">in</span> groups.keys():</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">abs</span>(coordinates[<span class="number">1</span>] - group_y) &lt;= threshold:</span><br><span class="line">                groups[group_y].append((coordinates, text))</span><br><span class="line">                found_group = <span class="literal">True</span></span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> found_group:</span><br><span class="line">            groups[coordinates[<span class="number">1</span>]] = [(coordinates, text)]</span><br><span class="line"></span><br><span class="line">    adjusted_coordinates = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> group_y, group_coords <span class="keyword">in</span> groups.items():</span><br><span class="line">        avg_y = <span class="built_in">sum</span>(coord[<span class="number">0</span>][<span class="number">1</span>] <span class="keyword">for</span> coord <span class="keyword">in</span> group_coords) / <span class="built_in">len</span>(group_coords)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> group_coords:</span><br><span class="line">            adjusted_coordinates[(i[<span class="number">0</span>][<span class="number">0</span>], avg_y, i[<span class="number">0</span>][<span class="number">2</span>], i[<span class="number">0</span>][<span class="number">3</span>])] = i[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> adjusted_coordinates</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="4-函数-draw-text-boxes-image-path-boxes-texts"><a href="#4-函数-draw-text-boxes-image-path-boxes-texts" class="headerlink" title="4.函数 draw_text_boxes(image_path, boxes, texts)"></a><strong>4.函数 <code>draw_text_boxes(image_path, boxes, texts)</code></strong></h3><p><strong>功能</strong>：在图像上绘制表格框与文字内容，进行可视化标注。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>利用 PIL 创建空白图层，绘制框线与文字。</li>
-<li>若文字宽度超出单元格宽度，则使用 textwrap 进行自动换行。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">draw_text_boxes</span>(<span class="params">image_path, boxes, texts</span>):</span><br><span class="line">    img = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    img = Image.new(<span class="string">&#x27;RGB&#x27;</span>, img.size, (<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>))</span><br><span class="line">    draw = ImageDraw.Draw(img)</span><br><span class="line">    font = ImageFont.truetype(<span class="string">&quot;./chinese_cht.ttf&quot;</span>, size=<span class="number">15</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> box, text <span class="keyword">in</span> <span class="built_in">zip</span>(boxes, texts):</span><br><span class="line">        x0, y0, x1, y1 = box</span><br><span class="line">        x0, x1 = <span class="built_in">sorted</span>([x0, x1])</span><br><span class="line">        y0, y1 = <span class="built_in">sorted</span>([y0, y1])</span><br><span class="line">        normalized_box = (x0, y0, x1, y1)</span><br><span class="line">        draw.rectangle(normalized_box, outline=<span class="string">&#x27;red&#x27;</span>, width=<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        text_len = draw.textbbox((x0, y0), text, font=font)</span><br><span class="line">        <span class="keyword">if</span> (text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) &gt; (x1 - x0):</span><br><span class="line">            text = <span class="string">&#x27;\n&#x27;</span>.join(textwrap.wrap(text, width=<span class="built_in">int</span>(</span><br><span class="line">                np.ceil(<span class="built_in">len</span>(text) / np.ceil((text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) / (x1 - x0))))))</span><br><span class="line"></span><br><span class="line">        draw.text((x0, y0), text, font=font, fill=<span class="string">&#x27;black&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    img.save(<span class="string">&#x27;your_image_storage_path/output.png&#x27;</span>)</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="5-最终文本输出（结构化行）"><a href="#5-最终文本输出（结构化行）" class="headerlink" title="5. 最终文本输出（结构化行）"></a><strong>5. 最终文本输出（结构化行）</strong></h2><p><strong>功能</strong>：将所有坐标按 y → x 排序，按行归组输出结构化文本。</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">adjusted_merged_text_sorted = <span class="built_in">sorted</span>(adjusted_merged_text.items(), key=<span class="keyword">lambda</span> x: (x[<span class="number">0</span>][<span class="number">1</span>], x[<span class="number">0</span>][<span class="number">0</span>]))</span><br><span class="line">adjusted_merged_text_sorted_group = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> coordinates, text <span class="keyword">in</span> adjusted_merged_text_sorted:</span><br><span class="line">    <span class="keyword">if</span> coordinates[<span class="number">1</span>] <span class="keyword">not</span> <span class="keyword">in</span> adjusted_merged_text_sorted_group:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]] = [text]</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]].append(text)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> text_list <span class="keyword">in</span> adjusted_merged_text_sorted_group.values():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27; | &#x27;</span>.join(text_list))</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a><strong>使用方法</strong></h2><ol>
-<li>运行脚本选择表格图片：</li>
-</ol>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python Table_Extraction.py</span><br></pre></td></tr></table></figure>
-<p>或</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python main.py</span><br></pre></td></tr></table></figure>
-
-<p>在项目目录会输出效果图片，终端会输出文本结果</p>
-<ol start="2">
-<li>效果展示<br><img src="https://github.com/user-attachments/assets/8e0f21d8-af6c-4da2-beb7-dcc7f5f73115" alt="image"><br><img src="https://github.com/user-attachments/assets/45ad3906-09df-431e-a4ec-4f0779137195" alt="image"><br>输出结果如下，你可以用这组结果测试大模型是否能读懂这组表格： <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PartNumber | TotalCapacitance(Ct) @ 50 V,(pF) | TotalCapacitance(Ct) @ 0 V,(pF) | SeriesResistance (Rs),@10 mA,(②) | MinorityCarrierLifetime (TL)@ 10 mA(ns) | VoltageRating2(M) | I-RegionThickness(μm) | ThermalResistance(0JC)(°C/W)</span><br><span class="line">Maximum | Typical | Maximum | Typical | Minimum | Nominal | Maximum</span><br><span class="line"></span><br><span class="line">Switching Applications(continued)</span><br><span class="line">| APD0810-203 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 174</span><br><span class="line">| APD0810-210 | 0.40 | 0.45 | 1.5 | 160 | 100 | 8 | 75</span><br><span class="line">| APD0810-219 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 143</span><br><span class="line">| APD0810-240 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 155</span><br><span class="line">| APD1505-203 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 172</span><br><span class="line">| APD1505-210 | 0.40 | 0.45@10 V | 2.5 | 350 | 200 | 15 | 74</span><br><span class="line">| APD1505-219 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 142</span><br><span class="line">| APD1505-240 | 0.40 | 0.45 @ 10 V | 2.5 | 350 | 200 | 15 | 150</span><br><span class="line">| APD1510-203 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 168</span><br><span class="line">| APD1510-210 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 70</span><br><span class="line">| APD1510-219 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 137</span><br><span class="line">| APD1510-240 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 149</span><br><span class="line">| APD1520-203 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 155</span><br><span class="line">| APD1520-210 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 57</span><br><span class="line">| APD1520-219 | 0.45 | 0.50 | 1.2 | 900 | 200 | 15 | 124</span><br><span class="line">| APD1520-240 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 136</span><br><span class="line"></span><br><span class="line">AttenuatorApplications</span><br><span class="line">| APD2220-203 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 132</span><br><span class="line">| APD2220-210 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 32</span><br><span class="line">| APD2220-219 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 104</span><br><span class="line">| APD2220-240 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 115</span><br></pre></td></tr></table></figure></li>
-</ol>
-<hr>
-<h2 id="补充说明"><a href="#补充说明" class="headerlink" title="补充说明"></a><strong>补充说明</strong></h2><ul>
-<li>字体文件 <code>chinese_cht.ttf</code> 必须存在，或替换为系统可识别的中文字体。</li>
-<li>对于复杂结构表格，当前模型仍然无法很好的处理。</li>
-</ul>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/wyf3/llm_related/tree/main">wyf3</a> 和 <a href="https://github.com/PaddlePaddle/PaddleOCR">PaddleOCR</a></p>
-]]></content>
-      <categories>
-        <category>OCR</category>
-      </categories>
-      <tags>
-        <tag>OCR</tag>
-        <tag>PaddleOCR</tag>
-        <tag>PDF</tag>
-        <tag>AI</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Add Copy Button to Code Blocks in Hexo</title>
     <url>/2025/03/26/Add-Copy-Button-to-Code-Blocks-in-Hexo/</url>
-    <content><![CDATA[<h1 id="Hexo-为代码块添加复制功能按钮"><a href="#Hexo-为代码块添加复制功能按钮" class="headerlink" title="Hexo 为代码块添加复制功能按钮"></a>Hexo 为代码块添加复制功能按钮</h1><p>本文详细记录如何在 Hexo 中为代码块添加一个 “复制” 按钮，实现一键复制代码功能。</p>
+    <content><![CDATA[<h2 id="Hexo-为代码块添加复制功能按钮"><a href="#Hexo-为代码块添加复制功能按钮" class="headerlink" title="Hexo 为代码块添加复制功能按钮"></a>Hexo 为代码块添加复制功能按钮</h2><p>本文详细记录如何在 Hexo 中为代码块添加一个 “复制” 按钮，实现一键复制代码功能。</p>
 <hr>
 <p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
 <hr>
@@ -149,9 +54,87 @@
       </tags>
   </entry>
   <entry>
+    <title>Custom Search Integration for Hexo Chic</title>
+    <url>/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/</url>
+    <content><![CDATA[<h2 id="Hexo-Chic-主题实现搜索功能"><a href="#Hexo-Chic-主题实现搜索功能" class="headerlink" title="Hexo + Chic 主题实现搜索功能"></a>Hexo + Chic 主题实现搜索功能</h2><p>本文详细记录如何在 Hexo 中使用插件 <code>hexo-generator-searchdb</code> 实现基于 Chic 主题的实时搜索功能，包括搜索回复框、搜索结果卡、暗黑模式适配等细节。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="1-安装插件"><a href="#1-安装插件" class="headerlink" title="1. 安装插件"></a><strong>1. 安装插件</strong></h2><p>在 <code>Hexo</code> 根目录下打开终端，执行</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-generator-searchdb --save</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="2-打开根目录的-config-yml-文件，添加（或修改）如下配置："><a href="#2-打开根目录的-config-yml-文件，添加（或修改）如下配置：" class="headerlink" title="2. 打开根目录的 _config.yml 文件，添加（或修改）如下配置："></a><strong>2. 打开根目录的 <code>_config.yml</code> 文件，添加（或修改）如下配置：</strong></h2><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">search:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">search.xml</span></span><br><span class="line">  <span class="attr">field:</span> <span class="string">post</span></span><br><span class="line">  <span class="attr">format:</span> <span class="string">html</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="3-新建-search-css"><a href="#3-新建-search-css" class="headerlink" title="3. 新建 search.css"></a><strong>3. 新建 search.css</strong></h2><p><strong>建议路径</strong>: <code>themes/hexo-theme-Chic/source/css/search.css</code></p>
+<p>包含搜索框&#x2F;结果卡&#x2F;暗黑模式样式，具体代码可带文章开头项目地址中获取：</p>
+<figure class="highlight css"><table><tr><td class="code"><pre><span class="line"><span class="selector-class">.search-container</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-result</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.search-card</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.search-card-snippet</span> &#123; ... &#125;</span><br><span class="line"><span class="keyword">@media</span> (<span class="attribute">max-width</span>: <span class="number">768px</span>) &#123; ... &#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="4-修改主题配置"><a href="#4-修改主题配置" class="headerlink" title="4. 修改主题配置"></a><strong>4. 修改主题配置</strong></h2><p>打开<code>theme/hexo-theme-Chic/_config.yml</code> ，在 <code>stylesheets </code>下增加一行 <code>search.css</code> 确保加载样式文件：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">stylesheets:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/style.css</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/search.css</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="5-修改-header-ejs"><a href="#5-修改-header-ejs" class="headerlink" title="5. 修改 header.ejs"></a><strong>5. 修改 <code>header.ejs</code></strong></h2><p>对 <code>theme/hexo-theme-Chic/layout/_partial/header.ejs</code> 做了如下关键修改，具体代码可带文章开头项目地址中获取：</p>
+<h3 id="HTML-结构改动"><a href="#HTML-结构改动" class="headerlink" title="HTML 结构改动"></a>HTML 结构改动</h3><ol>
+<li>在 <code>&lt;div class=&quot;menu navbar-right&quot;&gt;</code> 中插入：</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;div class=&quot;search-container&quot;&gt;</span><br><span class="line">  &lt;a href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍&lt;/a&gt;</span><br><span class="line">  &lt;input type=&quot;text&quot; id=&quot;nav-search-input&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">  &lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>在移动端导航 <code>&lt;div id=&quot;mobile-menu&quot;&gt;</code> 中插入：</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;a class=&quot;menu-item&quot; href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍 Search&lt;/a&gt;</span><br><span class="line">&lt;input type=&quot;text&quot; id=&quot;nav-search-input-mobile&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">&lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>保留并未更动主题切换按钮：</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;input id=&quot;switch_default&quot; type=&quot;checkbox&quot; class=&quot;switch_default&quot;&gt;</span><br><span class="line">&lt;label for=&quot;switch_default&quot; class=&quot;toggleBtn&quot;&gt;&lt;/label&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="JS-功能改动"><a href="#JS-功能改动" class="headerlink" title="JS 功能改动"></a>JS 功能改动</h3><ol>
+<li>新增 <code>toggleSearchInput()</code> 方法，实现点击图标展开或隐藏搜索框。</li>
+<li></li>
+</ol>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">toggleSearchInput</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> inputs = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-input&#x27;</span>);</span><br><span class="line">  <span class="keyword">const</span> results = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-result&#x27;</span>);</span><br><span class="line">  inputs.<span class="title function_">forEach</span>(<span class="function"><span class="params">input</span> =&gt;</span> &#123;</span><br><span class="line">    input.<span class="property">classList</span>.<span class="title function_">toggle</span>(<span class="string">&#x27;active&#x27;</span>);</span><br><span class="line">    <span class="keyword">if</span> (input.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;active&#x27;</span>)) input.<span class="title function_">focus</span>();</span><br><span class="line">  &#125;);</span><br><span class="line">  results.<span class="title function_">forEach</span>(<span class="function"><span class="params">r</span> =&gt;</span> r.<span class="property">style</span>.<span class="property">display</span> = <span class="string">&#x27;none&#x27;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>新增 <code>navSearch()</code> 方法，实现从 <code>search.xml</code> 加载数据并匹配关键词。</li>
+<li>新增空白点击关闭逻辑：点击 <code>.search-container</code> 外部区域后自动隐藏搜索框并清空内容。</li>
+</ol>
+<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">if</span> (searchData.<span class="property">length</span> === <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="title function_">fetch</span>(<span class="string">&#x27;&lt;%- config.root %&gt;search.xml&#x27;</span>)</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">res</span> =&gt;</span> res.<span class="title function_">text</span>())</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">xmlText</span> =&gt;</span> &#123;</span><br><span class="line">        <span class="keyword">const</span> parser = <span class="keyword">new</span> <span class="title class_">DOMParser</span>();</span><br><span class="line">        <span class="keyword">const</span> xml = parser.<span class="title function_">parseFromString</span>(xmlText, <span class="string">&#x27;text/xml&#x27;</span>);</span><br><span class="line">        <span class="keyword">const</span> entries = xml.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;entry&#x27;</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">let</span> entry <span class="keyword">of</span> entries) &#123;</span><br><span class="line">          searchData.<span class="title function_">push</span>(&#123;</span><br><span class="line">            <span class="attr">title</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;title&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">content</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;content&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">url</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;url&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span></span><br><span class="line">          &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="6-实现效果"><a href="#6-实现效果" class="headerlink" title="6. 实现效果"></a><strong>6. 实现效果</strong></h2><ul>
+<li>点击图标展示搜索框</li>
+<li>实时匹配文章标题&#x2F;内容</li>
+<li>结果以卡片形式展示</li>
+<li>黑色模式样式自动选择</li>
+<li>点击空白地方隐藏结果 + 清空文本</li>
+<li>移动端页面适配<br><img src="https://github.com/user-attachments/assets/430d306f-1836-4ca7-b1c6-c249835622bd" alt="image"></li>
+</ul>
+<hr>
+<h2 id="7-新生成并运行-Hexo"><a href="#7-新生成并运行-Hexo" class="headerlink" title="7. 新生成并运行 Hexo"></a><strong>7. 新生成并运行 Hexo</strong></h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
+
+<p>然后访问 <code>http://localhost:4000</code>，查看任意一段代码块，右上角应出现复制图标按钮。</p>
+<hr>
+<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> , <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 和 <a href="https://github.com/next-theme/hexo-generator-searchdb.git">hexo-generator-searchdb</a>。</p>
+]]></content>
+      <categories>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>Blog</tag>
+        <tag>前端</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Docling2md</title>
     <url>/2025/05/01/Docling2md/</url>
-    <content><![CDATA[<h1 id="基于Docling结合多模态大模型的的PDF转Markdown"><a href="#基于Docling结合多模态大模型的的PDF转Markdown" class="headerlink" title="基于Docling结合多模态大模型的的PDF转Markdown"></a>基于Docling结合多模态大模型的的PDF转Markdown</h1><hr>
+    <content><![CDATA[<h2 id="基于Docling结合多模态大模型的的PDF转Markdown"><a href="#基于Docling结合多模态大模型的的PDF转Markdown" class="headerlink" title="基于Docling结合多模态大模型的的PDF转Markdown"></a>基于Docling结合多模态大模型的的PDF转Markdown</h2><hr>
 <p>项目地址：<a href="https://github.com/EvannZhongg/Docling2md.git">https://github.com/EvannZhongg/Docling2md.git</a></p>
 <hr>
 <h2 id="项目背景"><a href="#项目背景" class="headerlink" title="项目背景"></a>项目背景</h2><p>基于我当前使用 LLM 构建<strong>知识图谱</strong>的处理的是一系列复杂的PDF文档，这些PDF包含图像、表格、文本等混合信息，结构复杂、不规则，无法直接使用。因此，需要一个高效、可扩展的结构化预处理流程来为后续实体提取、图谱生成等任务提供清洗后的输入，同时流程需要兼具准确和部署的方便。</p>
@@ -333,8 +316,8 @@
       <tags>
         <tag>OCR</tag>
         <tag>PDF</tag>
-        <tag>AI</tag>
         <tag>Markdown</tag>
+        <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
         <tag>Qwen</tag>
@@ -345,7 +328,7 @@
   <entry>
     <title>Function Calling</title>
     <url>/2025/03/21/Function-Calling/</url>
-    <content><![CDATA[<h1 id="Qwen-Function-Calling-详细解析"><a href="#Qwen-Function-Calling-详细解析" class="headerlink" title="Qwen Function Calling 详细解析"></a>Qwen Function Calling 详细解析</h1><hr>
+    <content><![CDATA[<h2 id="Qwen-Function-Calling-详细解析"><a href="#Qwen-Function-Calling-详细解析" class="headerlink" title="Qwen Function Calling 详细解析"></a>Qwen Function Calling 详细解析</h2><hr>
 <p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
 <hr>
 <h2 id="1-Function-Calling-简介"><a href="#1-Function-Calling-简介" class="headerlink" title="1. Function Calling 简介"></a><strong>1. Function Calling 简介</strong></h2><p>Function Calling 允许 LLM（大语言模型）在回答问题时调用外部工具，如 Python 函数、API 或数据库查询。</p>
@@ -465,87 +448,9 @@
       </tags>
   </entry>
   <entry>
-    <title>Custom Search Integration for Hexo Chic</title>
-    <url>/2025/03/27/Custom-Search-Integration-for-Hexo-Chic/</url>
-    <content><![CDATA[<h1 id="Hexo-Chic-主题实现搜索功能"><a href="#Hexo-Chic-主题实现搜索功能" class="headerlink" title="Hexo + Chic 主题实现搜索功能"></a>Hexo + Chic 主题实现搜索功能</h1><p>本文详细记录如何在 Hexo 中使用插件 <code>hexo-generator-searchdb</code> 实现基于 Chic 主题的实时搜索功能，包括搜索回复框、搜索结果卡、暗黑模式适配等细节。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
-<hr>
-<h2 id="1-安装插件"><a href="#1-安装插件" class="headerlink" title="1. 安装插件"></a><strong>1. 安装插件</strong></h2><p>在 <code>Hexo</code> 根目录下打开终端，执行</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm install hexo-generator-searchdb --save</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="2-打开根目录的-config-yml-文件，添加（或修改）如下配置："><a href="#2-打开根目录的-config-yml-文件，添加（或修改）如下配置：" class="headerlink" title="2. 打开根目录的 _config.yml 文件，添加（或修改）如下配置："></a><strong>2. 打开根目录的 <code>_config.yml</code> 文件，添加（或修改）如下配置：</strong></h2><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">search:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">search.xml</span></span><br><span class="line">  <span class="attr">field:</span> <span class="string">post</span></span><br><span class="line">  <span class="attr">format:</span> <span class="string">html</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="3-新建-search-css"><a href="#3-新建-search-css" class="headerlink" title="3. 新建 search.css"></a><strong>3. 新建 search.css</strong></h2><p><strong>建议路径</strong>: <code>themes/hexo-theme-Chic/source/css/search.css</code></p>
-<p>包含搜索框&#x2F;结果卡&#x2F;暗黑模式样式，具体代码可带文章开头项目地址中获取：</p>
-<figure class="highlight css"><table><tr><td class="code"><pre><span class="line"><span class="selector-class">.search-container</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.nav-search-result</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.search-card</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.nav-search-input</span> &#123; ... &#125;</span><br><span class="line"><span class="selector-class">.dark-theme</span> <span class="selector-class">.search-card-snippet</span> &#123; ... &#125;</span><br><span class="line"><span class="keyword">@media</span> (<span class="attribute">max-width</span>: <span class="number">768px</span>) &#123; ... &#125;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="4-修改主题配置"><a href="#4-修改主题配置" class="headerlink" title="4. 修改主题配置"></a><strong>4. 修改主题配置</strong></h2><p>打开<code>theme/hexo-theme-Chic/_config.yml</code> ，在 <code>stylesheets </code>下增加一行 <code>search.css</code> 确保加载样式文件：</p>
-<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">stylesheets:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/style.css</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/css/search.css</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="5-修改-header-ejs"><a href="#5-修改-header-ejs" class="headerlink" title="5. 修改 header.ejs"></a><strong>5. 修改 <code>header.ejs</code></strong></h2><p>对 <code>theme/hexo-theme-Chic/layout/_partial/header.ejs</code> 做了如下关键修改，具体代码可带文章开头项目地址中获取：</p>
-<h3 id="HTML-结构改动"><a href="#HTML-结构改动" class="headerlink" title="HTML 结构改动"></a>HTML 结构改动</h3><ol>
-<li>在 <code>&lt;div class=&quot;menu navbar-right&quot;&gt;</code> 中插入：</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;div class=&quot;search-container&quot;&gt;</span><br><span class="line">  &lt;a href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍&lt;/a&gt;</span><br><span class="line">  &lt;input type=&quot;text&quot; id=&quot;nav-search-input&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">  &lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li>在移动端导航 <code>&lt;div id=&quot;mobile-menu&quot;&gt;</code> 中插入：</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;a class=&quot;menu-item&quot; href=&quot;javascript:;&quot; onclick=&quot;toggleSearchInput()&quot;&gt;🔍 Search&lt;/a&gt;</span><br><span class="line">&lt;input type=&quot;text&quot; id=&quot;nav-search-input-mobile&quot; class=&quot;nav-search-input&quot; placeholder=&quot;Search...&quot; oninput=&quot;navSearch(this)&quot;&gt;</span><br><span class="line">&lt;div id=&quot;nav-search-result&quot; class=&quot;nav-search-result&quot;&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-
-<ol start="3">
-<li>保留并未更动主题切换按钮：</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;input id=&quot;switch_default&quot; type=&quot;checkbox&quot; class=&quot;switch_default&quot;&gt;</span><br><span class="line">&lt;label for=&quot;switch_default&quot; class=&quot;toggleBtn&quot;&gt;&lt;/label&gt;</span><br></pre></td></tr></table></figure>
-
-<h3 id="JS-功能改动"><a href="#JS-功能改动" class="headerlink" title="JS 功能改动"></a>JS 功能改动</h3><ol>
-<li>新增 <code>toggleSearchInput()</code> 方法，实现点击图标展开或隐藏搜索框。</li>
-<li></li>
-</ol>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">toggleSearchInput</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> inputs = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-input&#x27;</span>);</span><br><span class="line">  <span class="keyword">const</span> results = <span class="variable language_">document</span>.<span class="title function_">querySelectorAll</span>(<span class="string">&#x27;.nav-search-result&#x27;</span>);</span><br><span class="line">  inputs.<span class="title function_">forEach</span>(<span class="function"><span class="params">input</span> =&gt;</span> &#123;</span><br><span class="line">    input.<span class="property">classList</span>.<span class="title function_">toggle</span>(<span class="string">&#x27;active&#x27;</span>);</span><br><span class="line">    <span class="keyword">if</span> (input.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;active&#x27;</span>)) input.<span class="title function_">focus</span>();</span><br><span class="line">  &#125;);</span><br><span class="line">  results.<span class="title function_">forEach</span>(<span class="function"><span class="params">r</span> =&gt;</span> r.<span class="property">style</span>.<span class="property">display</span> = <span class="string">&#x27;none&#x27;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<ol start="2">
-<li>新增 <code>navSearch()</code> 方法，实现从 <code>search.xml</code> 加载数据并匹配关键词。</li>
-<li>新增空白点击关闭逻辑：点击 <code>.search-container</code> 外部区域后自动隐藏搜索框并清空内容。</li>
-</ol>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line"><span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">if</span> (searchData.<span class="property">length</span> === <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="title function_">fetch</span>(<span class="string">&#x27;&lt;%- config.root %&gt;search.xml&#x27;</span>)</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">res</span> =&gt;</span> res.<span class="title function_">text</span>())</span><br><span class="line">      .<span class="title function_">then</span>(<span class="function"><span class="params">xmlText</span> =&gt;</span> &#123;</span><br><span class="line">        <span class="keyword">const</span> parser = <span class="keyword">new</span> <span class="title class_">DOMParser</span>();</span><br><span class="line">        <span class="keyword">const</span> xml = parser.<span class="title function_">parseFromString</span>(xmlText, <span class="string">&#x27;text/xml&#x27;</span>);</span><br><span class="line">        <span class="keyword">const</span> entries = xml.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;entry&#x27;</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">let</span> entry <span class="keyword">of</span> entries) &#123;</span><br><span class="line">          searchData.<span class="title function_">push</span>(&#123;</span><br><span class="line">            <span class="attr">title</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;title&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">content</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;content&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            <span class="attr">url</span>: entry.<span class="title function_">getElementsByTagName</span>(<span class="string">&#x27;url&#x27;</span>)[<span class="number">0</span>]?.<span class="property">textContent</span> || <span class="string">&#x27;&#x27;</span></span><br><span class="line">          &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="6-实现效果"><a href="#6-实现效果" class="headerlink" title="6. 实现效果"></a><strong>6. 实现效果</strong></h2><ul>
-<li>点击图标展示搜索框</li>
-<li>实时匹配文章标题&#x2F;内容</li>
-<li>结果以卡片形式展示</li>
-<li>黑色模式样式自动选择</li>
-<li>点击空白地方隐藏结果 + 清空文本</li>
-<li>移动端页面适配<br><img src="https://github.com/user-attachments/assets/430d306f-1836-4ca7-b1c6-c249835622bd" alt="image"></li>
-</ul>
-<hr>
-<h2 id="7-新生成并运行-Hexo"><a href="#7-新生成并运行-Hexo" class="headerlink" title="7. 新生成并运行 Hexo"></a><strong>7. 新生成并运行 Hexo</strong></h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo s</span><br></pre></td></tr></table></figure>
-
-<p>然后访问 <code>http://localhost:4000</code>，查看任意一段代码块，右上角应出现复制图标按钮。</p>
-<hr>
-<p>修改后的相关完整代码可以在文章开头的项目地址中获取</p>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> , <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 和 <a href="https://github.com/next-theme/hexo-generator-searchdb.git">hexo-generator-searchdb</a>。</p>
-]]></content>
-      <categories>
-        <category>Hexo</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-        <tag>博客</tag>
-        <tag>Blog</tag>
-        <tag>前端</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>GraphRag Visualization</title>
     <url>/2025/04/11/GraphRag-Visualization/</url>
-    <content><![CDATA[<h1 id="GraphRag-图谱可视化"><a href="#GraphRag-图谱可视化" class="headerlink" title="GraphRag 图谱可视化"></a>GraphRag 图谱可视化</h1><p>本文将详细介绍如何将微软 GraphRAG 框架生成的 <code>entities.parquet</code> 与 <code>relationships.parquet</code> 文件转换为 GraphML 图结构在 Gephi 中实现可视化。我们将逐步解释数据格式、图构建逻辑及 Python 代码实现的每个模块功能。</p>
+    <content><![CDATA[<h2 id="GraphRag-图谱可视化"><a href="#GraphRag-图谱可视化" class="headerlink" title="GraphRag 图谱可视化"></a>GraphRag 图谱可视化</h2><p>本文将详细介绍如何将微软 GraphRAG 框架生成的 <code>entities.parquet</code> 与 <code>relationships.parquet</code> 文件转换为 GraphML 图结构在 Gephi 中实现可视化。我们将逐步解释数据格式、图构建逻辑及 Python 代码实现的每个模块功能。</p>
 <hr>
 <p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
 <hr>
@@ -802,9 +707,104 @@
       </tags>
   </entry>
   <entry>
+    <title>Convert PDF Tables to Readable Text</title>
+    <url>/2025/03/28/Convert-PDF-Tables-to-Readable-Text/</url>
+    <content><![CDATA[<h2 id="PDF-表格提取转为纯文本结构数据"><a href="#PDF-表格提取转为纯文本结构数据" class="headerlink" title="PDF 表格提取转为纯文本结构数据"></a>PDF 表格提取转为纯文本结构数据</h2><p>本文详细记录了如何使用读光的  Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Table_Extraction.git">https://github.com/EvannZhongg/Table_Extraction.git</a></p>
+<hr>
+<h2 id="项目概览"><a href="#项目概览" class="headerlink" title="项目概览"></a><strong>项目概览</strong></h2><p>本项目的主要目标是将 PDF 文件中存在的表格，作为图片提取参数信息，尤其是结构化表格。整个流程分为两个阶段：</p>
+<ol>
+<li><strong>表格结构识别</strong> —— 使用 Cycle-CenterNet 模型识别表格中每个单元格的位置（多边形坐标）。</li>
+<li><strong>OCR 文本识别</strong> —— 使用 PaddleOCR 识别图像中所有文字及其位置坐标。</li>
+</ol>
+<hr>
+<h2 id="环境与设置"><a href="#环境与设置" class="headerlink" title="环境与设置"></a><strong>环境与设置</strong></h2><h3 id="1-表格识别模型配置"><a href="#1-表格识别模型配置" class="headerlink" title="1. 表格识别模型配置"></a><strong>1. 表格识别模型配置</strong></h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git lfs install</span><br><span class="line">git <span class="built_in">clone</span> https://www.modelscope.cn/iic/cv_dla34_table-structure-recognition_cycle-centernet.git</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">model_path = <span class="string">&quot;your_absolute_path_to_cv_dla34_table-structure-recognition_cycle-centernet&quot;</span></span><br></pre></td></tr></table></figure>
+<p>建议自定义路径使用绝对路径</p>
+<p>例如：<code>model_path = &quot;D:/Table_Extraction/cv_dla34_table-structure-recognition_cycle-centernet&quot;</code></p>
+<h3 id="2-PaddleOCR-配置"><a href="#2-PaddleOCR-配置" class="headerlink" title="2. PaddleOCR 配置"></a><strong>2. PaddleOCR 配置</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">ocr = PaddleOCR(</span><br><span class="line">    use_gpu=<span class="literal">True</span>,</span><br><span class="line">    lang=<span class="string">&#x27;ch&#x27;</span>,</span><br><span class="line">    det_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_det_infer&#x27;</span>,</span><br><span class="line">    rec_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_rec_infer&#x27;</span>,</span><br><span class="line">    cls_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_ppocr_mobile_v2.0_cls_infer&#x27;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>建议自定义路径使用绝对路径</p>
+<p>例如： <code>det_model_dir=&#39;D:/Table_Extraction/PaddleOCR/models/ch_PP-OCRv4_det_infer/&#39;</code></p>
+<hr>
+<h2 id="核心函数详解"><a href="#核心函数详解" class="headerlink" title="核心函数详解"></a><strong>核心函数详解</strong></h2><h3 id="1-函数-calculate-iot-cell-text"><a href="#1-函数-calculate-iot-cell-text" class="headerlink" title="1. 函数 calculate_iot(cell, text)"></a><strong>1. 函数 <code>calculate_iot(cell, text)</code></strong></h3><p><strong>功能</strong>：计算 OCR 文本框与表格单元格的交并比（IoT, Intersection over Text）。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>利用两组矩形坐标，计算它们重叠区域的面积。</li>
+<li>然后用重叠面积 &#x2F; 文本框面积作为 IoT 值。</li>
+<li>若值越大，表示文本越“贴合”单元格。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">calculate_iot</span>(<span class="params">cell, text</span>):</span><br><span class="line">    intersection_x1 = <span class="built_in">max</span>(cell[<span class="number">0</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>])</span><br><span class="line">    intersection_y1 = <span class="built_in">max</span>(cell[<span class="number">1</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    intersection_x2 = <span class="built_in">min</span>(cell[<span class="number">2</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>])</span><br><span class="line">    intersection_y2 = <span class="built_in">min</span>(cell[<span class="number">3</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> intersection_x1 &gt;= intersection_x2 <span class="keyword">or</span> intersection_y1 &gt;= intersection_y2:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.0</span></span><br><span class="line"></span><br><span class="line">    intersection_area = (intersection_x2 - intersection_x1) * (intersection_y2 - intersection_y1)</span><br><span class="line">    text_area = (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>]) * (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    <span class="keyword">return</span> intersection_area / text_area</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="2-函数-merge-text-into-cells-cell-coords-ocr-results"><a href="#2-函数-merge-text-into-cells-cell-coords-ocr-results" class="headerlink" title="2. 函数 merge_text_into_cells(cell_coords, ocr_results)"></a><strong>2. 函数 <code>merge_text_into_cells(cell_coords, ocr_results)</code></strong></h3><p><strong>功能</strong>：将 OCR 识别到的文字分配到表格对应单元格中。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>对每个单元格遍历所有 OCR 文本框，计算 IoT。</li>
+<li>若 IoT &gt; 0.5，则认为该文字属于该单元格。</li>
+<li>同时记录那些与所有单元格 IoT &lt; 0.1 的文字（非表格内容）。</li>
+<li>将属于单元格的文字合并为一个字符串。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">merge_text_into_cells</span>(<span class="params">cell_coords, ocr_results</span>):</span><br><span class="line">    cell_text_dict = &#123;cell: [] <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords&#125;</span><br><span class="line">    noncell_text_dict = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords:</span><br><span class="line">        <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">            <span class="keyword">if</span> calculate_iot(cell, result) &gt; <span class="number">0.5</span>:</span><br><span class="line">                cell_text_dict[cell].append(result[<span class="string">&#x27;text&#x27;</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">all</span>(calculate_iot(cell, result) &lt; <span class="number">0.1</span> <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords):</span><br><span class="line">            noncell_text_dict[result[<span class="string">&#x27;coords&#x27;</span>]] = result[<span class="string">&#x27;text&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    merged_text = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> cell, texts <span class="keyword">in</span> cell_text_dict.items():</span><br><span class="line">        merged_text[cell] = <span class="string">&#x27;&#x27;</span>.join(texts).strip()</span><br><span class="line">    <span class="keyword">for</span> coords, text <span class="keyword">in</span> noncell_text_dict.items():</span><br><span class="line">        merged_text[coords] = <span class="string">&#x27;&#x27;</span>.join(text).strip()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> merged_text</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="3-函数-adjust-coordinates-merged-text-image-path"><a href="#3-函数-adjust-coordinates-merged-text-image-path" class="headerlink" title="3. 函数 adjust_coordinates(merged_text, image_path)"></a><strong>3. 函数 <code>adjust_coordinates(merged_text, image_path)</code></strong></h3><p><strong>功能</strong>：将 y 坐标相近的单元格进行聚类并统一化，方便后续行级别排序。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>图像越高，容许的 y 偏差越大，使用 height &#x2F; 100 作为容差。</li>
+<li>将 y 值差距小于阈值的单元格归为一组。</li>
+<li>每组内统一 y 值为该组的平均 y 值，确保在同一“水平行”内。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">adjust_coordinates</span>(<span class="params">merged_text, image_path</span>):</span><br><span class="line">    image = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    width, height = image.size</span><br><span class="line">    threshold = height / <span class="number">100</span></span><br><span class="line">    groups = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> coordinates, text <span class="keyword">in</span> merged_text.items():</span><br><span class="line">        found_group = <span class="literal">False</span></span><br><span class="line">        <span class="keyword">for</span> group_y <span class="keyword">in</span> groups.keys():</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">abs</span>(coordinates[<span class="number">1</span>] - group_y) &lt;= threshold:</span><br><span class="line">                groups[group_y].append((coordinates, text))</span><br><span class="line">                found_group = <span class="literal">True</span></span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> found_group:</span><br><span class="line">            groups[coordinates[<span class="number">1</span>]] = [(coordinates, text)]</span><br><span class="line"></span><br><span class="line">    adjusted_coordinates = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> group_y, group_coords <span class="keyword">in</span> groups.items():</span><br><span class="line">        avg_y = <span class="built_in">sum</span>(coord[<span class="number">0</span>][<span class="number">1</span>] <span class="keyword">for</span> coord <span class="keyword">in</span> group_coords) / <span class="built_in">len</span>(group_coords)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> group_coords:</span><br><span class="line">            adjusted_coordinates[(i[<span class="number">0</span>][<span class="number">0</span>], avg_y, i[<span class="number">0</span>][<span class="number">2</span>], i[<span class="number">0</span>][<span class="number">3</span>])] = i[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> adjusted_coordinates</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="4-函数-draw-text-boxes-image-path-boxes-texts"><a href="#4-函数-draw-text-boxes-image-path-boxes-texts" class="headerlink" title="4.函数 draw_text_boxes(image_path, boxes, texts)"></a><strong>4.函数 <code>draw_text_boxes(image_path, boxes, texts)</code></strong></h3><p><strong>功能</strong>：在图像上绘制表格框与文字内容，进行可视化标注。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>利用 PIL 创建空白图层，绘制框线与文字。</li>
+<li>若文字宽度超出单元格宽度，则使用 textwrap 进行自动换行。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">draw_text_boxes</span>(<span class="params">image_path, boxes, texts</span>):</span><br><span class="line">    img = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    img = Image.new(<span class="string">&#x27;RGB&#x27;</span>, img.size, (<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>))</span><br><span class="line">    draw = ImageDraw.Draw(img)</span><br><span class="line">    font = ImageFont.truetype(<span class="string">&quot;./chinese_cht.ttf&quot;</span>, size=<span class="number">15</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> box, text <span class="keyword">in</span> <span class="built_in">zip</span>(boxes, texts):</span><br><span class="line">        x0, y0, x1, y1 = box</span><br><span class="line">        x0, x1 = <span class="built_in">sorted</span>([x0, x1])</span><br><span class="line">        y0, y1 = <span class="built_in">sorted</span>([y0, y1])</span><br><span class="line">        normalized_box = (x0, y0, x1, y1)</span><br><span class="line">        draw.rectangle(normalized_box, outline=<span class="string">&#x27;red&#x27;</span>, width=<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        text_len = draw.textbbox((x0, y0), text, font=font)</span><br><span class="line">        <span class="keyword">if</span> (text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) &gt; (x1 - x0):</span><br><span class="line">            text = <span class="string">&#x27;\n&#x27;</span>.join(textwrap.wrap(text, width=<span class="built_in">int</span>(</span><br><span class="line">                np.ceil(<span class="built_in">len</span>(text) / np.ceil((text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) / (x1 - x0))))))</span><br><span class="line"></span><br><span class="line">        draw.text((x0, y0), text, font=font, fill=<span class="string">&#x27;black&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    img.save(<span class="string">&#x27;your_image_storage_path/output.png&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="5-最终文本输出（结构化行）"><a href="#5-最终文本输出（结构化行）" class="headerlink" title="5. 最终文本输出（结构化行）"></a><strong>5. 最终文本输出（结构化行）</strong></h2><p><strong>功能</strong>：将所有坐标按 y → x 排序，按行归组输出结构化文本。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">adjusted_merged_text_sorted = <span class="built_in">sorted</span>(adjusted_merged_text.items(), key=<span class="keyword">lambda</span> x: (x[<span class="number">0</span>][<span class="number">1</span>], x[<span class="number">0</span>][<span class="number">0</span>]))</span><br><span class="line">adjusted_merged_text_sorted_group = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> coordinates, text <span class="keyword">in</span> adjusted_merged_text_sorted:</span><br><span class="line">    <span class="keyword">if</span> coordinates[<span class="number">1</span>] <span class="keyword">not</span> <span class="keyword">in</span> adjusted_merged_text_sorted_group:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]] = [text]</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]].append(text)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> text_list <span class="keyword">in</span> adjusted_merged_text_sorted_group.values():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27; | &#x27;</span>.join(text_list))</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a><strong>使用方法</strong></h2><ol>
+<li>运行脚本选择表格图片：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python Table_Extraction.py</span><br></pre></td></tr></table></figure>
+<p>或</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python main.py</span><br></pre></td></tr></table></figure>
+
+<p>在项目目录会输出效果图片，终端会输出文本结果</p>
+<ol start="2">
+<li>效果展示<br><img src="https://github.com/user-attachments/assets/8e0f21d8-af6c-4da2-beb7-dcc7f5f73115" alt="image"><br><img src="https://github.com/user-attachments/assets/45ad3906-09df-431e-a4ec-4f0779137195" alt="image"><br>输出结果如下，你可以用这组结果测试大模型是否能读懂这组表格： <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PartNumber | TotalCapacitance(Ct) @ 50 V,(pF) | TotalCapacitance(Ct) @ 0 V,(pF) | SeriesResistance (Rs),@10 mA,(②) | MinorityCarrierLifetime (TL)@ 10 mA(ns) | VoltageRating2(M) | I-RegionThickness(μm) | ThermalResistance(0JC)(°C/W)</span><br><span class="line">Maximum | Typical | Maximum | Typical | Minimum | Nominal | Maximum</span><br><span class="line"></span><br><span class="line">Switching Applications(continued)</span><br><span class="line">| APD0810-203 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 174</span><br><span class="line">| APD0810-210 | 0.40 | 0.45 | 1.5 | 160 | 100 | 8 | 75</span><br><span class="line">| APD0810-219 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 143</span><br><span class="line">| APD0810-240 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 155</span><br><span class="line">| APD1505-203 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 172</span><br><span class="line">| APD1505-210 | 0.40 | 0.45@10 V | 2.5 | 350 | 200 | 15 | 74</span><br><span class="line">| APD1505-219 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 142</span><br><span class="line">| APD1505-240 | 0.40 | 0.45 @ 10 V | 2.5 | 350 | 200 | 15 | 150</span><br><span class="line">| APD1510-203 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 168</span><br><span class="line">| APD1510-210 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 70</span><br><span class="line">| APD1510-219 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 137</span><br><span class="line">| APD1510-240 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 149</span><br><span class="line">| APD1520-203 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 155</span><br><span class="line">| APD1520-210 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 57</span><br><span class="line">| APD1520-219 | 0.45 | 0.50 | 1.2 | 900 | 200 | 15 | 124</span><br><span class="line">| APD1520-240 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 136</span><br><span class="line"></span><br><span class="line">AttenuatorApplications</span><br><span class="line">| APD2220-203 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 132</span><br><span class="line">| APD2220-210 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 32</span><br><span class="line">| APD2220-219 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 104</span><br><span class="line">| APD2220-240 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 115</span><br></pre></td></tr></table></figure></li>
+</ol>
+<hr>
+<h2 id="补充说明"><a href="#补充说明" class="headerlink" title="补充说明"></a><strong>补充说明</strong></h2><ul>
+<li>字体文件 <code>chinese_cht.ttf</code> 必须存在，或替换为系统可识别的中文字体。</li>
+<li>对于复杂结构表格，当前模型仍然无法很好的处理。</li>
+</ul>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/wyf3/llm_related/tree/main">wyf3</a> 和 <a href="https://github.com/PaddlePaddle/PaddleOCR">PaddleOCR</a></p>
+]]></content>
+      <categories>
+        <category>OCR</category>
+      </categories>
+      <tags>
+        <tag>OCR</tag>
+        <tag>PDF</tag>
+        <tag>AI</tag>
+        <tag>PaddleOCR</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Hexo AI Assistant</title>
     <url>/2025/03/29/Hexo-AI-Assistant/</url>
-    <content><![CDATA[<h1 id="Hexo-博客专属AI助手"><a href="#Hexo-博客专属AI助手" class="headerlink" title="Hexo 博客专属AI助手"></a>Hexo 博客专属AI助手</h1><p>本项目通过向量检索 + 大语言模型（RAG）结合本地 Hexo 博客内容，实现基于语义的智能问答接口。</p>
+    <content><![CDATA[<h2 id="Hexo-博客专属AI助手"><a href="#Hexo-博客专属AI助手" class="headerlink" title="Hexo 博客专属AI助手"></a>Hexo 博客专属AI助手</h2><p>本项目通过向量检索 + 大语言模型（RAG）结合本地 Hexo 博客内容，实现基于语义的智能问答接口。</p>
 <hr>
 <p>项目地址：<a href="https://github.com/EvannZhongg/hexo-ai-assistant.git">https://github.com/EvannZhongg/hexo-ai-assistant.git</a></p>
 <hr>
@@ -897,11 +897,11 @@
         <category>Hexo</category>
       </categories>
       <tags>
-        <tag>AI</tag>
         <tag>Hexo</tag>
         <tag>博客</tag>
         <tag>Blog</tag>
         <tag>前端</tag>
+        <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
         <tag>Agent</tag>
@@ -912,9 +912,89 @@
       </tags>
   </entry>
   <entry>
+    <title>Hexo and Chic themes add Giscus comment system</title>
+    <url>/2025/03/24/Hexo-and-Chic-themes-add-Giscus-comment-system/</url>
+    <content><![CDATA[<h2 id="Hexo-Chic-主题集成-Giscus-评论系统详细教程"><a href="#Hexo-Chic-主题集成-Giscus-评论系统详细教程" class="headerlink" title="Hexo + Chic 主题集成 Giscus 评论系统详细教程"></a>Hexo + Chic 主题集成 Giscus 评论系统详细教程</h2><p>本教程将教你如何在 Hexo 博客（使用 Chic 主题）中添加 Giscus 评论系统，让你的博客拥有简洁现代的评论功能，并且支持明暗模式自动切换。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
+<hr>
+<h2 id="一、准备工作"><a href="#一、准备工作" class="headerlink" title="一、准备工作"></a>一、准备工作</h2><h3 id="1-确保你已完成以下条件："><a href="#1-确保你已完成以下条件：" class="headerlink" title="1. 确保你已完成以下条件："></a>1. 确保你已完成以下条件：</h3><ul>
+<li>博客已搭建并使用 Hexo 框架</li>
+<li>正在使用 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 主题</li>
+<li>博客托管在 GitHub</li>
+</ul>
+<h3 id="2-启用-GitHub-Discussions-功能"><a href="#2-启用-GitHub-Discussions-功能" class="headerlink" title="2. 启用 GitHub Discussions 功能"></a>2. 启用 GitHub Discussions 功能</h3><ol>
+<li>打开你的博客仓库页面</li>
+<li>点击顶部的 <strong>Settings</strong></li>
+<li>在 <strong>General</strong> 中 <strong>Features</strong> 区域点击 <strong>Discussions</strong></li>
+<li>勾选 <strong>“Enable discussions for this repository”</strong></li>
+</ol>
+<p><img src="https://github.com/user-attachments/assets/6686f60e-f2d4-4a87-8b0d-d3425070c2cd" alt="setting_discussions"></p>
+<hr>
+<h2 id="二、使用-Giscus-app-获取评论配置代码"><a href="#二、使用-Giscus-app-获取评论配置代码" class="headerlink" title="二、使用 Giscus.app 获取评论配置代码"></a>二、使用 Giscus.app 获取评论配置代码</h2><ol>
+<li>打开 Giscus 官网：<a href="https://giscus.app/">https://giscus.app</a></li>
+<li>登录 GitHub 账号</li>
+<li>安装 <a href="https://github.com/apps/giscus">giscus</a> app  ，否则访客将无法评论和回应</li>
+<li>按照如下选择进行配置：<ul>
+<li>Repository: 选择你的博客仓库（注意填写格式为 <strong>用户名&#x2F;仓库名</strong>）</li>
+<li>Discussion Category: 建议选择 <strong>Announcements</strong>（防止读者随意发帖）</li>
+<li>Page ↔️ Discussion Mapping: 选择 <strong>pathname</strong></li>
+<li>Theme: 选择任意（我们后续会动态控制）</li>
+<li>Language: 选择 <code>zh-CN</code></li>
+</ul>
+</li>
+<li>点击页面底部的 <strong>“Copy code snippet”</strong>，复制生成的 <code>&lt;script&gt;</code> 标签代码</li>
+</ol>
+<hr>
+<h2 id="三、创建评论模块文件"><a href="#三、创建评论模块文件" class="headerlink" title="三、创建评论模块文件"></a>三、创建评论模块文件</h2><h3 id="1-打开博客主题目录"><a href="#1-打开博客主题目录" class="headerlink" title="1. 打开博客主题目录"></a>1. 打开博客主题目录</h3><p>路径：<code>themes/hexo-theme-Chic/layout/_partial/</code></p>
+<h3 id="2-创建或编辑-livers-ejs-文件"><a href="#2-创建或编辑-livers-ejs-文件" class="headerlink" title="2. 创建或编辑 livers.ejs 文件"></a>2. 创建或编辑 <code>livers.ejs</code> 文件</h3><p>将 Giscus 中生成的 <code>&lt;script&gt;</code> 标签代码填入文件（注意部分参数的区别），同时增加主题自动同步功能代码：</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- Giscus 评论区挂载点 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">&quot;giscus-container&quot;</span> <span class="attr">style</span>=<span class="string">&quot;margin-top: 2.5rem;&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- Giscus 动态加载脚本：初始加载 + 明暗主题切换 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">createGiscus</span>(<span class="params">theme</span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> giscusContainer = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;giscus-container&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">if</span> (!giscusContainer) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 清除旧的评论 iframe</span></span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="property">innerHTML</span> = <span class="string">&#x27;&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> script = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(<span class="string">&#x27;script&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">src</span> = <span class="string">&#x27;https://giscus.app/client.js&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 替换为你的 GitHub 仓库信息（格式：username/repo）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo&#x27;</span>, <span class="string">&#x27;your-github-username/your-repo-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">   <span class="comment">// 替换为你的 repo-id 和 category-id（在 giscus.app 配置页面生成）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo-id&#x27;</span>, <span class="string">&#x27;your-repo-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category&#x27;</span>, <span class="string">&#x27;your-category-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category-id&#x27;</span>, <span class="string">&#x27;your-category-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 其他常规推荐设置</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-mapping&#x27;</span>, <span class="string">&#x27;pathname&#x27;</span>);           <span class="comment">// 用页面路径匹配评论帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-strict&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);                   <span class="comment">// 若无匹配帖则创建新帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-reactions-enabled&#x27;</span>, <span class="string">&#x27;1&#x27;</span>);        <span class="comment">// 启用表情反应</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-emit-metadata&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);            <span class="comment">// 不输出元数据</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-input-position&#x27;</span>, <span class="string">&#x27;top&#x27;</span>);         <span class="comment">// 输入框在评论上方</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-theme&#x27;</span>, theme);                </span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-lang&#x27;</span>, <span class="string">&#x27;zh-CN&#x27;</span>);                 <span class="comment">// 中文界面</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;crossorigin&#x27;</span>, <span class="string">&#x27;anonymous&#x27;</span>);           <span class="comment">// 跨域资源安全</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">async</span> = <span class="literal">true</span>;                                       </span></span><br><span class="line"><span class="language-javascript">     </span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="title function_">appendChild</span>(script);</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">getCurrentTheme</span>(<span class="params"></span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">return</span> <span class="variable language_">document</span>.<span class="property">body</span>.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;dark-theme&#x27;</span>) ? <span class="string">&#x27;dark&#x27;</span> : <span class="string">&#x27;light&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 页面首次加载，根据当前主题挂载评论</span></span></span><br><span class="line"><span class="language-javascript">    <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听按钮点击切换主题 → 重载评论区</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> buttons = [</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">querySelector</span>(<span class="string">&#x27;.toggleBtn&#x27;</span>),</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;mobile-toggle-theme&#x27;</span>)</span></span><br><span class="line"><span class="language-javascript">    ];</span></span><br><span class="line"><span class="language-javascript">    buttons.<span class="title function_">forEach</span>(<span class="function"><span class="params">btn</span> =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="keyword">if</span> (!btn) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript">      btn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="built_in">setTimeout</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">          <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">        &#125;, <span class="number">400</span>); <span class="comment">// 稍作延迟，确保 class 切换完毕</span></span></span><br><span class="line"><span class="language-javascript">      &#125;);</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听 body class 改变（保险方案）</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> observer = <span class="keyword">new</span> <span class="title class_">MutationObserver</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript">    observer.<span class="title function_">observe</span>(<span class="variable language_">document</span>.<span class="property">body</span>, &#123; <span class="attr">attributes</span>: <span class="literal">true</span>, <span class="attr">attributeFilter</span>: [<span class="string">&#x27;class&#x27;</span>] &#125;);</span></span><br><span class="line"><span class="language-javascript">  &#125;);</span></span><br><span class="line"><span class="language-javascript"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>⚠️ 请将 <code>data-repo-id</code> 和 <code>data-category-id</code> 替换为你从 giscus.app 获取的值。</p>
+</blockquote>
+<hr>
+<h2 id="四、引入评论模块到文章模板"><a href="#四、引入评论模块到文章模板" class="headerlink" title="四、引入评论模块到文章模板"></a>四、引入评论模块到文章模板</h2><p>打开文件：<code>themes/hexo-theme-Chic/layout/_page/post.ejs</code></p>
+<p>找到代码底部，在 <code>&lt;/article&gt;</code> 上方添加一行代码 <code>&lt;%- partial(&#39;_partial/livers&#39;) %&gt;</code> ：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">        &lt;section class=&quot;post-nav&quot;&gt;</span><br><span class="line">            &lt;% if(post.prev)&#123; %&gt;</span><br><span class="line">                &lt;a class=&quot;prev&quot; rel=&quot;prev&quot; href=&quot;&lt;%- url_for(post.prev.path)%&gt;&quot;&gt;&lt;%- post.prev.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">            &lt;% if(post.next)&#123; %&gt;</span><br><span class="line">            &lt;a class=&quot;next&quot; rel=&quot;next&quot; href=&quot;&lt;%- url_for(post.next.path)%&gt;&quot;&gt;&lt;%- post.next.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">        &lt;/section&gt;</span><br><span class="line"></span><br><span class="line">	&lt;%- partial(&#x27;_partial/livers&#x27;) %&gt;</span><br><span class="line"></span><br><span class="line">    &lt;/article&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+
+<p>这会让评论区出现在每篇文章的底部。</p>
+<hr>
+<h2 id="五、重新部署博客"><a href="#五、重新部署博客" class="headerlink" title="五、重新部署博客"></a>五、重新部署博客</h2><p>执行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
+
+<p>然后访问你的博客文章页面，应该就能看到 Giscus 评论框</p>
+<hr>
+<h2 id="成功效果"><a href="#成功效果" class="headerlink" title="成功效果"></a>成功效果</h2><p><img src="https://github.com/user-attachments/assets/b75a7ffd-d99b-4d4a-9e95-cb43b06b36aa" alt="discussions"> </p>
+<ul>
+<li>支持 GitHub 登录评论</li>
+<li>评论存储在 Discussions 中，便于管理</li>
+<li>评论区支持明暗主题自动切换，与 Chic 博客风格一致</li>
+</ul>
+<hr>
+<p>如有问题，可以：</p>
+<ul>
+<li>检查浏览器控制台是否有加载错误</li>
+<li>确保 repo-id 和 category-id 正确</li>
+<li>确保启用了 Discussions 功能</li>
+</ul>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
+]]></content>
+      <categories>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>博客</tag>
+        <tag>Blog</tag>
+        <tag>前端</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Learning LLM Pretraining from MiniMind</title>
     <url>/2026/03/28/Learning-LLM-Pretraining-from-MiniMind/</url>
-    <content><![CDATA[<h1 id="MiniMind-预训练学习指南"><a href="#MiniMind-预训练学习指南" class="headerlink" title="MiniMind 预训练学习指南"></a>MiniMind 预训练学习指南</h1><p>这份文档专门介绍 MiniMind 项目的预训练部分，帮助你真正理解：</p>
+    <content><![CDATA[<h2 id="MiniMind-预训练学习指南"><a href="#MiniMind-预训练学习指南" class="headerlink" title="MiniMind 预训练学习指南"></a>MiniMind 预训练学习指南</h2><p>这份文档专门介绍 MiniMind 项目的预训练部分，帮助你真正理解：</p>
 <ul>
 <li><code>train_pretrain.py</code> 在训练什么</li>
 <li><code>pretrain_hq.jsonl</code> 这种数据为什么能拿来训练</li>
@@ -1805,7 +1885,7 @@
   <entry>
     <title>NebulaGraphQAChain</title>
     <url>/2025/03/20/NebulaGraphQAChain/</url>
-    <content><![CDATA[<h1 id="基于Langchain在NebulaGraph实现GraphRAG"><a href="#基于Langchain在NebulaGraph实现GraphRAG" class="headerlink" title="基于Langchain在NebulaGraph实现GraphRAG"></a>基于Langchain在NebulaGraph实现GraphRAG</h1><hr>
+    <content><![CDATA[<h2 id="基于Langchain在NebulaGraph实现GraphRAG"><a href="#基于Langchain在NebulaGraph实现GraphRAG" class="headerlink" title="基于Langchain在NebulaGraph实现GraphRAG"></a>基于Langchain在NebulaGraph实现GraphRAG</h2><hr>
 <p>项目地址：<a href="https://github.com/EvannZhongg/NebulaGraphQAChain.git">https://github.com/EvannZhongg/NebulaGraphQAChain.git</a></p>
 <hr>
 <h2 id="1-这个代码是做什么的？"><a href="#1-这个代码是做什么的？" class="headerlink" title="1. 这个代码是做什么的？"></a><strong>1. 这个代码是做什么的？</strong></h2><ul>
@@ -1899,7 +1979,7 @@
   <entry>
     <title>Understanding Agent Runtime in One Week</title>
     <url>/2026/09/19/Nosis-Agent-Runtime-Evolution/</url>
-    <content><![CDATA[<h1 id="由浅入深看懂-Agent-Runtime-的七天演进"><a href="#由浅入深看懂-Agent-Runtime-的七天演进" class="headerlink" title="由浅入深看懂 Agent Runtime 的七天演进"></a>由浅入深看懂 Agent Runtime 的七天演进</h1><p>这是我自己开发 Nosis 的历程记录。</p>
+    <content><![CDATA[<h2 id="由浅入深看懂-Agent-Runtime-的七天演进"><a href="#由浅入深看懂-Agent-Runtime-的七天演进" class="headerlink" title="由浅入深看懂 Agent Runtime 的七天演进"></a>由浅入深看懂 Agent Runtime 的七天演进</h2><p>这是我自己开发 Nosis 的历程记录。</p>
 <hr>
 <h2 id="项目地址：https-github-com-EvannZhongg-Nosis-git"><a href="#项目地址：https-github-com-EvannZhongg-Nosis-git" class="headerlink" title="项目地址：https://github.com/EvannZhongg/Nosis.git"></a>项目地址：<a href="https://github.com/EvannZhongg/Nosis.git">https://github.com/EvannZhongg/Nosis.git</a></h2><p>素材来自项目自身的 Git 历史：从最初提交 <code>e1d15a4</code>（2026-09-09）到当前提交 <code>8f7f019</code>（2026-09-16），一共七天、131 个提交，其中 93 个触及了 <code>agent_core</code> 或 <code>interfaces/bridge</code>。</p>
 <p>我一直想做一个属于自己的 Agent，但很长一段时间里都不知道从哪下手——对它的理解只停留在一些基本的调用运行逻辑上，至于工具、上下文、状态这些东西该怎么组织，完全没有概念。这次总算从头写了一遍，七天之后再回头看，几乎每个阶段的改动我都要重新想一遍，才说得清“当时为什么非改不可”。于是我把这段历程按时间顺序重抄了一遍——这篇笔记的叙述顺序就是我的理解顺序，由浅入深分三层：</p>
@@ -2255,18 +2335,7 @@
 <h3 id="10-5-不断删除过渡结构"><a href="#10-5-不断删除过渡结构" class="headerlink" title="10.5 不断删除过渡结构"></a>10.5 不断删除过渡结构</h3><p>演进中有多次主动删除：旧 Agent archive wrapper、<code>create_tools</code> alias、可配置 shell timeout、重复 Provider projection、兼容 fallback、Bridge 侧取消清理、重复 Workspace metadata。</p>
 <p><strong>项目并不是只在叠加能力，而是在新职责边界稳定后及时移除旧路径。</strong> 当前架构的清晰度，很大程度上来自这些删除。</p>
 <hr>
-<h2 id="11-我抄下来的八条开发方法"><a href="#11-我抄下来的八条开发方法" class="headerlink" title="11. 我抄下来的八条开发方法"></a>11. 我抄下来的八条开发方法</h2><ol>
-<li>先建立最小可运行闭环，用真实需求暴露边界，而不是预设完整框架；</li>
-<li>每加入一种执行能力，都同时补齐终止条件、错误语义、持久化和 UI 事件；</li>
-<li>第二个调用方出现时统一执行入口，避免复制 Runtime；</li>
-<li>当一个对象同时承担“流程”和“策略”时再拆分，例如 Agent 与 ContextManager；</li>
-<li>并发和恢复以“实际发生的事实”为准，外部协议格式通过 projection 适配；</li>
-<li>Runtime 依赖统一在装配层解析，通过显式 Context 注入；</li>
-<li>新状态尽量复用现有语义，例如 steering 直接成为普通 user message；</li>
-<li>新结构稳定后删除旧 wrapper、fallback 和重复数据源。</li>
-</ol>
-<hr>
-<h2 id="12-附录：Runtime-相关提交索引（按时间）"><a href="#12-附录：Runtime-相关提交索引（按时间）" class="headerlink" title="12. 附录：Runtime 相关提交索引（按时间）"></a>12. 附录：Runtime 相关提交索引（按时间）</h2><p>标记为 <strong>里程碑</strong> 的提交改变了职责边界或状态模型；其余提交主要补齐能力、约束或语义。</p>
+<h2 id="11-附录：Runtime-相关提交索引（按时间）"><a href="#11-附录：Runtime-相关提交索引（按时间）" class="headerlink" title="11. 附录：Runtime 相关提交索引（按时间）"></a>11. 附录：Runtime 相关提交索引（按时间）</h2><p>标记为 <strong>里程碑</strong> 的提交改变了职责边界或状态模型；其余提交主要补齐能力、约束或语义。</p>
 <h3 id="2026-09-09：最小内核与-Tool-Loop"><a href="#2026-09-09：最小内核与-Tool-Loop" class="headerlink" title="2026-09-09：最小内核与 Tool Loop"></a>2026-09-09：最小内核与 Tool Loop</h3><ul>
 <li><code>e1d15a4</code> Initial commit：建立 Agent、Provider、Session 和 CLI 的最小闭环。（<strong>里程碑</strong>）</li>
 <li><code>42e9b60</code> Add timestamped session records and token usage：执行记录开始携带时间和 usage。</li>
@@ -2373,17 +2442,6 @@
 <li><code>60e6554</code> Store a session’s metadata in a file named after it：Session metadata 收口到 <code>session.json</code>。</li>
 <li><code>8f7f019</code> Derive a session’s workspace from the directory that holds it：Workspace 从目录结构推导，删除重复状态。</li>
 </ul>
-<hr>
-<h2 id="13-结语与我还留在笔记最后的问题"><a href="#13-结语与我还留在笔记最后的问题" class="headerlink" title="13. 结语与我还留在笔记最后的问题"></a>13. 结语与我还留在笔记最后的问题</h2><p>七天的演进最后汇合成几条线：Tool Loop 让 Agent 从回答器变成执行器；结构化事件和 Bridge 让多个前端共享同一 Runtime；ContextManager 让长对话和压缩成为独立机制；Tool Catalog、Context 注入、MCP 和角色化子 Agent 让能力可组合；append-only Journal 让执行事实、恢复和 Provider 格式彻底解耦；Runtime ownership、<code>ask_user</code>、steering 和权限 preset 让 Session 成为可持续、可接管的活动实体。</p>
-<p>所以当前最值得保留的，不是某个具体类，而是开头那四条不变量：执行语义只在 Core 实现一次、Runtime 只在 Bridge 装配一次、真实历史只写 Journal 其余皆投影、Tool 无状态且依赖在调用时注入。它们解释了项目为什么能在快速加入 GUI、MCP、子 Agent、多模态、并发、恢复和实时交互之后，依赖方向依然干净。</p>
-<p>回头看，这三层理解是逐层加上去的：最早只能复述“哪个阶段加了什么”，接着才看清每次重构把职责从谁手里交给了谁，最后才认出这些取舍都来自同一条主线——把执行语义收紧到一处，把容易变化的部分推到装配层和投影层。写到这里，开头那句“当时为什么非改不可”，才算勉强有了答案。</p>
-<p>最后留几个我自己还没想透的问题，等下一轮再读代码：</p>
-<ol>
-<li>并发 Tool 的四种顺序里，UI 展示用 completion order、Provider 用 projection order，那如果用户想“按事实顺序回看一次执行”，最自然的入口应该是 replayed Session 还是 Journal 原文？</li>
-<li><code>ask_user</code> 和 steering 都让用户在 turn 中途介入，这两条通道未来会不会统一成一种“运行中交互”语义？</li>
-<li>当子 Agent 也能装配自己的子 Agent 时，Journal 的 <code>turn_id</code> 嵌套和 ContextUnit 边界还能不能保持现在的简洁？</li>
-</ol>
-<p>如果这篇笔记对同样在啃 Agent Runtime 的人有一点帮助，那它的目的就达到了。</p>
 ]]></content>
       <categories>
         <category>LLM学习之路</category>
@@ -2401,180 +2459,9 @@
       </tags>
   </entry>
   <entry>
-    <title>Hexo and Chic themes add Giscus comment system</title>
-    <url>/2025/03/24/Hexo-and-Chic-themes-add-Giscus-comment-system/</url>
-    <content><![CDATA[<h1 id="Hexo-Chic-主题集成-Giscus-评论系统详细教程"><a href="#Hexo-Chic-主题集成-Giscus-评论系统详细教程" class="headerlink" title="Hexo + Chic 主题集成 Giscus 评论系统详细教程"></a>Hexo + Chic 主题集成 Giscus 评论系统详细教程</h1><p>本教程将教你如何在 Hexo 博客（使用 Chic 主题）中添加 Giscus 评论系统，让你的博客拥有简洁现代的评论功能，并且支持明暗模式自动切换。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
-<hr>
-<h2 id="一、准备工作"><a href="#一、准备工作" class="headerlink" title="一、准备工作"></a>一、准备工作</h2><h3 id="1-确保你已完成以下条件："><a href="#1-确保你已完成以下条件：" class="headerlink" title="1. 确保你已完成以下条件："></a>1. 确保你已完成以下条件：</h3><ul>
-<li>博客已搭建并使用 Hexo 框架</li>
-<li>正在使用 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 主题</li>
-<li>博客托管在 GitHub</li>
-</ul>
-<h3 id="2-启用-GitHub-Discussions-功能"><a href="#2-启用-GitHub-Discussions-功能" class="headerlink" title="2. 启用 GitHub Discussions 功能"></a>2. 启用 GitHub Discussions 功能</h3><ol>
-<li>打开你的博客仓库页面</li>
-<li>点击顶部的 <strong>Settings</strong></li>
-<li>在 <strong>General</strong> 中 <strong>Features</strong> 区域点击 <strong>Discussions</strong></li>
-<li>勾选 <strong>“Enable discussions for this repository”</strong></li>
-</ol>
-<p><img src="https://github.com/user-attachments/assets/6686f60e-f2d4-4a87-8b0d-d3425070c2cd" alt="setting_discussions"></p>
-<hr>
-<h2 id="二、使用-Giscus-app-获取评论配置代码"><a href="#二、使用-Giscus-app-获取评论配置代码" class="headerlink" title="二、使用 Giscus.app 获取评论配置代码"></a>二、使用 Giscus.app 获取评论配置代码</h2><ol>
-<li>打开 Giscus 官网：<a href="https://giscus.app/">https://giscus.app</a></li>
-<li>登录 GitHub 账号</li>
-<li>安装 <a href="https://github.com/apps/giscus">giscus</a> app  ，否则访客将无法评论和回应</li>
-<li>按照如下选择进行配置：<ul>
-<li>Repository: 选择你的博客仓库（注意填写格式为 <strong>用户名&#x2F;仓库名</strong>）</li>
-<li>Discussion Category: 建议选择 <strong>Announcements</strong>（防止读者随意发帖）</li>
-<li>Page ↔️ Discussion Mapping: 选择 <strong>pathname</strong></li>
-<li>Theme: 选择任意（我们后续会动态控制）</li>
-<li>Language: 选择 <code>zh-CN</code></li>
-</ul>
-</li>
-<li>点击页面底部的 <strong>“Copy code snippet”</strong>，复制生成的 <code>&lt;script&gt;</code> 标签代码</li>
-</ol>
-<hr>
-<h2 id="三、创建评论模块文件"><a href="#三、创建评论模块文件" class="headerlink" title="三、创建评论模块文件"></a>三、创建评论模块文件</h2><h3 id="1-打开博客主题目录"><a href="#1-打开博客主题目录" class="headerlink" title="1. 打开博客主题目录"></a>1. 打开博客主题目录</h3><p>路径：<code>themes/hexo-theme-Chic/layout/_partial/</code></p>
-<h3 id="2-创建或编辑-livers-ejs-文件"><a href="#2-创建或编辑-livers-ejs-文件" class="headerlink" title="2. 创建或编辑 livers.ejs 文件"></a>2. 创建或编辑 <code>livers.ejs</code> 文件</h3><p>将 Giscus 中生成的 <code>&lt;script&gt;</code> 标签代码填入文件（注意部分参数的区别），同时增加主题自动同步功能代码：</p>
-<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- Giscus 评论区挂载点 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">&quot;giscus-container&quot;</span> <span class="attr">style</span>=<span class="string">&quot;margin-top: 2.5rem;&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- Giscus 动态加载脚本：初始加载 + 明暗主题切换 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">createGiscus</span>(<span class="params">theme</span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> giscusContainer = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;giscus-container&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">if</span> (!giscusContainer) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 清除旧的评论 iframe</span></span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="property">innerHTML</span> = <span class="string">&#x27;&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> script = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(<span class="string">&#x27;script&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">src</span> = <span class="string">&#x27;https://giscus.app/client.js&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 替换为你的 GitHub 仓库信息（格式：username/repo）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo&#x27;</span>, <span class="string">&#x27;your-github-username/your-repo-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">   <span class="comment">// 替换为你的 repo-id 和 category-id（在 giscus.app 配置页面生成）</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-repo-id&#x27;</span>, <span class="string">&#x27;your-repo-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category&#x27;</span>, <span class="string">&#x27;your-category-name&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-category-id&#x27;</span>, <span class="string">&#x27;your-category-id&#x27;</span>);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 其他常规推荐设置</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-mapping&#x27;</span>, <span class="string">&#x27;pathname&#x27;</span>);           <span class="comment">// 用页面路径匹配评论帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-strict&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);                   <span class="comment">// 若无匹配帖则创建新帖</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-reactions-enabled&#x27;</span>, <span class="string">&#x27;1&#x27;</span>);        <span class="comment">// 启用表情反应</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-emit-metadata&#x27;</span>, <span class="string">&#x27;0&#x27;</span>);            <span class="comment">// 不输出元数据</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-input-position&#x27;</span>, <span class="string">&#x27;top&#x27;</span>);         <span class="comment">// 输入框在评论上方</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-theme&#x27;</span>, theme);                </span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;data-lang&#x27;</span>, <span class="string">&#x27;zh-CN&#x27;</span>);                 <span class="comment">// 中文界面</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="title function_">setAttribute</span>(<span class="string">&#x27;crossorigin&#x27;</span>, <span class="string">&#x27;anonymous&#x27;</span>);           <span class="comment">// 跨域资源安全</span></span></span><br><span class="line"><span class="language-javascript">    script.<span class="property">async</span> = <span class="literal">true</span>;                                       </span></span><br><span class="line"><span class="language-javascript">     </span></span><br><span class="line"><span class="language-javascript">    giscusContainer.<span class="title function_">appendChild</span>(script);</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="keyword">function</span> <span class="title function_">getCurrentTheme</span>(<span class="params"></span>) &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">return</span> <span class="variable language_">document</span>.<span class="property">body</span>.<span class="property">classList</span>.<span class="title function_">contains</span>(<span class="string">&#x27;dark-theme&#x27;</span>) ? <span class="string">&#x27;dark&#x27;</span> : <span class="string">&#x27;light&#x27;</span>;</span></span><br><span class="line"><span class="language-javascript">  &#125;</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">  <span class="variable language_">document</span>.<span class="title function_">addEventListener</span>(<span class="string">&#x27;DOMContentLoaded&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 页面首次加载，根据当前主题挂载评论</span></span></span><br><span class="line"><span class="language-javascript">    <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听按钮点击切换主题 → 重载评论区</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> buttons = [</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">querySelector</span>(<span class="string">&#x27;.toggleBtn&#x27;</span>),</span></span><br><span class="line"><span class="language-javascript">      <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&#x27;mobile-toggle-theme&#x27;</span>)</span></span><br><span class="line"><span class="language-javascript">    ];</span></span><br><span class="line"><span class="language-javascript">    buttons.<span class="title function_">forEach</span>(<span class="function"><span class="params">btn</span> =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="keyword">if</span> (!btn) <span class="keyword">return</span>;</span></span><br><span class="line"><span class="language-javascript">      btn.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="built_in">setTimeout</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">          <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">        &#125;, <span class="number">400</span>); <span class="comment">// 稍作延迟，确保 class 切换完毕</span></span></span><br><span class="line"><span class="language-javascript">      &#125;);</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="comment">// 监听 body class 改变（保险方案）</span></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">const</span> observer = <span class="keyword">new</span> <span class="title class_">MutationObserver</span>(<span class="function">() =&gt;</span> &#123;</span></span><br><span class="line"><span class="language-javascript">      <span class="title function_">createGiscus</span>(<span class="title function_">getCurrentTheme</span>());</span></span><br><span class="line"><span class="language-javascript">    &#125;);</span></span><br><span class="line"><span class="language-javascript">    observer.<span class="title function_">observe</span>(<span class="variable language_">document</span>.<span class="property">body</span>, &#123; <span class="attr">attributes</span>: <span class="literal">true</span>, <span class="attr">attributeFilter</span>: [<span class="string">&#x27;class&#x27;</span>] &#125;);</span></span><br><span class="line"><span class="language-javascript">  &#125;);</span></span><br><span class="line"><span class="language-javascript"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>⚠️ 请将 <code>data-repo-id</code> 和 <code>data-category-id</code> 替换为你从 giscus.app 获取的值。</p>
-</blockquote>
-<hr>
-<h2 id="四、引入评论模块到文章模板"><a href="#四、引入评论模块到文章模板" class="headerlink" title="四、引入评论模块到文章模板"></a>四、引入评论模块到文章模板</h2><p>打开文件：<code>themes/hexo-theme-Chic/layout/_page/post.ejs</code></p>
-<p>找到代码底部，在 <code>&lt;/article&gt;</code> 上方添加一行代码 <code>&lt;%- partial(&#39;_partial/livers&#39;) %&gt;</code> ：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">        &lt;section class=&quot;post-nav&quot;&gt;</span><br><span class="line">            &lt;% if(post.prev)&#123; %&gt;</span><br><span class="line">                &lt;a class=&quot;prev&quot; rel=&quot;prev&quot; href=&quot;&lt;%- url_for(post.prev.path)%&gt;&quot;&gt;&lt;%- post.prev.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">            &lt;% if(post.next)&#123; %&gt;</span><br><span class="line">            &lt;a class=&quot;next&quot; rel=&quot;next&quot; href=&quot;&lt;%- url_for(post.next.path)%&gt;&quot;&gt;&lt;%- post.next.title%&gt;&lt;/a&gt;</span><br><span class="line">            &lt;% &#125; %&gt;</span><br><span class="line">        &lt;/section&gt;</span><br><span class="line"></span><br><span class="line">	&lt;%- partial(&#x27;_partial/livers&#x27;) %&gt;</span><br><span class="line"></span><br><span class="line">    &lt;/article&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-
-<p>这会让评论区出现在每篇文章的底部。</p>
-<hr>
-<h2 id="五、重新部署博客"><a href="#五、重新部署博客" class="headerlink" title="五、重新部署博客"></a>五、重新部署博客</h2><p>执行以下命令：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">hexo clean</span><br><span class="line">hexo g</span><br><span class="line">hexo d</span><br></pre></td></tr></table></figure>
-
-<p>然后访问你的博客文章页面，应该就能看到 Giscus 评论框</p>
-<hr>
-<h2 id="成功效果"><a href="#成功效果" class="headerlink" title="成功效果"></a>成功效果</h2><p><img src="https://github.com/user-attachments/assets/b75a7ffd-d99b-4d4a-9e95-cb43b06b36aa" alt="discussions"> </p>
-<ul>
-<li>支持 GitHub 登录评论</li>
-<li>评论存储在 Discussions 中，便于管理</li>
-<li>评论区支持明暗主题自动切换，与 Chic 博客风格一致</li>
-</ul>
-<hr>
-<p>如有问题，可以：</p>
-<ul>
-<li>检查浏览器控制台是否有加载错误</li>
-<li>确保 repo-id 和 category-id 正确</li>
-<li>确保启用了 Discussions 功能</li>
-</ul>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/hexojs/hexo.git">Hexo</a> 和 <a href="https://github.com/Siricee/hexo-theme-Chic.git">hexo-theme-Chic</a> 。</p>
-]]></content>
-      <categories>
-        <category>Hexo</category>
-      </categories>
-      <tags>
-        <tag>Hexo</tag>
-        <tag>博客</tag>
-        <tag>Blog</tag>
-        <tag>前端</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Securely Rendering LLM-Generated Local Image Paths in Flask</title>
-    <url>/2025/06/13/Securely-Rendering-LLM-Generated-Local-Image-Paths-in-Flask/</url>
-    <content><![CDATA[<h1 id="一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法"><a href="#一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法" class="headerlink" title="一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法"></a>一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法</h1><h2 id="1-问题背景：浏览器安全模型与本地文件访问限制"><a href="#1-问题背景：浏览器安全模型与本地文件访问限制" class="headerlink" title="1. 问题背景：浏览器安全模型与本地文件访问限制"></a>1. 问题背景：浏览器安全模型与本地文件访问限制</h2><p>在构建基于大型语言模型（<code>LLM</code>）的 <code>Web</code> 应用时，一个常见的场景是 <code>LLM</code> 的输出中包含了指向服务器本地文件系统的图片路径。例如，在一个本地搭建的 <code>RAG</code> 系统中，<code>LLM</code> 可能会根据上下文生成一段包含标准 <code>Markdown</code> 图片语法的回答：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">![图片](D:\images\image.png)</span><br></pre></td></tr></table></figure>
-<p>然而，如果将这段 <code>Markdown</code> 直接转换为 <code>HTML</code>（例如 <code>&lt;img src=&quot;D:\project\data\images\package_diagram.png&quot;&gt;</code>），并试图在用户浏览器中渲染，该请求将会失败出现报错：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Not allowed to load local resource: file:///D:/...</span><br></pre></td></tr></table></figure>
-<p>这是因为现代浏览器的安全模型，特别是同源策略（<code>Same-Origin Policy</code>）和安全沙箱机制，严格禁止网页中的JavaScript代码直接访问用户的本地或远程服务器的任意文件系统。这种限制是保障用户安全的基石。</p>
-<p>因此，必须设计一个安全且有效的机制，作为浏览器和服务器文件系统之间的“中间人”，以实现图片的正确渲染。</p>
-<hr>
-<h2 id="2-解决方案架构：建立一个“受信任的中间人”"><a href="#2-解决方案架构：建立一个“受信任的中间人”" class="headerlink" title="2. 解决方案架构：建立一个“受信任的中间人”"></a>2. 解决方案架构：建立一个“受信任的中间人”</h2><p>既然前端浏览器不能直接去服务器硬盘上“拿”图片，我们就需要一个“中间人”来代劳。这个中间人必须是服务器自己，因为服务器有权限访问自己的文件系统。</p>
-<p>这个思路引出了一种经典的架构模式：代理服务（<code>Proxy Service</code>）。</p>
-<p>我们的方法论可以分解为以下几个步骤：</p>
-<ul>
-<li><p><strong>约定一个暗号</strong>：前端和后端约定一个特殊的 <code>URL</code> 格式，作为请求图片的“暗号”。这个 <code>URL</code> 不会暴露真实的文件路径，而是指向我们即将创建的后端服务。</p>
-</li>
-<li><p><strong>创建后端代理端点</strong>：在 <code>Flask</code> 中创建一个 <code>API</code> 端点（例如 <code>/image</code>）。这个端点是唯一有权访问服务器上特定图片目录的“守门人”。</p>
-</li>
-<li><p><strong>前端发起代理请求</strong>：当前端需要显示一张本地图片时，它不直接使用文件路径，而是向这个 <code>/image</code> 端点发起一个请求，并将真实的文件路径作为参数传递。</p>
-</li>
-<li><p><strong>后端验证并服务</strong>：后端代理收到请求后，首先进行严格的安全检查，确保请求的路径是合法的。验证通过后，它才去硬盘上读取图片文件。</p>
-</li>
-<li><p><strong>安全的数据传输</strong>：后端不直接发送文件，而是将图片内容编码为 <code>Base64</code> 字符串。这是一种能将二进制数据转换为纯文本的编码方式，非常适合在 <code>JSON</code> 中传输。</p>
-</li>
-<li><p><strong>前端动态渲染</strong>：前端接收到包含Base64数据的JSON后，用这些数据动态地构建一个 <code>Data URL</code> ，并将其赋给 <code>&lt;img&gt;</code> 标签的 <code>src</code> 属性，最终将图片显示出来。</p>
-</li>
-</ul>
-<p>这个流程的核心在于，将一个不安全的直接文件访问，转变为一个安全的、受控的 <code>API</code> 调用。</p>
-<hr>
-<h2 id="3-代码实现详解"><a href="#3-代码实现详解" class="headerlink" title="3. 代码实现详解"></a>3. 代码实现详解</h2><h3 id="3-1-后端-app-py-构建安全的文件代理与Base64编码器"><a href="#3-1-后端-app-py-构建安全的文件代理与Base64编码器" class="headerlink" title="3.1. 后端 (app.py): 构建安全的文件代理与Base64编码器"></a>3.1. 后端 (app.py): 构建安全的文件代理与Base64编码器</h3><p>核心改动是在Flask应用中增加 <code>/image</code> 路由。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import os</span><br><span class="line">import base64</span><br><span class="line">from flask import Flask, jsonify, request, abort</span><br><span class="line"></span><br><span class="line"># ... (其他Flask应用设置) ...</span><br><span class="line"></span><br><span class="line"># 1. 定义一个安全的根目录，所有图片请求都必须在此目录之下</span><br><span class="line">#    为安全起见，请将此路径设置为您的项目根目录或包含所有图片的特定父目录。</span><br><span class="line">#    os.getcwd() 会获取当前脚本运行的目录，这是一个安全的默认值。</span><br><span class="line">IMAGE_BASE_DIR = os.path.abspath(os.getcwd())</span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/image&#x27;)</span><br><span class="line">def serve_image():</span><br><span class="line">    # 2. 获取前端通过URL参数传来的路径</span><br><span class="line">    image_path = request.args.get(&#x27;path&#x27;)</span><br><span class="line"></span><br><span class="line">    # 3. 安全校验：确保请求的路径没有“越界”</span><br><span class="line">    safe_path = os.path.abspath(image_path)</span><br><span class="line">    if not safe_path.startswith(IMAGE_BASE_DIR):</span><br><span class="line">        abort(403) # 拒绝非法请求</span><br><span class="line"></span><br><span class="line">    # 4. 读取文件并编码为Base64</span><br><span class="line">    try:</span><br><span class="line">        with open(safe_path, &quot;rb&quot;) as image_file:</span><br><span class="line">            encoded_string = base64.b64encode(image_file.read()).decode(&#x27;utf-8&#x27;)</span><br><span class="line">        </span><br><span class="line">        # 5. 构造包含MIME类型和编码数据的Data URL</span><br><span class="line">        ext = os.path.splitext(safe_path)[1].lower()</span><br><span class="line">        mime_type = &#123;&#x27;.png&#x27;: &#x27;image/png&#x27;, &#x27;.jpg&#x27;: &#x27;image/jpeg&#x27;&#125;.get(ext, &#x27;application/octet-stream&#x27;)</span><br><span class="line">        data_url = f&quot;data:&#123;mime_type&#125;;base64,&#123;encoded_string&#125;&quot;</span><br><span class="line"></span><br><span class="line">        # 6. 将Data URL打包成JSON返回</span><br><span class="line">        return jsonify(&#123;&quot;imageData&quot;: data_url&#125;)</span><br><span class="line">    except FileNotFoundError:</span><br><span class="line">        abort(404)</span><br><span class="line">    except Exception as e:</span><br><span class="line">        abort(500)</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>安全检查: <code>IMAGE_BASE_DIR</code> 的设置和 <code>startswith()</code> 的验证是此端点的安全核心，它将文件访问权限严格限制在预设的目录范围内。</p>
-</li>
-<li><p>Base64编码: 将图片转换为 <code>Base64</code> 格式的 <code>Data URL</code>，允许图片数据作为文本嵌入到 <code>JSON</code> 响应中，并能被浏览器直接渲染，避免了前端需要为获取图片而发起额外的 <code>HTTP</code> 请求。</p>
-</li>
-</ul>
-<hr>
-<h3 id="3-2-前端-index-html-自定义Markdown渲染与异步加载"><a href="#3-2-前端-index-html-自定义Markdown渲染与异步加载" class="headerlink" title="3.2. 前端 (index.html): 自定义Markdown渲染与异步加载"></a>3.2. 前端 (index.html): 自定义Markdown渲染与异步加载</h3><p>前端的核心工作在 <code>appendAiMessage</code> 函数中，通过重写 <code>marked.js</code> 的图片渲染逻辑来实现。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function appendAiMessage(data, fullLog = &#x27;&#x27;) &#123;</span><br><span class="line">    // ... (其他创建消息元素的代码) ...</span><br><span class="line">    const messageDiv = document.createElement(&#x27;div&#x27;);</span><br><span class="line">    </span><br><span class="line">    // --- 1. 自定义Markdown图片渲染规则 ---</span><br><span class="line">    const renderer = new marked.Renderer();</span><br><span class="line">    renderer.image = (href, title, text) =&gt; &#123;</span><br><span class="line">        // 安全检查，确保href是字符串</span><br><span class="line">        if (typeof href !== &#x27;string&#x27;) &#123;</span><br><span class="line">            console.error(&quot;marked.js renderer received a non-string href:&quot;, href);</span><br><span class="line">            return &#x27;&#x27;; </span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        const decodedHref = decodeURIComponent(href || &#x27;&#x27;);</span><br><span class="line">        </span><br><span class="line">        // 使用正则表达式检查是否是需要代理的本地绝对路径</span><br><span class="line">        if (/^[a-zA-Z]:[\\\/]/.test(decodedHref)) &#123;</span><br><span class="line">            const encodedPath = encodeURIComponent(decodedHref);</span><br><span class="line">            // **步骤 A (生成占位符)**: 返回一个&lt;img&gt;标签，其src指向后端的/image代理API</span><br><span class="line">            return &#x27;&lt;img src=&quot;/image?path=&#x27; + encodedPath + &#x27;&quot; alt=&quot;&#x27; + (text || &#x27;相关图片&#x27;) + &#x27;&quot; style=&quot;opacity: 0.5;&quot;&gt;&#x27;;</span><br><span class="line">        &#125;</span><br><span class="line">        // 对于标准的网络图片，维持原样</span><br><span class="line">        return &#x27;&lt;img src=&quot;&#x27; + href + &#x27;&quot; alt=&quot;&#x27; + (text || &#x27;&#x27;) + &#x27;&quot;&gt;&#x27;;</span><br><span class="line">    &#125;;</span><br><span class="line">    </span><br><span class="line">    // 使用自定义渲染器将Markdown文本转换为HTML</span><br><span class="line">    const htmlContent = marked.parse(answer || &quot;抱歉，没有收到回答。&quot;, &#123; renderer: renderer &#125;);</span><br><span class="line">    messageDiv.innerHTML = htmlContent;</span><br><span class="line">    // ... (将messageDiv添加到聊天窗口) ...</span><br><span class="line"></span><br><span class="line">    // --- 2. 异步获取并替换图片 ---</span><br><span class="line">    // 查找所有需要从后端加载的&quot;占位&quot;图片</span><br><span class="line">    const imagesToLoad = messageDiv.querySelectorAll(&#x27;img[src^=&quot;/image?path=&quot;]&#x27;);</span><br><span class="line">    imagesToLoad.forEach(async (img) =&gt; &#123;</span><br><span class="line">        const placeholderSrc = img.getAttribute(&#x27;src&#x27;);</span><br><span class="line">        if (!placeholderSrc) return;</span><br><span class="line"></span><br><span class="line">        try &#123;</span><br><span class="line">            // **步骤 B (发起代理请求)**: 异步向后端API请求真实的图片数据</span><br><span class="line">            const response = await fetch(placeholderSrc);</span><br><span class="line">            if (!response.ok) throw new Error(&#x27;Failed to fetch image data: &#x27; + response.status);</span><br><span class="line">            const imgData = await response.json(); // 解析后端返回的JSON</span><br><span class="line">            </span><br><span class="line">            // **步骤 C (替换src)**: 将图片的src属性替换为后端返回的Base64 Data URL</span><br><span class="line">            if (imgData.imageData) &#123;</span><br><span class="line">                img.src = imgData.imageData;</span><br><span class="line">                img.style.opacity = 1; // 使图片完全可见</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; catch (error) &#123;</span><br><span class="line">            console.error(&#x27;加载图片失败:&#x27;, error);</span><br><span class="line">            img.alt = &quot;图片加载失败&quot;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    // ... (其他代码) ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><p>渲染逻辑分离: <code>HTML</code> 的初始渲染和图片的最终加载是分离的。<code>marked.js</code> 首先创建了包含代理 <code>URL</code> 的 <code>HTML</code> 结构。</p>
-</li>
-<li><p>异步非阻塞: 图片的加载过程是异步的，不会阻塞用户界面的其他操作。用户可以立即看到文本内容，而图片会在后台加载完成后显示。</p>
-</li>
-</ul>
-<hr>
-<h3 id="3-2-1-正则表达式详解"><a href="#3-2-1-正则表达式详解" class="headerlink" title="3.2.1. 正则表达式详解"></a>3.2.1. 正则表达式详解</h3><p>在前端代码中，用于判断路径是否为本地绝对路径的正则表达式 <code>/^(?:[a-zA-Z]:[\\\/]|\/)/</code> 是一个关键部分。让我们来详细解析它的工作原理：</p>
-<ul>
-<li><p><code>^</code>: 这个符号代表“字符串的开始”。它确保我们只匹配路径的起始部分，而不是路径中间的某个位置。</p>
-</li>
-<li><p><code>(?: ... )</code>: 这是一个非捕获组（<code>non-capturing group</code>）。它的作用是将括号内的多个模式组合成一个单元，但不会像普通括号那样“捕获”匹配到的内容。在这里，它将两种主要的路径格式组合在一起。</p>
-</li>
-<li><p><code>[a-zA-Z]:[\\\/]</code>: 这是用来匹配Windows绝对路径的部分。</p>
-</li>
-<li><p><code>[a-zA-Z]</code>: 匹配任意一个大写或小写字母（即盘符，如 C, D）。</p>
-</li>
-<li><p><code>:</code>: 匹配紧跟在盘符后面的冒号。</p>
-</li>
-<li><p><code>[\\\/]</code>: 匹配一个路径分隔符。\ 是对反斜杠 \ 的转义，&#x2F; 是正斜杠。这个部分意味着无论是 <code>D:\...</code> 还是 <code>D:/...</code>  格式的路径都能被识别。</p>
-</li>
-<li><p><code>|</code>: 这是一个“或”操作符。它表示匹配左边的模式 或者 右边的模式。</p>
-</li>
-<li><p><code>/</code>: 这是用来匹配Unix&#x2F;Linux绝对路径的部分。所有Unix-like系统的绝对路径都以一个正斜杠 &#x2F; 开始（例如 <code>/home/user/image.png</code>）。</p>
-</li>
-</ul>
-<hr>
-<h2 id="4-对LLM的输出引导"><a href="#4-对LLM的输出引导" class="headerlink" title="4. 对LLM的输出引导"></a>4. 对LLM的输出引导</h2><p>最后一步是确保LLM能够持续生成符合我们预期的、包含本地路径的 <code>Markdown</code> 图片语法。这通过在系统提示（System Prompt）中提供清晰的指令和示例来完成。</p>
-<p>指令示例:</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">图片处理: 如果一个节点的值是文件路径（例如以 .png, .jpg 等结尾），你应该说“它的封装图如下所示：”或类似的话，然后另起一行，使用标准的Markdown语法 ![封装图](图片路径) 来格式化并展示图片。</span><br></pre></td></tr></table></figure>
-
-<p>成功在前端渲染 <code>markdown</code> 图片效果展示：<br><img src="https://github.com/user-attachments/assets/6241fccf-1ec6-4c52-af78-6b115500ad48" alt="image"></p>
-<hr>
-<p>该项目代码参考 <a href="https://www.jianshu.com/p/5cc1fff0280c">Not allowed to load local resource: 报错解决方法</a></p>
-]]></content>
-      <categories>
-        <category>LLM学习之路</category>
-      </categories>
-      <tags>
-        <tag>AI</tag>
-        <tag>前端</tag>
-        <tag>Markdown</tag>
-        <tag>LLM</tag>
-        <tag>大模型</tag>
-        <tag>Python</tag>
-        <tag>RAG</tag>
-        <tag>flask</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Run vLLM Locally and Expose with Cloudflare Tunnel</title>
     <url>/2025/09/01/Run-vLLM-Locally-and-Expose-with-Cloudflare-Tunnel/</url>
-    <content><![CDATA[<h1 id="通过vLLM部署本地模型并通过Cloudflare-Tunnel发布到公网"><a href="#通过vLLM部署本地模型并通过Cloudflare-Tunnel发布到公网" class="headerlink" title="通过vLLM部署本地模型并通过Cloudflare Tunnel发布到公网"></a>通过vLLM部署本地模型并通过Cloudflare Tunnel发布到公网</h1><p>这份指南将以我本人解决问题的历程为线索，记录每一步的命令、参数、遇到的问题以及相应的解决方案。</p>
+    <content><![CDATA[<h2 id="通过vLLM部署本地模型并通过Cloudflare-Tunnel发布到公网"><a href="#通过vLLM部署本地模型并通过Cloudflare-Tunnel发布到公网" class="headerlink" title="通过vLLM部署本地模型并通过Cloudflare Tunnel发布到公网"></a>通过vLLM部署本地模型并通过Cloudflare Tunnel发布到公网</h2><p>这份指南将以我本人解决问题的历程为线索，记录每一步的命令、参数、遇到的问题以及相应的解决方案。</p>
 <hr>
 <h2 id="1-准备工作"><a href="#1-准备工作" class="headerlink" title="1. 准备工作"></a>1. 准备工作</h2><p>在开始之前，请确保您具备以下条件：</p>
 <ul>
@@ -2737,9 +2624,100 @@
       </tags>
   </entry>
   <entry>
+    <title>Securely Rendering LLM-Generated Local Image Paths in Flask</title>
+    <url>/2025/06/13/Securely-Rendering-LLM-Generated-Local-Image-Paths-in-Flask/</url>
+    <content><![CDATA[<h2 id="一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法"><a href="#一个在Flask-Web应用中安全渲染LLM输出的本地图片路径的方法" class="headerlink" title="一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法"></a>一个在Flask Web应用中安全渲染LLM输出的本地图片路径的方法</h2><h2 id="1-问题背景：浏览器安全模型与本地文件访问限制"><a href="#1-问题背景：浏览器安全模型与本地文件访问限制" class="headerlink" title="1. 问题背景：浏览器安全模型与本地文件访问限制"></a>1. 问题背景：浏览器安全模型与本地文件访问限制</h2><p>在构建基于大型语言模型（<code>LLM</code>）的 <code>Web</code> 应用时，一个常见的场景是 <code>LLM</code> 的输出中包含了指向服务器本地文件系统的图片路径。例如，在一个本地搭建的 <code>RAG</code> 系统中，<code>LLM</code> 可能会根据上下文生成一段包含标准 <code>Markdown</code> 图片语法的回答：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">![图片](D:\images\image.png)</span><br></pre></td></tr></table></figure>
+<p>然而，如果将这段 <code>Markdown</code> 直接转换为 <code>HTML</code>（例如 <code>&lt;img src=&quot;D:\project\data\images\package_diagram.png&quot;&gt;</code>），并试图在用户浏览器中渲染，该请求将会失败出现报错：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">Not allowed to load local resource: file:///D:/...</span><br></pre></td></tr></table></figure>
+<p>这是因为现代浏览器的安全模型，特别是同源策略（<code>Same-Origin Policy</code>）和安全沙箱机制，严格禁止网页中的JavaScript代码直接访问用户的本地或远程服务器的任意文件系统。这种限制是保障用户安全的基石。</p>
+<p>因此，必须设计一个安全且有效的机制，作为浏览器和服务器文件系统之间的“中间人”，以实现图片的正确渲染。</p>
+<hr>
+<h2 id="2-解决方案架构：建立一个“受信任的中间人”"><a href="#2-解决方案架构：建立一个“受信任的中间人”" class="headerlink" title="2. 解决方案架构：建立一个“受信任的中间人”"></a>2. 解决方案架构：建立一个“受信任的中间人”</h2><p>既然前端浏览器不能直接去服务器硬盘上“拿”图片，我们就需要一个“中间人”来代劳。这个中间人必须是服务器自己，因为服务器有权限访问自己的文件系统。</p>
+<p>这个思路引出了一种经典的架构模式：代理服务（<code>Proxy Service</code>）。</p>
+<p>我们的方法论可以分解为以下几个步骤：</p>
+<ul>
+<li><p><strong>约定一个暗号</strong>：前端和后端约定一个特殊的 <code>URL</code> 格式，作为请求图片的“暗号”。这个 <code>URL</code> 不会暴露真实的文件路径，而是指向我们即将创建的后端服务。</p>
+</li>
+<li><p><strong>创建后端代理端点</strong>：在 <code>Flask</code> 中创建一个 <code>API</code> 端点（例如 <code>/image</code>）。这个端点是唯一有权访问服务器上特定图片目录的“守门人”。</p>
+</li>
+<li><p><strong>前端发起代理请求</strong>：当前端需要显示一张本地图片时，它不直接使用文件路径，而是向这个 <code>/image</code> 端点发起一个请求，并将真实的文件路径作为参数传递。</p>
+</li>
+<li><p><strong>后端验证并服务</strong>：后端代理收到请求后，首先进行严格的安全检查，确保请求的路径是合法的。验证通过后，它才去硬盘上读取图片文件。</p>
+</li>
+<li><p><strong>安全的数据传输</strong>：后端不直接发送文件，而是将图片内容编码为 <code>Base64</code> 字符串。这是一种能将二进制数据转换为纯文本的编码方式，非常适合在 <code>JSON</code> 中传输。</p>
+</li>
+<li><p><strong>前端动态渲染</strong>：前端接收到包含Base64数据的JSON后，用这些数据动态地构建一个 <code>Data URL</code> ，并将其赋给 <code>&lt;img&gt;</code> 标签的 <code>src</code> 属性，最终将图片显示出来。</p>
+</li>
+</ul>
+<p>这个流程的核心在于，将一个不安全的直接文件访问，转变为一个安全的、受控的 <code>API</code> 调用。</p>
+<hr>
+<h2 id="3-代码实现详解"><a href="#3-代码实现详解" class="headerlink" title="3. 代码实现详解"></a>3. 代码实现详解</h2><h3 id="3-1-后端-app-py-构建安全的文件代理与Base64编码器"><a href="#3-1-后端-app-py-构建安全的文件代理与Base64编码器" class="headerlink" title="3.1. 后端 (app.py): 构建安全的文件代理与Base64编码器"></a>3.1. 后端 (app.py): 构建安全的文件代理与Base64编码器</h3><p>核心改动是在Flask应用中增加 <code>/image</code> 路由。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import os</span><br><span class="line">import base64</span><br><span class="line">from flask import Flask, jsonify, request, abort</span><br><span class="line"></span><br><span class="line"># ... (其他Flask应用设置) ...</span><br><span class="line"></span><br><span class="line"># 1. 定义一个安全的根目录，所有图片请求都必须在此目录之下</span><br><span class="line">#    为安全起见，请将此路径设置为您的项目根目录或包含所有图片的特定父目录。</span><br><span class="line">#    os.getcwd() 会获取当前脚本运行的目录，这是一个安全的默认值。</span><br><span class="line">IMAGE_BASE_DIR = os.path.abspath(os.getcwd())</span><br><span class="line"></span><br><span class="line">@app.route(&#x27;/image&#x27;)</span><br><span class="line">def serve_image():</span><br><span class="line">    # 2. 获取前端通过URL参数传来的路径</span><br><span class="line">    image_path = request.args.get(&#x27;path&#x27;)</span><br><span class="line"></span><br><span class="line">    # 3. 安全校验：确保请求的路径没有“越界”</span><br><span class="line">    safe_path = os.path.abspath(image_path)</span><br><span class="line">    if not safe_path.startswith(IMAGE_BASE_DIR):</span><br><span class="line">        abort(403) # 拒绝非法请求</span><br><span class="line"></span><br><span class="line">    # 4. 读取文件并编码为Base64</span><br><span class="line">    try:</span><br><span class="line">        with open(safe_path, &quot;rb&quot;) as image_file:</span><br><span class="line">            encoded_string = base64.b64encode(image_file.read()).decode(&#x27;utf-8&#x27;)</span><br><span class="line">        </span><br><span class="line">        # 5. 构造包含MIME类型和编码数据的Data URL</span><br><span class="line">        ext = os.path.splitext(safe_path)[1].lower()</span><br><span class="line">        mime_type = &#123;&#x27;.png&#x27;: &#x27;image/png&#x27;, &#x27;.jpg&#x27;: &#x27;image/jpeg&#x27;&#125;.get(ext, &#x27;application/octet-stream&#x27;)</span><br><span class="line">        data_url = f&quot;data:&#123;mime_type&#125;;base64,&#123;encoded_string&#125;&quot;</span><br><span class="line"></span><br><span class="line">        # 6. 将Data URL打包成JSON返回</span><br><span class="line">        return jsonify(&#123;&quot;imageData&quot;: data_url&#125;)</span><br><span class="line">    except FileNotFoundError:</span><br><span class="line">        abort(404)</span><br><span class="line">    except Exception as e:</span><br><span class="line">        abort(500)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>安全检查: <code>IMAGE_BASE_DIR</code> 的设置和 <code>startswith()</code> 的验证是此端点的安全核心，它将文件访问权限严格限制在预设的目录范围内。</p>
+</li>
+<li><p>Base64编码: 将图片转换为 <code>Base64</code> 格式的 <code>Data URL</code>，允许图片数据作为文本嵌入到 <code>JSON</code> 响应中，并能被浏览器直接渲染，避免了前端需要为获取图片而发起额外的 <code>HTTP</code> 请求。</p>
+</li>
+</ul>
+<hr>
+<h3 id="3-2-前端-index-html-自定义Markdown渲染与异步加载"><a href="#3-2-前端-index-html-自定义Markdown渲染与异步加载" class="headerlink" title="3.2. 前端 (index.html): 自定义Markdown渲染与异步加载"></a>3.2. 前端 (index.html): 自定义Markdown渲染与异步加载</h3><p>前端的核心工作在 <code>appendAiMessage</code> 函数中，通过重写 <code>marked.js</code> 的图片渲染逻辑来实现。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">function appendAiMessage(data, fullLog = &#x27;&#x27;) &#123;</span><br><span class="line">    // ... (其他创建消息元素的代码) ...</span><br><span class="line">    const messageDiv = document.createElement(&#x27;div&#x27;);</span><br><span class="line">    </span><br><span class="line">    // --- 1. 自定义Markdown图片渲染规则 ---</span><br><span class="line">    const renderer = new marked.Renderer();</span><br><span class="line">    renderer.image = (href, title, text) =&gt; &#123;</span><br><span class="line">        // 安全检查，确保href是字符串</span><br><span class="line">        if (typeof href !== &#x27;string&#x27;) &#123;</span><br><span class="line">            console.error(&quot;marked.js renderer received a non-string href:&quot;, href);</span><br><span class="line">            return &#x27;&#x27;; </span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        const decodedHref = decodeURIComponent(href || &#x27;&#x27;);</span><br><span class="line">        </span><br><span class="line">        // 使用正则表达式检查是否是需要代理的本地绝对路径</span><br><span class="line">        if (/^[a-zA-Z]:[\\\/]/.test(decodedHref)) &#123;</span><br><span class="line">            const encodedPath = encodeURIComponent(decodedHref);</span><br><span class="line">            // **步骤 A (生成占位符)**: 返回一个&lt;img&gt;标签，其src指向后端的/image代理API</span><br><span class="line">            return &#x27;&lt;img src=&quot;/image?path=&#x27; + encodedPath + &#x27;&quot; alt=&quot;&#x27; + (text || &#x27;相关图片&#x27;) + &#x27;&quot; style=&quot;opacity: 0.5;&quot;&gt;&#x27;;</span><br><span class="line">        &#125;</span><br><span class="line">        // 对于标准的网络图片，维持原样</span><br><span class="line">        return &#x27;&lt;img src=&quot;&#x27; + href + &#x27;&quot; alt=&quot;&#x27; + (text || &#x27;&#x27;) + &#x27;&quot;&gt;&#x27;;</span><br><span class="line">    &#125;;</span><br><span class="line">    </span><br><span class="line">    // 使用自定义渲染器将Markdown文本转换为HTML</span><br><span class="line">    const htmlContent = marked.parse(answer || &quot;抱歉，没有收到回答。&quot;, &#123; renderer: renderer &#125;);</span><br><span class="line">    messageDiv.innerHTML = htmlContent;</span><br><span class="line">    // ... (将messageDiv添加到聊天窗口) ...</span><br><span class="line"></span><br><span class="line">    // --- 2. 异步获取并替换图片 ---</span><br><span class="line">    // 查找所有需要从后端加载的&quot;占位&quot;图片</span><br><span class="line">    const imagesToLoad = messageDiv.querySelectorAll(&#x27;img[src^=&quot;/image?path=&quot;]&#x27;);</span><br><span class="line">    imagesToLoad.forEach(async (img) =&gt; &#123;</span><br><span class="line">        const placeholderSrc = img.getAttribute(&#x27;src&#x27;);</span><br><span class="line">        if (!placeholderSrc) return;</span><br><span class="line"></span><br><span class="line">        try &#123;</span><br><span class="line">            // **步骤 B (发起代理请求)**: 异步向后端API请求真实的图片数据</span><br><span class="line">            const response = await fetch(placeholderSrc);</span><br><span class="line">            if (!response.ok) throw new Error(&#x27;Failed to fetch image data: &#x27; + response.status);</span><br><span class="line">            const imgData = await response.json(); // 解析后端返回的JSON</span><br><span class="line">            </span><br><span class="line">            // **步骤 C (替换src)**: 将图片的src属性替换为后端返回的Base64 Data URL</span><br><span class="line">            if (imgData.imageData) &#123;</span><br><span class="line">                img.src = imgData.imageData;</span><br><span class="line">                img.style.opacity = 1; // 使图片完全可见</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; catch (error) &#123;</span><br><span class="line">            console.error(&#x27;加载图片失败:&#x27;, error);</span><br><span class="line">            img.alt = &quot;图片加载失败&quot;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    // ... (其他代码) ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>渲染逻辑分离: <code>HTML</code> 的初始渲染和图片的最终加载是分离的。<code>marked.js</code> 首先创建了包含代理 <code>URL</code> 的 <code>HTML</code> 结构。</p>
+</li>
+<li><p>异步非阻塞: 图片的加载过程是异步的，不会阻塞用户界面的其他操作。用户可以立即看到文本内容，而图片会在后台加载完成后显示。</p>
+</li>
+</ul>
+<hr>
+<h3 id="3-2-1-正则表达式详解"><a href="#3-2-1-正则表达式详解" class="headerlink" title="3.2.1. 正则表达式详解"></a>3.2.1. 正则表达式详解</h3><p>在前端代码中，用于判断路径是否为本地绝对路径的正则表达式 <code>/^(?:[a-zA-Z]:[\\\/]|\/)/</code> 是一个关键部分。让我们来详细解析它的工作原理：</p>
+<ul>
+<li><p><code>^</code>: 这个符号代表“字符串的开始”。它确保我们只匹配路径的起始部分，而不是路径中间的某个位置。</p>
+</li>
+<li><p><code>(?: ... )</code>: 这是一个非捕获组（<code>non-capturing group</code>）。它的作用是将括号内的多个模式组合成一个单元，但不会像普通括号那样“捕获”匹配到的内容。在这里，它将两种主要的路径格式组合在一起。</p>
+</li>
+<li><p><code>[a-zA-Z]:[\\\/]</code>: 这是用来匹配Windows绝对路径的部分。</p>
+</li>
+<li><p><code>[a-zA-Z]</code>: 匹配任意一个大写或小写字母（即盘符，如 C, D）。</p>
+</li>
+<li><p><code>:</code>: 匹配紧跟在盘符后面的冒号。</p>
+</li>
+<li><p><code>[\\\/]</code>: 匹配一个路径分隔符。\ 是对反斜杠 \ 的转义，&#x2F; 是正斜杠。这个部分意味着无论是 <code>D:\...</code> 还是 <code>D:/...</code>  格式的路径都能被识别。</p>
+</li>
+<li><p><code>|</code>: 这是一个“或”操作符。它表示匹配左边的模式 或者 右边的模式。</p>
+</li>
+<li><p><code>/</code>: 这是用来匹配Unix&#x2F;Linux绝对路径的部分。所有Unix-like系统的绝对路径都以一个正斜杠 &#x2F; 开始（例如 <code>/home/user/image.png</code>）。</p>
+</li>
+</ul>
+<hr>
+<h2 id="4-对LLM的输出引导"><a href="#4-对LLM的输出引导" class="headerlink" title="4. 对LLM的输出引导"></a>4. 对LLM的输出引导</h2><p>最后一步是确保LLM能够持续生成符合我们预期的、包含本地路径的 <code>Markdown</code> 图片语法。这通过在系统提示（System Prompt）中提供清晰的指令和示例来完成。</p>
+<p>指令示例:</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">图片处理: 如果一个节点的值是文件路径（例如以 .png, .jpg 等结尾），你应该说“它的封装图如下所示：”或类似的话，然后另起一行，使用标准的Markdown语法 ![封装图](图片路径) 来格式化并展示图片。</span><br></pre></td></tr></table></figure>
+
+<p>成功在前端渲染 <code>markdown</code> 图片效果展示：<br><img src="https://github.com/user-attachments/assets/6241fccf-1ec6-4c52-af78-6b115500ad48" alt="image"></p>
+<hr>
+<p>该项目代码参考 <a href="https://www.jianshu.com/p/5cc1fff0280c">Not allowed to load local resource: 报错解决方法</a></p>
+]]></content>
+      <categories>
+        <category>LLM学习之路</category>
+      </categories>
+      <tags>
+        <tag>前端</tag>
+        <tag>Markdown</tag>
+        <tag>AI</tag>
+        <tag>LLM</tag>
+        <tag>大模型</tag>
+        <tag>Python</tag>
+        <tag>RAG</tag>
+        <tag>flask</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Sync Code Block Theme with Dark Mode in Hexo Chic</title>
     <url>/2025/03/25/Sync-Code-Block-Theme-with-Dark-Mode-in-Hexo-Chic/</url>
-    <content><![CDATA[<h1 id="Hexo-Chic-主题为代码块实现明暗主题切换效果"><a href="#Hexo-Chic-主题为代码块实现明暗主题切换效果" class="headerlink" title="Hexo + Chic 主题为代码块实现明暗主题切换效果"></a>Hexo + Chic 主题为代码块实现明暗主题切换效果</h1><p>这份文档记录如何在 Hexo 博客（使用 Chic 主题），完成代码块 (highlight.js) 样式随明&#x2F;暗主题切换。</p>
+    <content><![CDATA[<h2 id="Hexo-Chic-主题为代码块实现明暗主题切换效果"><a href="#Hexo-Chic-主题为代码块实现明暗主题切换效果" class="headerlink" title="Hexo + Chic 主题为代码块实现明暗主题切换效果"></a>Hexo + Chic 主题为代码块实现明暗主题切换效果</h2><p>这份文档记录如何在 Hexo 博客（使用 Chic 主题），完成代码块 (highlight.js) 样式随明&#x2F;暗主题切换。</p>
 <hr>
 <p>项目地址：<a href="https://github.com/EvannZhongg/Blog-Learning.git">https://github.com/EvannZhongg/Blog-Learning.git</a></p>
 <hr>
@@ -2817,7 +2795,7 @@
   <entry>
     <title>Uploading Local Images to Vision LLM</title>
     <url>/2025/04/18/Uploading-Local-Images-to-Vision-LLM/</url>
-    <content><![CDATA[<h1 id="如何使用视觉大模型上传本地图像并生成回答"><a href="#如何使用视觉大模型上传本地图像并生成回答" class="headerlink" title="如何使用视觉大模型上传本地图像并生成回答"></a>如何使用视觉大模型上传本地图像并生成回答</h1><p>在本篇博客中，我将讲解如何将本地图片上传至视觉大模型，并让模型生成图像的描述，本文以 Qwen 的模型举例。</p>
+    <content><![CDATA[<h2 id="如何使用视觉大模型上传本地图像并生成回答"><a href="#如何使用视觉大模型上传本地图像并生成回答" class="headerlink" title="如何使用视觉大模型上传本地图像并生成回答"></a>如何使用视觉大模型上传本地图像并生成回答</h2><p>在本篇博客中，我将讲解如何将本地图片上传至视觉大模型，并让模型生成图像的描述，本文以 Qwen 的模型举例。</p>
 <h2 id="1-什么是视觉模型？"><a href="#1-什么是视觉模型？" class="headerlink" title="1. 什么是视觉模型？"></a>1. 什么是视觉模型？</h2><p>视觉模型是一个基于大规模视觉-语言模型的工具，能够将图片与自然语言结合。通过调用该模型，你可以将图像发送给它，并让它生成对图像内容的详细描述。例如，它可以描述图像中的物体、场景甚至情感。</p>
 <hr>
 <h2 id="2-Qwen官方的-API-调用方法"><a href="#2-Qwen官方的-API-调用方法" class="headerlink" title="2. Qwen官方的 API 调用方法"></a>2. Qwen官方的 API 调用方法</h2><p>Qwen 官方提供的视觉大模型调用方式是通过直接提供图像的 URL 来进行图像分析。代码如下：</p>
@@ -2900,7 +2878,7 @@
   <entry>
     <title>「LeetCode」 Palindrome Number</title>
     <url>/2025/04/10/%E3%80%8CLeetCode%E3%80%8D-Palindrome-Number/</url>
-    <content><![CDATA[<h1 id="回文数"><a href="#回文数" class="headerlink" title="回文数"></a>回文数</h1><hr>
+    <content><![CDATA[<h2 id="回文数"><a href="#回文数" class="headerlink" title="回文数"></a>回文数</h2><hr>
 <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>给你一个整数 <code>x</code> ，如果 <code>x</code> 是一个回文整数，返回 <code>true</code> ；否则，返回 <code>false</code> 。</p>
 <p><strong>回文数</strong> 是指正序（从左向右）和倒序（从右向左）读都是一样的整数。</p>
 <ul>
@@ -3019,7 +2997,7 @@
   <entry>
     <title>「LeetCode」 Two Sum</title>
     <url>/2025/04/09/%E3%80%8CLeetCode%E3%80%8D-Two-Sum/</url>
-    <content><![CDATA[<h1 id="两数之和"><a href="#两数之和" class="headerlink" title="两数之和"></a>两数之和</h1><p>开始学习Python的第一天，努力ing</p>
+    <content><![CDATA[<h2 id="两数之和"><a href="#两数之和" class="headerlink" title="两数之和"></a>两数之和</h2><p>开始学习Python的第一天，努力ing</p>
 <hr>
 <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>给定一个整数数组 <code>nums</code> 和一个目标值 <code>target</code>，请你在该数组中找出 <strong>和为目标值</strong> 的那两个整数，并返回它们的数组下标。</p>
 <ul>
@@ -3198,16 +3176,6 @@
       </tags>
   </entry>
   <entry>
-    <title>category</title>
-    <url>/category/index.html</url>
-    <content><![CDATA[]]></content>
-  </entry>
-  <entry>
-    <title>tag</title>
-    <url>/tag/index.html</url>
-    <content><![CDATA[]]></content>
-  </entry>
-  <entry>
     <title>About Me</title>
     <url>/about/index.html</url>
     <content><![CDATA[<h2 id="👋-你好，我是-Evan-Zhong！"><a href="#👋-你好，我是-Evan-Zhong！" class="headerlink" title="👋 你好，我是 Evan Zhong！"></a>👋 你好，我是 Evan Zhong！</h2><ul>
@@ -3238,6 +3206,11 @@
 <li>实物电路焊接调试</li>
 </ul>
 ]]></content>
+  </entry>
+  <entry>
+    <title>category</title>
+    <url>/category/index.html</url>
+    <content><![CDATA[]]></content>
   </entry>
   <entry>
     <title></title>
@@ -3293,5 +3266,10 @@
   });
 });
 ]]></content>
+  </entry>
+  <entry>
+    <title>tag</title>
+    <url>/tag/index.html</url>
+    <content><![CDATA[]]></content>
   </entry>
 </search>
