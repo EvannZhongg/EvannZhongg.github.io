@@ -15,7 +15,7 @@
 <!-- oogle Search Console 验证标签 -->
 <meta name="google-site-verification" content="0hjafUT-HANjK2izAW9bOEq2iQG3VWXZTPPKl5pVMyc" />
 
-<title>Nosis Agent Runtime 架构演进学习笔记 | Hexo</title>
+<title>由浅入深看懂 Agent Runtime 的七天演进 | Hexo</title>
 
 
 
@@ -310,7 +310,7 @@
     
     <article class="post-wrap">
         <header class="post-header">
-            <h1 class="post-title">Nosis Agent Runtime 架构演进学习笔记</h1>
+            <h1 class="post-title">由浅入深看懂 Agent Runtime 的七天演进</h1>
             
                 <div class="post-meta">
                     
@@ -335,9 +335,10 @@
         </header>
 
         <div class="post-content">
-            <h1 id="由浅入深看懂-Nosis-Agent-Runtime-的七天演进"><a href="#由浅入深看懂-Nosis-Agent-Runtime-的七天演进" class="headerlink" title="由浅入深看懂 Nosis Agent Runtime 的七天演进"></a>由浅入深看懂 Nosis Agent Runtime 的七天演进</h1><p>这份笔记是我在学习 Nosis 项目 Agent Runtime 演进史时的整理稿。</p>
-<p>素材来自项目自身的 Git 历史：从最初提交 <code>e1d15a4</code>（2026-09-09）到当前提交 <code>8f7f019</code>（2026-09-16），一共七天、131 个提交，其中 93 个触及了 <code>agent_core</code> 或 <code>interfaces/bridge</code>。</p>
-<p>第一次读原版演进史，读完之后的状态是：每个字都认识，但说不出“为什么第五天要重构成那样”。于是我按时间顺序重抄了一遍。这篇笔记的叙述顺序就是我的理解顺序，由浅入深分三层：</p>
+            <h1 id="由浅入深看懂-Agent-Runtime-的七天演进"><a href="#由浅入深看懂-Agent-Runtime-的七天演进" class="headerlink" title="由浅入深看懂 Agent Runtime 的七天演进"></a>由浅入深看懂 Agent Runtime 的七天演进</h1><p>这是我自己开发 Nosis 的历程记录。</p>
+<hr>
+<h2 id="项目地址：https-github-com-EvannZhongg-Nosis-git"><a href="#项目地址：https-github-com-EvannZhongg-Nosis-git" class="headerlink" title="项目地址：https://github.com/EvannZhongg/Nosis.git"></a>项目地址：<a target="_blank" rel="noopener" href="https://github.com/EvannZhongg/Nosis.git">https://github.com/EvannZhongg/Nosis.git</a></h2><p>素材来自项目自身的 Git 历史：从最初提交 <code>e1d15a4</code>（2026-09-09）到当前提交 <code>8f7f019</code>（2026-09-16），一共七天、131 个提交，其中 93 个触及了 <code>agent_core</code> 或 <code>interfaces/bridge</code>。</p>
+<p>刚开工时，我对 Agent Runtime 的理解只有一句话：“把聊天记录发给模型”。七天之后再回头看，几乎每个阶段的改动我都要重新想一遍，才说得清“当时为什么非改不可”。于是我把这段历程按时间顺序重抄了一遍——这篇笔记的叙述顺序就是我的理解顺序，由浅入深分三层：</p>
 <ol>
 <li>先看懂<strong>形态</strong>：这个阶段的 Runtime 长什么样；</li>
 <li>再看懂<strong>边界</strong>：哪些职责从谁手里交给了谁；</li>
@@ -351,7 +352,7 @@
 </ol>
 <p>下面的记录，就是这三问一层层推进的过程。涉及的“Runtime”不只是 <code>Agent.run()</code>，还包括驱动一次执行所必需的上下文管理、Tool 系统、Session、持久化、授权、取消、子 Agent、MCP 和前端适配语义。</p>
 <hr>
-<h2 id="0-先记住四句话"><a href="#0-先记住四句话" class="headerlink" title="0. 先记住四句话"></a>0. 先记住四句话</h2><p>原版演进史的最后给了四条“架构不变量”，我第一次读完全无感，等把七个阶段抄完，才发现前面所有剧情都在往这四句话上收。一开始读不懂也没关系，可以先跳过，读完再回头对照：</p>
+<h2 id="0-先记住四句话"><a href="#0-先记住四句话" class="headerlink" title="0. 先记住四句话"></a>0. 先记住四句话</h2><p>回头看，七天里最后沉淀出四条“架构不变量”。刚开工时我对它们完全无感，等把七个阶段抄完，才发现前面所有剧情都在往这四句话上收。一开始读不懂也没关系，可以先跳过，读完再回头对照：</p>
 <ol>
 <li><strong>执行语义只在 Agent Core 实现一次；</strong></li>
 <li><strong>Runtime 只在 Bridge 装配一次；</strong></li>
@@ -415,7 +416,7 @@
 <td>Runtime 不再等同于一次请求，而是 Session 级活动实体</td>
 </tr>
 </tbody></table>
-<p>七个阶段里，真正改变职责边界或状态模型的只有几次（原版把它们叫“转折点”），其余提交都是在补能力、补约束、补语义。我按这个节奏画了张时间线，方便自己回看：</p>
+<p>七个阶段里，真正改变职责边界或状态模型的只有几次（我在下面把它们标成“转折点”），其余提交都是在补能力、补约束、补语义。我按这个节奏画了张时间线，方便自己回看：</p>
 <pre class="mermaid">flowchart LR
     A["阶段0<br/>最小对话内核<br/>09-09"] --> B["阶段1<br/>Agent Loop<br/>09-09~10"]
     B --> C["阶段2<br/>Bridge 统一 Runtime<br/>09-11"]
@@ -811,7 +812,7 @@
 <hr>
 <h2 id="13-结语与我还留在笔记最后的问题"><a href="#13-结语与我还留在笔记最后的问题" class="headerlink" title="13. 结语与我还留在笔记最后的问题"></a>13. 结语与我还留在笔记最后的问题</h2><p>七天的演进最后汇合成几条线：Tool Loop 让 Agent 从回答器变成执行器；结构化事件和 Bridge 让多个前端共享同一 Runtime；ContextManager 让长对话和压缩成为独立机制；Tool Catalog、Context 注入、MCP 和角色化子 Agent 让能力可组合；append-only Journal 让执行事实、恢复和 Provider 格式彻底解耦；Runtime ownership、<code>ask_user</code>、steering 和权限 preset 让 Session 成为可持续、可接管的活动实体。</p>
 <p>所以当前最值得保留的，不是某个具体类，而是开头那四条不变量：执行语义只在 Core 实现一次、Runtime 只在 Bridge 装配一次、真实历史只写 Journal 其余皆投影、Tool 无状态且依赖在调用时注入。它们解释了项目为什么能在快速加入 GUI、MCP、子 Agent、多模态、并发、恢复和实时交互之后，依赖方向依然干净。</p>
-<p>回头看，这三层理解是逐层加上去的：最早只能复述“哪个阶段加了什么”，接着才看清每次重构把职责从谁手里交给了谁，最后才认出这些取舍都来自同一条主线——把执行语义收紧到一处，把容易变化的部分推到装配层和投影层。写到这里，开头那句“每个字都认识但说不出为什么”，才算勉强有了答案。</p>
+<p>回头看，这三层理解是逐层加上去的：最早只能复述“哪个阶段加了什么”，接着才看清每次重构把职责从谁手里交给了谁，最后才认出这些取舍都来自同一条主线——把执行语义收紧到一处，把容易变化的部分推到装配层和投影层。写到这里，开头那句“当时为什么非改不可”，才算勉强有了答案。</p>
 <p>最后留几个我自己还没想透的问题，等下一轮再读代码：</p>
 <ol>
 <li>并发 Tool 的四种顺序里，UI 展示用 completion order、Provider 用 projection order，那如果用户想“按事实顺序回看一次执行”，最自然的入口应该是 replayed Session 还是 Journal 原文？</li>
