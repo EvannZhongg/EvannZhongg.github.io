@@ -338,7 +338,7 @@
             <h1 id="由浅入深看懂-Agent-Runtime-的七天演进"><a href="#由浅入深看懂-Agent-Runtime-的七天演进" class="headerlink" title="由浅入深看懂 Agent Runtime 的七天演进"></a>由浅入深看懂 Agent Runtime 的七天演进</h1><p>这是我自己开发 Nosis 的历程记录。</p>
 <hr>
 <h2 id="项目地址：https-github-com-EvannZhongg-Nosis-git"><a href="#项目地址：https-github-com-EvannZhongg-Nosis-git" class="headerlink" title="项目地址：https://github.com/EvannZhongg/Nosis.git"></a>项目地址：<a target="_blank" rel="noopener" href="https://github.com/EvannZhongg/Nosis.git">https://github.com/EvannZhongg/Nosis.git</a></h2><p>素材来自项目自身的 Git 历史：从最初提交 <code>e1d15a4</code>（2026-09-09）到当前提交 <code>8f7f019</code>（2026-09-16），一共七天、131 个提交，其中 93 个触及了 <code>agent_core</code> 或 <code>interfaces/bridge</code>。</p>
-<p>刚开工时，我对 Agent Runtime 的理解只有一句话：“把聊天记录发给模型”。七天之后再回头看，几乎每个阶段的改动我都要重新想一遍，才说得清“当时为什么非改不可”。于是我把这段历程按时间顺序重抄了一遍——这篇笔记的叙述顺序就是我的理解顺序，由浅入深分三层：</p>
+<p>我一直想做一个属于自己的 Agent，但很长一段时间里都不知道从哪下手——对它的理解只停留在一些基本的调用运行逻辑上，至于工具、上下文、状态这些东西该怎么组织，完全没有概念。这次总算从头写了一遍，七天之后再回头看，几乎每个阶段的改动我都要重新想一遍，才说得清“当时为什么非改不可”。于是我把这段历程按时间顺序重抄了一遍——这篇笔记的叙述顺序就是我的理解顺序，由浅入深分三层：</p>
 <ol>
 <li>先看懂<strong>形态</strong>：这个阶段的 Runtime 长什么样；</li>
 <li>再看懂<strong>边界</strong>：哪些职责从谁手里交给了谁；</li>
@@ -859,11 +859,11 @@
                     
                         <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"># 大模型</a>
                     
-                        <a href="/tags/Python/"># Python</a>
-                    
                         <a href="/tags/Function-Calling/"># Function Calling</a>
                     
                         <a href="/tags/Agent/"># Agent</a>
+                    
+                        <a href="/tags/Python/"># Python</a>
                     
                         <a href="/tags/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/"># 架构设计</a>
                     
