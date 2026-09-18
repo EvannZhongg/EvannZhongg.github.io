@@ -132,101 +132,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Convert PDF Tables to Readable Text</title>
-    <url>/2025/03/28/Convert-PDF-Tables-to-Readable-Text/</url>
-    <content><![CDATA[<h1 id="PDF-表格提取转为纯文本结构数据"><a href="#PDF-表格提取转为纯文本结构数据" class="headerlink" title="PDF 表格提取转为纯文本结构数据"></a>PDF 表格提取转为纯文本结构数据</h1><p>本文详细记录了如何使用读光的  Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。</p>
-<hr>
-<p>项目地址：<a href="https://github.com/EvannZhongg/Table_Extraction.git">https://github.com/EvannZhongg/Table_Extraction.git</a></p>
-<hr>
-<h2 id="项目概览"><a href="#项目概览" class="headerlink" title="项目概览"></a><strong>项目概览</strong></h2><p>本项目的主要目标是将 PDF 文件中存在的表格，作为图片提取参数信息，尤其是结构化表格。整个流程分为两个阶段：</p>
-<ol>
-<li><strong>表格结构识别</strong> —— 使用 Cycle-CenterNet 模型识别表格中每个单元格的位置（多边形坐标）。</li>
-<li><strong>OCR 文本识别</strong> —— 使用 PaddleOCR 识别图像中所有文字及其位置坐标。</li>
-</ol>
-<hr>
-<h2 id="环境与设置"><a href="#环境与设置" class="headerlink" title="环境与设置"></a><strong>环境与设置</strong></h2><h3 id="1-表格识别模型配置"><a href="#1-表格识别模型配置" class="headerlink" title="1. 表格识别模型配置"></a><strong>1. 表格识别模型配置</strong></h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git lfs install</span><br><span class="line">git <span class="built_in">clone</span> https://www.modelscope.cn/iic/cv_dla34_table-structure-recognition_cycle-centernet.git</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">model_path = <span class="string">&quot;your_absolute_path_to_cv_dla34_table-structure-recognition_cycle-centernet&quot;</span></span><br></pre></td></tr></table></figure>
-<p>建议自定义路径使用绝对路径</p>
-<p>例如：<code>model_path = &quot;D:/Table_Extraction/cv_dla34_table-structure-recognition_cycle-centernet&quot;</code></p>
-<h3 id="2-PaddleOCR-配置"><a href="#2-PaddleOCR-配置" class="headerlink" title="2. PaddleOCR 配置"></a><strong>2. PaddleOCR 配置</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">ocr = PaddleOCR(</span><br><span class="line">    use_gpu=<span class="literal">True</span>,</span><br><span class="line">    lang=<span class="string">&#x27;ch&#x27;</span>,</span><br><span class="line">    det_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_det_infer&#x27;</span>,</span><br><span class="line">    rec_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_rec_infer&#x27;</span>,</span><br><span class="line">    cls_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_ppocr_mobile_v2.0_cls_infer&#x27;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p>建议自定义路径使用绝对路径</p>
-<p>例如： <code>det_model_dir=&#39;D:/Table_Extraction/PaddleOCR/models/ch_PP-OCRv4_det_infer/&#39;</code></p>
-<hr>
-<h2 id="核心函数详解"><a href="#核心函数详解" class="headerlink" title="核心函数详解"></a><strong>核心函数详解</strong></h2><h3 id="1-函数-calculate-iot-cell-text"><a href="#1-函数-calculate-iot-cell-text" class="headerlink" title="1. 函数 calculate_iot(cell, text)"></a><strong>1. 函数 <code>calculate_iot(cell, text)</code></strong></h3><p><strong>功能</strong>：计算 OCR 文本框与表格单元格的交并比（IoT, Intersection over Text）。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>利用两组矩形坐标，计算它们重叠区域的面积。</li>
-<li>然后用重叠面积 &#x2F; 文本框面积作为 IoT 值。</li>
-<li>若值越大，表示文本越“贴合”单元格。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">calculate_iot</span>(<span class="params">cell, text</span>):</span><br><span class="line">    intersection_x1 = <span class="built_in">max</span>(cell[<span class="number">0</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>])</span><br><span class="line">    intersection_y1 = <span class="built_in">max</span>(cell[<span class="number">1</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    intersection_x2 = <span class="built_in">min</span>(cell[<span class="number">2</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>])</span><br><span class="line">    intersection_y2 = <span class="built_in">min</span>(cell[<span class="number">3</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> intersection_x1 &gt;= intersection_x2 <span class="keyword">or</span> intersection_y1 &gt;= intersection_y2:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.0</span></span><br><span class="line"></span><br><span class="line">    intersection_area = (intersection_x2 - intersection_x1) * (intersection_y2 - intersection_y1)</span><br><span class="line">    text_area = (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>]) * (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    <span class="keyword">return</span> intersection_area / text_area</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="2-函数-merge-text-into-cells-cell-coords-ocr-results"><a href="#2-函数-merge-text-into-cells-cell-coords-ocr-results" class="headerlink" title="2. 函数 merge_text_into_cells(cell_coords, ocr_results)"></a><strong>2. 函数 <code>merge_text_into_cells(cell_coords, ocr_results)</code></strong></h3><p><strong>功能</strong>：将 OCR 识别到的文字分配到表格对应单元格中。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>对每个单元格遍历所有 OCR 文本框，计算 IoT。</li>
-<li>若 IoT &gt; 0.5，则认为该文字属于该单元格。</li>
-<li>同时记录那些与所有单元格 IoT &lt; 0.1 的文字（非表格内容）。</li>
-<li>将属于单元格的文字合并为一个字符串。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">merge_text_into_cells</span>(<span class="params">cell_coords, ocr_results</span>):</span><br><span class="line">    cell_text_dict = &#123;cell: [] <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords&#125;</span><br><span class="line">    noncell_text_dict = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords:</span><br><span class="line">        <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">            <span class="keyword">if</span> calculate_iot(cell, result) &gt; <span class="number">0.5</span>:</span><br><span class="line">                cell_text_dict[cell].append(result[<span class="string">&#x27;text&#x27;</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">all</span>(calculate_iot(cell, result) &lt; <span class="number">0.1</span> <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords):</span><br><span class="line">            noncell_text_dict[result[<span class="string">&#x27;coords&#x27;</span>]] = result[<span class="string">&#x27;text&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    merged_text = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> cell, texts <span class="keyword">in</span> cell_text_dict.items():</span><br><span class="line">        merged_text[cell] = <span class="string">&#x27;&#x27;</span>.join(texts).strip()</span><br><span class="line">    <span class="keyword">for</span> coords, text <span class="keyword">in</span> noncell_text_dict.items():</span><br><span class="line">        merged_text[coords] = <span class="string">&#x27;&#x27;</span>.join(text).strip()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> merged_text</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="3-函数-adjust-coordinates-merged-text-image-path"><a href="#3-函数-adjust-coordinates-merged-text-image-path" class="headerlink" title="3. 函数 adjust_coordinates(merged_text, image_path)"></a><strong>3. 函数 <code>adjust_coordinates(merged_text, image_path)</code></strong></h3><p><strong>功能</strong>：将 y 坐标相近的单元格进行聚类并统一化，方便后续行级别排序。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>图像越高，容许的 y 偏差越大，使用 height &#x2F; 100 作为容差。</li>
-<li>将 y 值差距小于阈值的单元格归为一组。</li>
-<li>每组内统一 y 值为该组的平均 y 值，确保在同一“水平行”内。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">adjust_coordinates</span>(<span class="params">merged_text, image_path</span>):</span><br><span class="line">    image = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    width, height = image.size</span><br><span class="line">    threshold = height / <span class="number">100</span></span><br><span class="line">    groups = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> coordinates, text <span class="keyword">in</span> merged_text.items():</span><br><span class="line">        found_group = <span class="literal">False</span></span><br><span class="line">        <span class="keyword">for</span> group_y <span class="keyword">in</span> groups.keys():</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">abs</span>(coordinates[<span class="number">1</span>] - group_y) &lt;= threshold:</span><br><span class="line">                groups[group_y].append((coordinates, text))</span><br><span class="line">                found_group = <span class="literal">True</span></span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> found_group:</span><br><span class="line">            groups[coordinates[<span class="number">1</span>]] = [(coordinates, text)]</span><br><span class="line"></span><br><span class="line">    adjusted_coordinates = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> group_y, group_coords <span class="keyword">in</span> groups.items():</span><br><span class="line">        avg_y = <span class="built_in">sum</span>(coord[<span class="number">0</span>][<span class="number">1</span>] <span class="keyword">for</span> coord <span class="keyword">in</span> group_coords) / <span class="built_in">len</span>(group_coords)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> group_coords:</span><br><span class="line">            adjusted_coordinates[(i[<span class="number">0</span>][<span class="number">0</span>], avg_y, i[<span class="number">0</span>][<span class="number">2</span>], i[<span class="number">0</span>][<span class="number">3</span>])] = i[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> adjusted_coordinates</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="4-函数-draw-text-boxes-image-path-boxes-texts"><a href="#4-函数-draw-text-boxes-image-path-boxes-texts" class="headerlink" title="4.函数 draw_text_boxes(image_path, boxes, texts)"></a><strong>4.函数 <code>draw_text_boxes(image_path, boxes, texts)</code></strong></h3><p><strong>功能</strong>：在图像上绘制表格框与文字内容，进行可视化标注。</p>
-<p><strong>原理说明</strong>：</p>
-<ul>
-<li>利用 PIL 创建空白图层，绘制框线与文字。</li>
-<li>若文字宽度超出单元格宽度，则使用 textwrap 进行自动换行。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">draw_text_boxes</span>(<span class="params">image_path, boxes, texts</span>):</span><br><span class="line">    img = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    img = Image.new(<span class="string">&#x27;RGB&#x27;</span>, img.size, (<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>))</span><br><span class="line">    draw = ImageDraw.Draw(img)</span><br><span class="line">    font = ImageFont.truetype(<span class="string">&quot;./chinese_cht.ttf&quot;</span>, size=<span class="number">15</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> box, text <span class="keyword">in</span> <span class="built_in">zip</span>(boxes, texts):</span><br><span class="line">        x0, y0, x1, y1 = box</span><br><span class="line">        x0, x1 = <span class="built_in">sorted</span>([x0, x1])</span><br><span class="line">        y0, y1 = <span class="built_in">sorted</span>([y0, y1])</span><br><span class="line">        normalized_box = (x0, y0, x1, y1)</span><br><span class="line">        draw.rectangle(normalized_box, outline=<span class="string">&#x27;red&#x27;</span>, width=<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        text_len = draw.textbbox((x0, y0), text, font=font)</span><br><span class="line">        <span class="keyword">if</span> (text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) &gt; (x1 - x0):</span><br><span class="line">            text = <span class="string">&#x27;\n&#x27;</span>.join(textwrap.wrap(text, width=<span class="built_in">int</span>(</span><br><span class="line">                np.ceil(<span class="built_in">len</span>(text) / np.ceil((text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) / (x1 - x0))))))</span><br><span class="line"></span><br><span class="line">        draw.text((x0, y0), text, font=font, fill=<span class="string">&#x27;black&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    img.save(<span class="string">&#x27;your_image_storage_path/output.png&#x27;</span>)</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="5-最终文本输出（结构化行）"><a href="#5-最终文本输出（结构化行）" class="headerlink" title="5. 最终文本输出（结构化行）"></a><strong>5. 最终文本输出（结构化行）</strong></h2><p><strong>功能</strong>：将所有坐标按 y → x 排序，按行归组输出结构化文本。</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">adjusted_merged_text_sorted = <span class="built_in">sorted</span>(adjusted_merged_text.items(), key=<span class="keyword">lambda</span> x: (x[<span class="number">0</span>][<span class="number">1</span>], x[<span class="number">0</span>][<span class="number">0</span>]))</span><br><span class="line">adjusted_merged_text_sorted_group = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> coordinates, text <span class="keyword">in</span> adjusted_merged_text_sorted:</span><br><span class="line">    <span class="keyword">if</span> coordinates[<span class="number">1</span>] <span class="keyword">not</span> <span class="keyword">in</span> adjusted_merged_text_sorted_group:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]] = [text]</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]].append(text)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> text_list <span class="keyword">in</span> adjusted_merged_text_sorted_group.values():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27; | &#x27;</span>.join(text_list))</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a><strong>使用方法</strong></h2><ol>
-<li>运行脚本选择表格图片：</li>
-</ol>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python Table_Extraction.py</span><br></pre></td></tr></table></figure>
-<p>或</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python main.py</span><br></pre></td></tr></table></figure>
-
-<p>在项目目录会输出效果图片，终端会输出文本结果</p>
-<ol start="2">
-<li>效果展示<br><img src="https://github.com/user-attachments/assets/8e0f21d8-af6c-4da2-beb7-dcc7f5f73115" alt="image"><br><img src="https://github.com/user-attachments/assets/45ad3906-09df-431e-a4ec-4f0779137195" alt="image"><br>输出结果如下，你可以用这组结果测试大模型是否能读懂这组表格： <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PartNumber | TotalCapacitance(Ct) @ 50 V,(pF) | TotalCapacitance(Ct) @ 0 V,(pF) | SeriesResistance (Rs),@10 mA,(②) | MinorityCarrierLifetime (TL)@ 10 mA(ns) | VoltageRating2(M) | I-RegionThickness(μm) | ThermalResistance(0JC)(°C/W)</span><br><span class="line">Maximum | Typical | Maximum | Typical | Minimum | Nominal | Maximum</span><br><span class="line"></span><br><span class="line">Switching Applications(continued)</span><br><span class="line">| APD0810-203 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 174</span><br><span class="line">| APD0810-210 | 0.40 | 0.45 | 1.5 | 160 | 100 | 8 | 75</span><br><span class="line">| APD0810-219 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 143</span><br><span class="line">| APD0810-240 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 155</span><br><span class="line">| APD1505-203 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 172</span><br><span class="line">| APD1505-210 | 0.40 | 0.45@10 V | 2.5 | 350 | 200 | 15 | 74</span><br><span class="line">| APD1505-219 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 142</span><br><span class="line">| APD1505-240 | 0.40 | 0.45 @ 10 V | 2.5 | 350 | 200 | 15 | 150</span><br><span class="line">| APD1510-203 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 168</span><br><span class="line">| APD1510-210 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 70</span><br><span class="line">| APD1510-219 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 137</span><br><span class="line">| APD1510-240 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 149</span><br><span class="line">| APD1520-203 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 155</span><br><span class="line">| APD1520-210 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 57</span><br><span class="line">| APD1520-219 | 0.45 | 0.50 | 1.2 | 900 | 200 | 15 | 124</span><br><span class="line">| APD1520-240 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 136</span><br><span class="line"></span><br><span class="line">AttenuatorApplications</span><br><span class="line">| APD2220-203 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 132</span><br><span class="line">| APD2220-210 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 32</span><br><span class="line">| APD2220-219 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 104</span><br><span class="line">| APD2220-240 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 115</span><br></pre></td></tr></table></figure></li>
-</ol>
-<hr>
-<h2 id="补充说明"><a href="#补充说明" class="headerlink" title="补充说明"></a><strong>补充说明</strong></h2><ul>
-<li>字体文件 <code>chinese_cht.ttf</code> 必须存在，或替换为系统可识别的中文字体。</li>
-<li>对于复杂结构表格，当前模型仍然无法很好的处理。</li>
-</ul>
-<hr>
-<p>该项目代码基于 <a href="https://github.com/wyf3/llm_related/tree/main">wyf3</a> 和 <a href="https://github.com/PaddlePaddle/PaddleOCR">PaddleOCR</a></p>
-]]></content>
-      <categories>
-        <category>OCR</category>
-      </categories>
-      <tags>
-        <tag>OCR</tag>
-        <tag>PaddleOCR</tag>
-        <tag>PDF</tag>
-        <tag>AI</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Docling2md</title>
     <url>/2025/05/01/Docling2md/</url>
     <content><![CDATA[<h1 id="基于Docling结合多模态大模型的的PDF转Markdown"><a href="#基于Docling结合多模态大模型的的PDF转Markdown" class="headerlink" title="基于Docling结合多模态大模型的的PDF转Markdown"></a>基于Docling结合多模态大模型的的PDF转Markdown</h1><hr>
@@ -411,8 +316,8 @@
       <tags>
         <tag>OCR</tag>
         <tag>PDF</tag>
-        <tag>AI</tag>
         <tag>Markdown</tag>
+        <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
         <tag>Qwen</tag>
@@ -799,6 +704,101 @@
         <tag>Python</tag>
         <tag>Function Calling</tag>
         <tag>Agent</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Convert PDF Tables to Readable Text</title>
+    <url>/2025/03/28/Convert-PDF-Tables-to-Readable-Text/</url>
+    <content><![CDATA[<h1 id="PDF-表格提取转为纯文本结构数据"><a href="#PDF-表格提取转为纯文本结构数据" class="headerlink" title="PDF 表格提取转为纯文本结构数据"></a>PDF 表格提取转为纯文本结构数据</h1><p>本文详细记录了如何使用读光的  Cycle-CenterNet 有线表格识别模型进行表格结构识别，以及 PaddleOCR 进行文本识别，将 PDF 中的表格图像转为大模型可以理解的表格结构。</p>
+<hr>
+<p>项目地址：<a href="https://github.com/EvannZhongg/Table_Extraction.git">https://github.com/EvannZhongg/Table_Extraction.git</a></p>
+<hr>
+<h2 id="项目概览"><a href="#项目概览" class="headerlink" title="项目概览"></a><strong>项目概览</strong></h2><p>本项目的主要目标是将 PDF 文件中存在的表格，作为图片提取参数信息，尤其是结构化表格。整个流程分为两个阶段：</p>
+<ol>
+<li><strong>表格结构识别</strong> —— 使用 Cycle-CenterNet 模型识别表格中每个单元格的位置（多边形坐标）。</li>
+<li><strong>OCR 文本识别</strong> —— 使用 PaddleOCR 识别图像中所有文字及其位置坐标。</li>
+</ol>
+<hr>
+<h2 id="环境与设置"><a href="#环境与设置" class="headerlink" title="环境与设置"></a><strong>环境与设置</strong></h2><h3 id="1-表格识别模型配置"><a href="#1-表格识别模型配置" class="headerlink" title="1. 表格识别模型配置"></a><strong>1. 表格识别模型配置</strong></h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git lfs install</span><br><span class="line">git <span class="built_in">clone</span> https://www.modelscope.cn/iic/cv_dla34_table-structure-recognition_cycle-centernet.git</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">model_path = <span class="string">&quot;your_absolute_path_to_cv_dla34_table-structure-recognition_cycle-centernet&quot;</span></span><br></pre></td></tr></table></figure>
+<p>建议自定义路径使用绝对路径</p>
+<p>例如：<code>model_path = &quot;D:/Table_Extraction/cv_dla34_table-structure-recognition_cycle-centernet&quot;</code></p>
+<h3 id="2-PaddleOCR-配置"><a href="#2-PaddleOCR-配置" class="headerlink" title="2. PaddleOCR 配置"></a><strong>2. PaddleOCR 配置</strong></h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">ocr = PaddleOCR(</span><br><span class="line">    use_gpu=<span class="literal">True</span>,</span><br><span class="line">    lang=<span class="string">&#x27;ch&#x27;</span>,</span><br><span class="line">    det_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_det_infer&#x27;</span>,</span><br><span class="line">    rec_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_PP-OCRv4_rec_infer&#x27;</span>,</span><br><span class="line">    cls_model_dir=<span class="string">&#x27;your_absolute_path_to_ch_ppocr_mobile_v2.0_cls_infer&#x27;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>建议自定义路径使用绝对路径</p>
+<p>例如： <code>det_model_dir=&#39;D:/Table_Extraction/PaddleOCR/models/ch_PP-OCRv4_det_infer/&#39;</code></p>
+<hr>
+<h2 id="核心函数详解"><a href="#核心函数详解" class="headerlink" title="核心函数详解"></a><strong>核心函数详解</strong></h2><h3 id="1-函数-calculate-iot-cell-text"><a href="#1-函数-calculate-iot-cell-text" class="headerlink" title="1. 函数 calculate_iot(cell, text)"></a><strong>1. 函数 <code>calculate_iot(cell, text)</code></strong></h3><p><strong>功能</strong>：计算 OCR 文本框与表格单元格的交并比（IoT, Intersection over Text）。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>利用两组矩形坐标，计算它们重叠区域的面积。</li>
+<li>然后用重叠面积 &#x2F; 文本框面积作为 IoT 值。</li>
+<li>若值越大，表示文本越“贴合”单元格。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">calculate_iot</span>(<span class="params">cell, text</span>):</span><br><span class="line">    intersection_x1 = <span class="built_in">max</span>(cell[<span class="number">0</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>])</span><br><span class="line">    intersection_y1 = <span class="built_in">max</span>(cell[<span class="number">1</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    intersection_x2 = <span class="built_in">min</span>(cell[<span class="number">2</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>])</span><br><span class="line">    intersection_y2 = <span class="built_in">min</span>(cell[<span class="number">3</span>], text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> intersection_x1 &gt;= intersection_x2 <span class="keyword">or</span> intersection_y1 &gt;= intersection_y2:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0.0</span></span><br><span class="line"></span><br><span class="line">    intersection_area = (intersection_x2 - intersection_x1) * (intersection_y2 - intersection_y1)</span><br><span class="line">    text_area = (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">2</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">0</span>]) * (text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">3</span>] - text[<span class="string">&#x27;coords&#x27;</span>][<span class="number">1</span>])</span><br><span class="line">    <span class="keyword">return</span> intersection_area / text_area</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="2-函数-merge-text-into-cells-cell-coords-ocr-results"><a href="#2-函数-merge-text-into-cells-cell-coords-ocr-results" class="headerlink" title="2. 函数 merge_text_into_cells(cell_coords, ocr_results)"></a><strong>2. 函数 <code>merge_text_into_cells(cell_coords, ocr_results)</code></strong></h3><p><strong>功能</strong>：将 OCR 识别到的文字分配到表格对应单元格中。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>对每个单元格遍历所有 OCR 文本框，计算 IoT。</li>
+<li>若 IoT &gt; 0.5，则认为该文字属于该单元格。</li>
+<li>同时记录那些与所有单元格 IoT &lt; 0.1 的文字（非表格内容）。</li>
+<li>将属于单元格的文字合并为一个字符串。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">merge_text_into_cells</span>(<span class="params">cell_coords, ocr_results</span>):</span><br><span class="line">    cell_text_dict = &#123;cell: [] <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords&#125;</span><br><span class="line">    noncell_text_dict = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords:</span><br><span class="line">        <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">            <span class="keyword">if</span> calculate_iot(cell, result) &gt; <span class="number">0.5</span>:</span><br><span class="line">                cell_text_dict[cell].append(result[<span class="string">&#x27;text&#x27;</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> result <span class="keyword">in</span> ocr_results:</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">all</span>(calculate_iot(cell, result) &lt; <span class="number">0.1</span> <span class="keyword">for</span> cell <span class="keyword">in</span> cell_coords):</span><br><span class="line">            noncell_text_dict[result[<span class="string">&#x27;coords&#x27;</span>]] = result[<span class="string">&#x27;text&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    merged_text = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> cell, texts <span class="keyword">in</span> cell_text_dict.items():</span><br><span class="line">        merged_text[cell] = <span class="string">&#x27;&#x27;</span>.join(texts).strip()</span><br><span class="line">    <span class="keyword">for</span> coords, text <span class="keyword">in</span> noncell_text_dict.items():</span><br><span class="line">        merged_text[coords] = <span class="string">&#x27;&#x27;</span>.join(text).strip()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> merged_text</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="3-函数-adjust-coordinates-merged-text-image-path"><a href="#3-函数-adjust-coordinates-merged-text-image-path" class="headerlink" title="3. 函数 adjust_coordinates(merged_text, image_path)"></a><strong>3. 函数 <code>adjust_coordinates(merged_text, image_path)</code></strong></h3><p><strong>功能</strong>：将 y 坐标相近的单元格进行聚类并统一化，方便后续行级别排序。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>图像越高，容许的 y 偏差越大，使用 height &#x2F; 100 作为容差。</li>
+<li>将 y 值差距小于阈值的单元格归为一组。</li>
+<li>每组内统一 y 值为该组的平均 y 值，确保在同一“水平行”内。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">adjust_coordinates</span>(<span class="params">merged_text, image_path</span>):</span><br><span class="line">    image = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    width, height = image.size</span><br><span class="line">    threshold = height / <span class="number">100</span></span><br><span class="line">    groups = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> coordinates, text <span class="keyword">in</span> merged_text.items():</span><br><span class="line">        found_group = <span class="literal">False</span></span><br><span class="line">        <span class="keyword">for</span> group_y <span class="keyword">in</span> groups.keys():</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">abs</span>(coordinates[<span class="number">1</span>] - group_y) &lt;= threshold:</span><br><span class="line">                groups[group_y].append((coordinates, text))</span><br><span class="line">                found_group = <span class="literal">True</span></span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> found_group:</span><br><span class="line">            groups[coordinates[<span class="number">1</span>]] = [(coordinates, text)]</span><br><span class="line"></span><br><span class="line">    adjusted_coordinates = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> group_y, group_coords <span class="keyword">in</span> groups.items():</span><br><span class="line">        avg_y = <span class="built_in">sum</span>(coord[<span class="number">0</span>][<span class="number">1</span>] <span class="keyword">for</span> coord <span class="keyword">in</span> group_coords) / <span class="built_in">len</span>(group_coords)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> group_coords:</span><br><span class="line">            adjusted_coordinates[(i[<span class="number">0</span>][<span class="number">0</span>], avg_y, i[<span class="number">0</span>][<span class="number">2</span>], i[<span class="number">0</span>][<span class="number">3</span>])] = i[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> adjusted_coordinates</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="4-函数-draw-text-boxes-image-path-boxes-texts"><a href="#4-函数-draw-text-boxes-image-path-boxes-texts" class="headerlink" title="4.函数 draw_text_boxes(image_path, boxes, texts)"></a><strong>4.函数 <code>draw_text_boxes(image_path, boxes, texts)</code></strong></h3><p><strong>功能</strong>：在图像上绘制表格框与文字内容，进行可视化标注。</p>
+<p><strong>原理说明</strong>：</p>
+<ul>
+<li>利用 PIL 创建空白图层，绘制框线与文字。</li>
+<li>若文字宽度超出单元格宽度，则使用 textwrap 进行自动换行。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">draw_text_boxes</span>(<span class="params">image_path, boxes, texts</span>):</span><br><span class="line">    img = Image.<span class="built_in">open</span>(image_path)</span><br><span class="line">    img = Image.new(<span class="string">&#x27;RGB&#x27;</span>, img.size, (<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>))</span><br><span class="line">    draw = ImageDraw.Draw(img)</span><br><span class="line">    font = ImageFont.truetype(<span class="string">&quot;./chinese_cht.ttf&quot;</span>, size=<span class="number">15</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> box, text <span class="keyword">in</span> <span class="built_in">zip</span>(boxes, texts):</span><br><span class="line">        x0, y0, x1, y1 = box</span><br><span class="line">        x0, x1 = <span class="built_in">sorted</span>([x0, x1])</span><br><span class="line">        y0, y1 = <span class="built_in">sorted</span>([y0, y1])</span><br><span class="line">        normalized_box = (x0, y0, x1, y1)</span><br><span class="line">        draw.rectangle(normalized_box, outline=<span class="string">&#x27;red&#x27;</span>, width=<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">        text_len = draw.textbbox((x0, y0), text, font=font)</span><br><span class="line">        <span class="keyword">if</span> (text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) &gt; (x1 - x0):</span><br><span class="line">            text = <span class="string">&#x27;\n&#x27;</span>.join(textwrap.wrap(text, width=<span class="built_in">int</span>(</span><br><span class="line">                np.ceil(<span class="built_in">len</span>(text) / np.ceil((text_len[<span class="number">2</span>] - text_len[<span class="number">0</span>]) / (x1 - x0))))))</span><br><span class="line"></span><br><span class="line">        draw.text((x0, y0), text, font=font, fill=<span class="string">&#x27;black&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    img.save(<span class="string">&#x27;your_image_storage_path/output.png&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="5-最终文本输出（结构化行）"><a href="#5-最终文本输出（结构化行）" class="headerlink" title="5. 最终文本输出（结构化行）"></a><strong>5. 最终文本输出（结构化行）</strong></h2><p><strong>功能</strong>：将所有坐标按 y → x 排序，按行归组输出结构化文本。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">adjusted_merged_text_sorted = <span class="built_in">sorted</span>(adjusted_merged_text.items(), key=<span class="keyword">lambda</span> x: (x[<span class="number">0</span>][<span class="number">1</span>], x[<span class="number">0</span>][<span class="number">0</span>]))</span><br><span class="line">adjusted_merged_text_sorted_group = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> coordinates, text <span class="keyword">in</span> adjusted_merged_text_sorted:</span><br><span class="line">    <span class="keyword">if</span> coordinates[<span class="number">1</span>] <span class="keyword">not</span> <span class="keyword">in</span> adjusted_merged_text_sorted_group:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]] = [text]</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        adjusted_merged_text_sorted_group[coordinates[<span class="number">1</span>]].append(text)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> text_list <span class="keyword">in</span> adjusted_merged_text_sorted_group.values():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27; | &#x27;</span>.join(text_list))</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a><strong>使用方法</strong></h2><ol>
+<li>运行脚本选择表格图片：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python Table_Extraction.py</span><br></pre></td></tr></table></figure>
+<p>或</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python main.py</span><br></pre></td></tr></table></figure>
+
+<p>在项目目录会输出效果图片，终端会输出文本结果</p>
+<ol start="2">
+<li>效果展示<br><img src="https://github.com/user-attachments/assets/8e0f21d8-af6c-4da2-beb7-dcc7f5f73115" alt="image"><br><img src="https://github.com/user-attachments/assets/45ad3906-09df-431e-a4ec-4f0779137195" alt="image"><br>输出结果如下，你可以用这组结果测试大模型是否能读懂这组表格： <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">PartNumber | TotalCapacitance(Ct) @ 50 V,(pF) | TotalCapacitance(Ct) @ 0 V,(pF) | SeriesResistance (Rs),@10 mA,(②) | MinorityCarrierLifetime (TL)@ 10 mA(ns) | VoltageRating2(M) | I-RegionThickness(μm) | ThermalResistance(0JC)(°C/W)</span><br><span class="line">Maximum | Typical | Maximum | Typical | Minimum | Nominal | Maximum</span><br><span class="line"></span><br><span class="line">Switching Applications(continued)</span><br><span class="line">| APD0810-203 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 174</span><br><span class="line">| APD0810-210 | 0.40 | 0.45 | 1.5 | 160 | 100 | 8 | 75</span><br><span class="line">| APD0810-219 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 143</span><br><span class="line">| APD0810-240 | 0.35 | 0.40 | 1.5 | 160 | 100 | 8 | 155</span><br><span class="line">| APD1505-203 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 172</span><br><span class="line">| APD1505-210 | 0.40 | 0.45@10 V | 2.5 | 350 | 200 | 15 | 74</span><br><span class="line">| APD1505-219 | 0.40 | 0.45@10V | 2.5 | 350 | 200 | 15 | 142</span><br><span class="line">| APD1505-240 | 0.40 | 0.45 @ 10 V | 2.5 | 350 | 200 | 15 | 150</span><br><span class="line">| APD1510-203 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 168</span><br><span class="line">| APD1510-210 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 70</span><br><span class="line">| APD1510-219 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 137</span><br><span class="line">| APD1510-240 | 0.35 | 0.40 | 2.0 | 300 | 200 | 15 | 149</span><br><span class="line">| APD1520-203 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 155</span><br><span class="line">| APD1520-210 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 57</span><br><span class="line">| APD1520-219 | 0.45 | 0.50 | 1.2 | 900 | 200 | 15 | 124</span><br><span class="line">| APD1520-240 | 0.40 | 0.45 | 1.2 | 900 | 200 | 15 | 136</span><br><span class="line"></span><br><span class="line">AttenuatorApplications</span><br><span class="line">| APD2220-203 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 132</span><br><span class="line">| APD2220-210 | 0.45 | 0.50 | 4.0 | 100 | 100 | 50 | 32</span><br><span class="line">| APD2220-219 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 104</span><br><span class="line">| APD2220-240 | 0.40 | 0.45 | 4.0 | 100 | 100 | 50 | 115</span><br></pre></td></tr></table></figure></li>
+</ol>
+<hr>
+<h2 id="补充说明"><a href="#补充说明" class="headerlink" title="补充说明"></a><strong>补充说明</strong></h2><ul>
+<li>字体文件 <code>chinese_cht.ttf</code> 必须存在，或替换为系统可识别的中文字体。</li>
+<li>对于复杂结构表格，当前模型仍然无法很好的处理。</li>
+</ul>
+<hr>
+<p>该项目代码基于 <a href="https://github.com/wyf3/llm_related/tree/main">wyf3</a> 和 <a href="https://github.com/PaddlePaddle/PaddleOCR">PaddleOCR</a></p>
+]]></content>
+      <categories>
+        <category>OCR</category>
+      </categories>
+      <tags>
+        <tag>OCR</tag>
+        <tag>PDF</tag>
+        <tag>AI</tag>
+        <tag>PaddleOCR</tag>
       </tags>
   </entry>
   <entry>
@@ -2223,8 +2223,8 @@
       </categories>
       <tags>
         <tag>前端</tag>
-        <tag>AI</tag>
         <tag>Markdown</tag>
+        <tag>AI</tag>
         <tag>LLM</tag>
         <tag>大模型</tag>
         <tag>RAG</tag>
@@ -2694,16 +2694,6 @@
       </tags>
   </entry>
   <entry>
-    <title>category</title>
-    <url>/category/index.html</url>
-    <content><![CDATA[]]></content>
-  </entry>
-  <entry>
-    <title>tag</title>
-    <url>/tag/index.html</url>
-    <content><![CDATA[]]></content>
-  </entry>
-  <entry>
     <title></title>
     <url>/js/code-copy.js</url>
     <content><![CDATA[document.addEventListener('DOMContentLoaded', () => {
@@ -2789,5 +2779,15 @@
 <li>实物电路焊接调试</li>
 </ul>
 ]]></content>
+  </entry>
+  <entry>
+    <title>tag</title>
+    <url>/tag/index.html</url>
+    <content><![CDATA[]]></content>
+  </entry>
+  <entry>
+    <title>category</title>
+    <url>/category/index.html</url>
+    <content><![CDATA[]]></content>
   </entry>
 </search>
