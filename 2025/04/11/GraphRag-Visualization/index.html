@@ -16,7 +16,7 @@
 
 <link rel="canonical" href="https://evannzhongg.github.io/2025/04/11/GraphRag-Visualization/">
 <meta name="description" content="GraphRag 图谱可视化 本文将详细介绍如何将微软 GraphRAG 框架生成的 entities.parquet 与 relationships.parquet 文件转换为 GraphML 图结构在 Gephi 中实现可视化。我们将逐步解释数据格式、图构建逻辑及 Python 代码实现的每个模…">
-<meta name="keywords" content="AI,LLM,大模型,Knowledge Graph,Python,GraphRAG,RAG,Gephi">
+<meta name="keywords" content="AI,LLM,大模型,Python,Knowledge Graph,GraphRAG,RAG,Gephi">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
 
 
@@ -33,8 +33,8 @@
 <meta property="article:tag" content="AI">
 <meta property="article:tag" content="LLM">
 <meta property="article:tag" content="大模型">
-<meta property="article:tag" content="Knowledge Graph">
 <meta property="article:tag" content="Python">
+<meta property="article:tag" content="Knowledge Graph">
 <meta property="article:tag" content="GraphRAG">
 <meta property="article:tag" content="RAG">
 <meta property="article:tag" content="Gephi">
@@ -51,7 +51,7 @@
 
 
 
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"GraphRag Visualization","description":"GraphRag 图谱可视化 本文将详细介绍如何将微软 GraphRAG 框架生成的 entities.parquet 与 relationships.parquet 文件转换为 GraphML 图结构在 Gephi 中实现可视化。我们将逐步解释数据格式、图构建逻辑及 Python 代码实现的每个模…","url":"https://evannzhongg.github.io/2025/04/11/GraphRag-Visualization/","mainEntityOfPage":{"@type":"WebPage","@id":"https://evannzhongg.github.io/2025/04/11/GraphRag-Visualization/"},"datePublished":"2025-04-11T15:02:21.000Z","dateModified":"2025-05-01T16:11:28.210Z","author":{"@type":"Person","name":"Evan Zhong","url":"https://evannzhongg.github.io/"},"publisher":{"@type":"Person","name":"Evan Zhong"},"keywords":"AI,LLM,大模型,Knowledge Graph,Python,GraphRAG,RAG,Gephi","inLanguage":"zh-CN","image":"https://evannzhongg.github.io/image/freakthrow.jpg"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"GraphRag Visualization","description":"GraphRag 图谱可视化 本文将详细介绍如何将微软 GraphRAG 框架生成的 entities.parquet 与 relationships.parquet 文件转换为 GraphML 图结构在 Gephi 中实现可视化。我们将逐步解释数据格式、图构建逻辑及 Python 代码实现的每个模…","url":"https://evannzhongg.github.io/2025/04/11/GraphRag-Visualization/","mainEntityOfPage":{"@type":"WebPage","@id":"https://evannzhongg.github.io/2025/04/11/GraphRag-Visualization/"},"datePublished":"2025-04-11T15:02:21.000Z","dateModified":"2025-05-01T16:11:28.210Z","author":{"@type":"Person","name":"Evan Zhong","url":"https://evannzhongg.github.io/"},"publisher":{"@type":"Person","name":"Evan Zhong"},"keywords":"AI,LLM,大模型,Python,Knowledge Graph,GraphRAG,RAG,Gephi","inLanguage":"zh-CN","image":"https://evannzhongg.github.io/image/freakthrow.jpg"}</script>
 
 <!-- Google Search Console 验证标签 -->
 <meta name="google-site-verification" content="0hjafUT-HANjK2izAW9bOEq2iQG3VWXZTPPKl5pVMyc" />
@@ -656,9 +656,9 @@
                     
                         <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/"># 大模型</a>
                     
-                        <a href="/tags/Knowledge-Graph/"># Knowledge Graph</a>
-                    
                         <a href="/tags/Python/"># Python</a>
+                    
+                        <a href="/tags/Knowledge-Graph/"># Knowledge Graph</a>
                     
                         <a href="/tags/GraphRAG/"># GraphRAG</a>
                     
